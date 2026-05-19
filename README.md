@@ -22,7 +22,7 @@
 > *"기억을 전달받는다면, 그건 온전한 기억이어야 한다."*
 > — 로이스 로리, 《기억 전달자》
 
-《기억 전달자》에서 한 사람이 세상의 모든 기억을 품는다. 나머지 모든 사람은 **Sameness** 속에 산다 — 역사도, 맥락도, 축적된 노이즈도 없이. 기억 전달자는 필요한 순간에 필요한 기억만 골라 전달한다. 꿈 공유(giving of pain)를 통해 고통의 기억도 전달하여 같은 실수를 반복하지 않게 한다.
+《기억 전달자》에서 한 사람이 세상의 모든 기억을 품는다. 나머지 모든 사람은 **Sameness** 속에 산다 — 역사도, 맥락도, 축적된 노이즈도 없이. 기억 전달자는 필요한 순간에 필요한 기억만 골라 전달한다. **고통의 전달(giving of pain)**을 통해 레거시의 고통스러운 진실 — 실패, 제약, 절대 피해야 할 것 — 을 정제하여 백지 상태의 수령자에게 주입한다.
 
 이 아키텍처도 똑같이 작동한다:
 
@@ -31,9 +31,10 @@
 | 기억 전달자가 모든 기억을 보유 | Giver가 모든 대화 컨텍스트를 보유 |
 | 수령자는 전달받은 것만 받음 | Planner는 Giver의 브리프만 수신 |
 | 공동체는 Sameness 속에 삶 | Worker/Scout는 완전히 fresh — 역사 0 |
-| 전달은 선택적이고 의도적 | **tx**는 Planner에게만 명시적 6섹션 계약 |
+| 전달은 선택적이고 의도적 | **giving**은 Planner에게만 명시적 6섹션 계약 |
 | 기억은 사라지지 않고 보류만 됨 | 대화 컨텍스트는 Giver에만 머물고 아래로 새지 않음 |
-| 꿈 공유로 고통을 전달 | **Dream Sharing**으로 실패를 전달하여 반복 방지 |
+| 고통의 전달 (giving of pain) | Giver가 실패 기억을 Planner에게 주입 → Planner가 Pitfalls로 번역 → Worker에게 전달 |
+| Stirrings 감시 | 하위 에이전트 실행 전후 검증: 컨텍스트 오염 없는지 확인, fresh 보장 |
 
 ## 설계 철학
 
@@ -42,7 +43,7 @@
 
 Fork 모드(상위 컨텍스트 상속)는 더하다. 자식은 상위의 누적된 전체 컨텍스트를 복사한 채 시작하고 거기에 자신의 것까지 더한다. 양쪽 다 복리로 쌓인다.
 
-### 해결: 3개 층, **tx** (transmission), Dream Sharing, 주기적 압축
+### 해결: 3개 층, **giving** (transmission), giving of pain, 주기적 압축
 
 ```mermaid
 graph TD
@@ -52,12 +53,12 @@ graph TD
     S2["Scout\nFRESH"]
     W["Worker\nFRESH"]
 
-    G -->|"tx (6섹션 계약)"| P
+    G -->|"giving (6섹션 계약)"| P
     P -->|"plan.md\n(Worker Briefing 포함)"| S2
     S1 -->|"코드 정찰"| P
     S2 -->|"구현 정찰"| W
 
-    G -.->|"Dream Sharing\n(재시도 시 Planner 브리프에 포함)"| P
+    G -.->|"giving of pain\n(재시도 시 Planner 브리프에 포함)"| P
     P -.->|"Pitfalls 섹션으로\nplan.md에 반영"| W
 
     style G fill:#4a9eff,color:#fff,stroke:#2d7ce0
@@ -82,10 +83,10 @@ graph TD
 
 1. **The Giver가 유일한 컨텍스트 보유자.** 지저분한 대화 기록은 Giver에만 있다. 아래로는 절대 흐르지 않는다.
 
-2. **tx가 전달 수단.** Giver는 전체 기억을 쏟지 않는다 — Planner에게만 **tx** (transmission)로 6섹션 브리프를 선택적으로 전달한다:
+2. **tx가 전달 수단.** Giver는 전체 기억을 쏟지 않는다 — Planner에게만 **giving** (transmission)로 6섹션 브리프를 선택적으로 전달한다:
    - **Objective** — 무엇을, 왜
    - **Context** — fresh 에이전트가 볼 수 없는 모든 것
-   - **Previous Failures** — 이전 시도의 실패 기록 (Dream Sharing)
+   - **Previous Failures** — 이전 시도의 실패 기록 (giving of pain)
    - **Target Files** — 어디에 작업할지
    - **Constraints** — 하지 말아야 할 것
    - **Scope Boundary** — 범위 안과 밖
@@ -96,7 +97,7 @@ graph TD
 
 5. **Scout은 항상 worker 앞에.** Fresh worker에는 암묵적 코드 지식이 없다. Scout이 구현 직전에 `context.md`와 `{previous}`로 라이브 코드베이스 길잡이를 제공한다.
 
-6. **Dream Sharing이 실패 반복을 방지한다.** Giver가 Planner 브리프의 `## Previous Failures`에 실패 경험을 전달하고, Planner가 이를 plan.md의 **Pitfalls** 섹션으로 번역하여 Worker에게 전달한다. 이 이중 변환이 실패 맥락을 실행 가능한 지시로 바꾼다.
+6. **giving of pain이 실패 반복을 방지한다.** Giver가 Planner 브리프의 `## Previous Failures`에 실패 경험을 전달하고, Planner가 이를 plan.md의 **Pitfalls** 섹션으로 번역하여 Worker에게 전달한다. 이 이중 변환이 실패 맥락을 실행 가능한 지시로 바꾼다.
 
 7. **Giver가 방향을 결정하고 충분히 확전해야 한다.** Giver는 조직의 CEO와 같다. 방향이 모호하면 전체 조직이 틀린다. 브리프 전에 모호성을 해소하고, 충분히 탐색하고, 모든 제약을 명시해야 한다. Fresh 에이전트는 질문할 수 없다 — 추축으로 채우고, 추측은 잘못된 구현이 된다. Giver의 불충분한 브리프가 하류 오류의 진짜 원인인 경우, Giver가 자기 점검 없이 Planner/Worker를 탓하면 같은 모호한 브리프로 같은 실패가 반복된다.
 
@@ -126,9 +127,9 @@ xychart-beta
 - ↘ **압축 후**: Giver가 대화 히스토리를 구조화된 요약으로 교체, 기준선(~5-10K)으로 복귀
 - 🔁 톱니 패턴 반복 → 상향선 없는 수렴 → **무한 세션 가능**
 
-### Dream Sharing: 실패 전달 프로토콜
+### giving of pain: 실패 전달 프로토콜
 
-Fresh 에이전트는 이전에 어떤 접근이 실패했는지, 왜 실패했는지, 무엇을 피해야 하는지 모른다. Dream Sharing은 이 실패 경험을 다음 시도에 전달하여 같은 실수의 반복을 방지한다.
+Fresh 에이전트는 이전에 어떤 접근이 실패했는지, 왜 실패했는지, 무엇을 피해야 하는지 모른다. giving of pain은 이 실패 경험을 다음 시도에 전달하여 같은 실수의 반복을 방지한다.
 
 각 실패는 **What happened → Root cause → What to avoid → Correct direction** 4필드 구조로 전달. 재시도마다 브리프는 더 구체화된다 — 퍼널 패턴.
 
@@ -138,7 +139,7 @@ Fresh 에이전트는 이전에 어떤 접근이 실패했는지, 왜 실패했�
 |---|---|---|---|---|
 | 컨텍스트 증가 | 기하급수 (26–42×) | 기하급수 (10–20×) | 선형 (10.1×) | **수렴 (톱니 패턴)** |
 | Worker 컨텍스트 | 191K 누적 노이즈 | 상속 노이즈 | 5–15K 브리프 | 5–15K 브리프 |
-| 실패 반복 | 같은 실수 반복 | 같은 실수 반복 | 같은 실수 반복 | **Dream Sharing으로 방지** |
+| 실패 반복 | 같은 실수 반복 | 같은 실수 반복 | 같은 실수 반복 | **giving of pain으로 방지** |
 
 ## 파일
 
@@ -167,7 +168,7 @@ python3 scripts/pi-analyze --project giver-architecture
 python3 scripts/pi-analyze --json       # JSON 출력
 ```
 
-pi-subagents 세션 로그와 서브에이전트 아티팩트를 분석합니다: 세션 턴/토큰, 서브에이전트 타입별 분석(planner/scout/worker), 토큰 분포, Giver 프로토콜 준수(페이즈, Dream Sharing, 브랜치, 에러 분류, 자기 점검).
+pi-subagents 세션 로그와 서브에이전트 아티팩트를 분석합니다: 세션 턴/토큰, 서브에이전트 타입별 분석(planner/scout/worker), 토큰 분포, Giver 프로토콜 준수(페이즈, giving of pain, 브랜치, 에러 분류, 자기 점검).
 
 ## License
 
