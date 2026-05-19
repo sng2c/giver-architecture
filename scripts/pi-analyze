@@ -1,0 +1,327 @@
+#!/usr/bin/env python3
+"""Giver Architecture Log Analyzer
+
+Analyzes pi-subagents session logs and subagent artifacts to measure
+how well The Giver protocol is working in practice.
+
+Usage:
+    python3 scripts/pi-analyze                    # Analyze latest session
+    python3 scripts/pi-analyze --all              # Analyze all sessions
+    python3 scripts/pi-analyze --session <path>   # Analyze specific session
+    python3 scripts/pi-analyze --project <name>   # Analyze specific project
+"""
+
+import json
+import os
+import sys
+import argparse
+from pathlib import Path
+from collections import defaultdict, Counter
+from datetime import datetime
+
+PI_DIR = Path.home() / ".pi"
+SESSIONS_DIR = PI_DIR / "agent" / "sessions"
+
+
+def find_sessions(project=None):
+    """Find all session directories"""
+    if project:
+        project_dir = SESSIONS_DIR / project
+        if project_dir.exists():
+            return [project_dir]
+        # Try with -- prefix
+        for d in SESSIONS_DIR.iterdir():
+            if d.is_dir() and project in d.name:
+                return [d]
+        return []
+
+    return [d for d in SESSIONS_DIR.iterdir() if d.is_dir()]
+
+
+def find_jsonl_files(session_dir):
+    """Find all .jsonl log files in a session directory"""
+    return sorted(session_dir.glob("*.jsonl"))
+
+
+def parse_jsonl(filepath):
+    """Parse a JSONL file and return list of entries"""
+    entries = []
+    with open(filepath) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return entries
+
+
+def analyze_subagent_artifacts(session_dir):
+    """Analyze subagent *_meta.json files"""
+    artifacts_dir = session_dir / "subagent-artifacts"
+    if not artifacts_dir.exists():
+        return []
+
+    artifacts = []
+    for meta_file in sorted(artifacts_dir.glob("*_meta.json")):
+        try:
+            with open(meta_file) as f:
+                meta = json.load(f)
+            run_id = meta_file.stem.replace("_meta", "").rsplit("_", 1)
+            if len(run_id) == 2:
+                run_id_str, agent_seq = run_id
+                agent_type = agent_seq.rsplit("_", 1)[0] if "_" in agent_seq else "?"
+            else:
+                run_id_str = run_id[0]
+                agent_type = meta.get("agent", "?")
+
+            task_file = meta_file.parent / meta_file.name.replace("_meta.json", "_input.md")
+            output_file = meta_file.parent / meta_file.name.replace("_meta.json", "_output.md")
+
+            task_preview = ""
+            if task_file.exists():
+                task_preview = task_file.read_text()[:200]
+
+            artifacts.append({
+                "run_id": meta.get("runId", run_id_str),
+                "agent": meta.get("agent", agent_type),
+                "usage": meta.get("usage", {}),
+                "duration_ms": meta.get("durationMs", 0),
+                "model": meta.get("model", "?"),
+                "exit_code": meta.get("exitCode", -1),
+                "task_preview": task_preview,
+            })
+        except Exception as e:
+            pass
+
+    return artifacts
+
+
+def analyze_session_log(filepath):
+    """Analyze a session JSONL log for Giver protocol events"""
+    entries = parse_jsonl(filepath)
+    if not entries:
+        return None
+
+    session_info = {
+        "file": filepath.name,
+        "timestamp": None,
+        "total_turns": 0,
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "total_cost": 0,
+        "giver_events": [],
+        "subagent_invocations": [],
+        "phases_detected": [],
+        "dream_sharing_count": 0,
+        "branch_operations": [],
+        "error_sources": [],
+    }
+
+    for entry in entries:
+        entry_type = entry.get("type", "")
+
+        if entry_type == "session":
+            session_info["timestamp"] = entry.get("timestamp", "")
+
+        elif entry_type == "message":
+            msg = entry.get("message", {})
+            role = msg.get("role", "")
+            usage = msg.get("usage", {})
+
+            if usage:
+                session_info["total_input_tokens"] += usage.get("input", 0)
+                session_info["total_output_tokens"] += usage.get("output", 0)
+                session_info["total_cost"] += usage.get("cost", {}).get("total", 0) if isinstance(usage.get("cost"), dict) else 0
+
+            if role == "assistant":
+                session_info["total_turns"] += 1
+
+                content = ""
+                if isinstance(msg.get("content"), list):
+                    for block in msg["content"]:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            content += block.get("text", "")
+                elif isinstance(msg.get("content"), str):
+                    content = msg["content"]
+
+                # Detect Giver phases
+                content_lower = content.lower()
+                if "phase 0" in content_lower or "clarification" in content_lower:
+                    session_info["phases_detected"].append("phase0")
+                if "phase 1" in content_lower or "impact analysis" in content_lower:
+                    session_info["phases_detected"].append("phase1")
+                if "phase 1.5" in content_lower or "git checkout -b" in content_lower:
+                    session_info["phases_detected"].append("phase1.5")
+                if "phase 2" in content_lower or "6-section" in content_lower or "objective" in content_lower and "## context" in content_lower:
+                    session_info["phases_detected"].append("phase2")
+                if "phase 4" in content_lower or "report" in content_lower:
+                    session_info["phases_detected"].append("phase4")
+
+                # Detect Dream Sharing
+                if "previous failures" in content_lower or "attempt 1" in content_lower:
+                    session_info["dream_sharing_count"] += 1
+
+                # Detect branch operations
+                if "git checkout -b giver/" in content_lower or "git checkout -b" in content:
+                    session_info["branch_operations"].append("create")
+                if "git checkout ." in content:
+                    session_info["branch_operations"].append("reset")
+
+                # Detect error source analysis
+                if "strategic" in content_lower and "tactical" in content_lower and "operational" in content_lower:
+                    session_info["error_sources"].append("classified")
+                if "giver self-reflection" in content_lower or "was my brief sufficient" in content_lower:
+                    session_info["error_sources"].append("self-reflection")
+
+    return session_info
+
+
+def format_tokens(n):
+    """Format token count with commas and K/M suffix"""
+    if n >= 1_000_000:
+        return f"{n/1_000_000:.1f}M"
+    elif n >= 1_000:
+        return f"{n/1_000:.1f}K"
+    return str(n)
+
+
+def print_report(sessions_data, artifacts_data):
+    """Print the analysis report"""
+    print("=" * 60)
+    print("  The Giver — Protocol Analysis Report")
+    print("=" * 60)
+
+    # Session summary
+    total_sessions = len(sessions_data)
+    total_input = sum(s["total_input_tokens"] for s in sessions_data)
+    total_output = sum(s["total_output_tokens"] for s in sessions_data)
+    total_turns = sum(s["total_turns"] for s in sessions_data)
+
+    print(f"\n📊 Sessions: {total_sessions}")
+    print(f"   Turns:    {total_turns:,}")
+    print(f"   Input:    {format_tokens(total_input)} tokens")
+    print(f"   Output:   {format_tokens(total_output)} tokens")
+
+    # Subagent stats
+    if artifacts_data:
+        print(f"\n🔗 Subagent Runs")
+        agent_stats = defaultdict(lambda: {"count": 0, "input": 0, "output": 0, "turns": 0, "duration": 0})
+        for a in artifacts_data:
+            agent = a["agent"]
+            stats = agent_stats[agent]
+            stats["count"] += 1
+            stats["input"] += a["usage"].get("input", 0)
+            stats["output"] += a["usage"].get("output", 0)
+            stats["turns"] += a["usage"].get("turns", 0)
+            stats["duration"] += a["duration_ms"]
+
+        for agent, stats in sorted(agent_stats.items()):
+            print(f"\n   {agent}:")
+            print(f"     Runs:     {stats['count']}")
+            print(f"     Input:    {format_tokens(stats['input'])} tokens")
+            print(f"     Output:   {format_tokens(stats['output'])} tokens")
+            print(f"     Turns:    {stats['turns']:,}")
+            print(f"     Duration: {stats['duration']/1000:.1f}s")
+
+        # Token distribution
+        print(f"\n📈 Token Distribution by Agent")
+        total_sub_input = sum(a["usage"].get("input", 0) for a in artifacts_data)
+        total_sub_output = sum(a["usage"].get("output", 0) for a in artifacts_data)
+        for agent in sorted(agent_stats.keys()):
+            stats = agent_stats[agent]
+            pct_in = (stats["input"] / total_sub_input * 100) if total_sub_input else 0
+            pct_out = (stats["output"] / total_sub_output * 100) if total_sub_output else 0
+            print(f"   {agent:10s}  in={pct_in:5.1f}%  out={pct_out:5.1f}%")
+
+    # Protocol compliance
+    print(f"\n✅ Protocol Compliance")
+
+    phases_all = []
+    dream_sharing_total = 0
+    branch_total = {"create": 0, "reset": 0}
+    error_source_detected = 0
+    self_reflection_count = 0
+
+    for s in sessions_data:
+        phases_all.extend(s["phases_detected"])
+        dream_sharing_total += s["dream_sharing_count"]
+        branch_total["create"] += s["branch_operations"].count("create")
+        branch_total["reset"] += s["branch_operations"].count("reset")
+        error_source_detected += len(s["error_sources"])
+        self_reflection_count += s["error_sources"].count("self-reflection")
+
+    phase_counts = Counter(phases_all)
+    print(f"   Phases detected:  {dict(phase_counts)}")
+    print(f"   Dream Sharing:    {dream_sharing_total} uses")
+    print(f"   Branch creates:   {branch_total['create']}")
+    print(f"   Branch resets:    {branch_total['reset']}")
+    print(f"   Error classified: {error_source_detected}")
+    print(f"   Self-reflection:   {self_reflection_count}")
+
+    # Per-session detail for latest session
+    if sessions_data:
+        latest = sessions_data[-1]
+        print(f"\n📋 Latest Session Detail")
+        print(f"   File:       {latest['file']}")
+        print(f"   Timestamp:  {latest['timestamp']}")
+        print(f"   Turns:      {latest['total_turns']}")
+        print(f"   Input:      {format_tokens(latest['total_input_tokens'])}")
+        print(f"   Output:     {format_tokens(latest['total_output_tokens'])}")
+
+    print(f"\n{'=' * 60}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Analyze The Giver protocol logs")
+    parser.add_argument("--all", action="store_true", help="Analyze all projects")
+    parser.add_argument("--project", help="Analyze specific project")
+    parser.add_argument("--session", help="Analyze specific session file")
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    args = parser.parse_args()
+
+    if args.session:
+        session_path = Path(args.session)
+        if not session_path.exists():
+            print(f"Session file not found: {args.session}")
+            sys.exit(1)
+        session_data = analyze_session_log(session_path)
+        sessions_data = [session_data] if session_data else []
+        parent_dir = session_path.parent
+        artifacts_data = analyze_subagent_artifacts(parent_dir)
+    else:
+        projects = find_sessions(args.project)
+        if not projects:
+            print("No sessions found")
+            sys.exit(1)
+
+        sessions_data = []
+        artifacts_data = []
+
+        for project_dir in projects:
+            # Find session logs
+            for jsonl_file in find_jsonl_files(project_dir):
+                # Skip sub-artifact directories
+                if "subagent-artifacts" in str(jsonl_file):
+                    continue
+                session_data = analyze_session_log(jsonl_file)
+                if session_data:
+                    sessions_data.append(session_data)
+
+            # Find subagent artifacts
+            artifacts_data.extend(analyze_subagent_artifacts(project_dir))
+
+    if args.json:
+        result = {
+            "sessions": sessions_data,
+            "artifacts": artifacts_data,
+        }
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        print_report(sessions_data, artifacts_data)
+
+
+if __name__ == "__main__":
+    main()
