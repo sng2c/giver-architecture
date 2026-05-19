@@ -1,0 +1,70 @@
+#!/bin/bash
+set -e
+
+# The Giver — Install symlinks into ~/.pi
+# Makes the giver skill and agent overrides available globally
+
+SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "${YELLOW}=== The Giver Install ===${NC}"
+echo ""
+
+# Files to symlink: source -> target (relative to ~/.pi)
+declare -A LINKS=(
+  ["agent/skills/giver/SKILL.md"]="agent/skills/giver/SKILL.md"
+  ["agents/planner.md"]="agents/planner.md"
+  ["agents/worker.md"]="agents/worker.md"
+  ["agents/scout.md"]="agents/scout.md"
+)
+
+# Check source files exist
+for src in "${!LINKS[@]}"; do
+  if [ ! -f "$SRC_DIR/.pi/$src" ]; then
+    echo -e "${RED}Error: $SRC_DIR/.pi/$src not found${NC}"
+    exit 1
+  fi
+done
+
+# Create directories and symlinks
+installed=0
+skipped=0
+
+for src in "${!LINKS[@]}"; do
+  target="${LINKS[$src]}"
+  target_dir=$(dirname "$HOME/.pi/$target")
+  target_path="$HOME/.pi/$target"
+  source_path="$SRC_DIR/.pi/$src"
+
+  # Create parent directory
+  mkdir -p "$target_dir"
+
+  # Check if symlink already exists and points to the right place
+  if [ -L "$target_path" ]; then
+    existing=$(readlink "$target_path")
+    if [ "$existing" = "$source_path" ]; then
+      echo -e "  ${YELLOW}skip${NC} $target (already linked)"
+      skipped=$((skipped + 1))
+      continue
+    else
+      echo -e "  ${YELLOW}update${NC} $target (was: $existing)"
+      rm "$target_path"
+    fi
+  elif [ -f "$target_path" ]; then
+    echo -e "  ${RED}conflict${NC} $target (regular file exists, not symlink)"
+    echo "         Remove $target_path manually and re-run."
+    continue
+  fi
+
+  ln -s "$source_path" "$target_path"
+  echo -e "  ${GREEN}link${NC} $target -> $source_path"
+  installed=$((installed + 1))
+done
+
+echo ""
+echo -e "${GREEN}Install complete.${NC}  Linked: $installed  Skipped: $skipped"

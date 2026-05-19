@@ -178,13 +178,13 @@ cp -r .pi/ /your-project/.pi/
 
 The skill will be activated automatically by pi-agent when the `giver` skill is triggered.
 
-## Deploy
+## Install
 
 ```bash
-./scripts/deploy
+./scripts/pi-install
 ```
 
-Updates the GitHub gists with the latest versions of SKILL.md and README.md.
+Creates symlinks in `~/.pi` for the giver skill and agent overrides (planner, worker, scout with `defaultContext: fresh`). Safe to re-run — skips existing links, warns on conflicts.
 
 ## License
 
