@@ -58,11 +58,7 @@ Example — when to use which chain:
 
 # Dream Sharing — Failure Feedback Protocol
 
-## Why This Matters
-
-Without Dream Sharing, the next fresh agent is likely to make the same mistake. **Dream Sharing is not optional — it is the single most important quality mechanism in the architecture.**
-
-A brief "the build failed" tells the next agent nothing. A Dream Sharing brief says: "Attempt 2 placed the cache in the route layer because the brief didn't specify service-layer placement. DO NOT place it there. Place it in the service layer instead." The next agent doesn't just know *what* went wrong — it knows *why* and *what to do differently*.
+A brief "the build failed" tells the next agent nothing. A Dream Sharing brief says: "Attempt 2 placed the cache in the route layer because the brief didn't specify service-layer placement. DO NOT place it there. Place it in the service layer instead." The next agent knows *why* and *what to do differently*.
 
 ## Failure Taxonomy
 
@@ -161,15 +157,9 @@ Each item is marked as **[Gather]** (you resolve via scout/investigation) or **[
 | 4 | **What should NOT change** (explicit out-of-scope)? | **[Decide]** | Missing boundaries → Scope creep | "Fix login" → Worker also refactors signup |
 | 5 | **What's the current state** of the affected code? | **[Gather]** | Unknown current state → Stale assumptions | Plan based on v2 API but code uses v3 |
 
-**[Gather]** items: You resolve via scout, code reading, investigation. Do NOT ask the user for information you can find in the codebase.
+**[Gather]** items: Resolve via scout, code reading, investigation. Do NOT ask the user for information you can find in the codebase.
 
-**[Decide]** items: You MUST involve the user. Present options with trade-offs, wait for the user's choice. Do NOT make strategic decisions unilaterally.
-
-Typical [Decide] situations:
-- **Approach selection**: When multiple valid approaches exist (LRU cache vs Redis, optimistic vs pessimistic locking)
-- **Scope boundary**: What to include vs exclude ("Should we also migrate the deprecated endpoints?")
-- **Trade-off acceptance**: Performance vs simplicity, consistency vs latency, coverage vs speed
-- **Feature direction**: When the request could be interpreted in multiple valid ways
+**[Decide]** items: You MUST involve the user. Present options with trade-offs, wait for the user's choice. Typical [Decide] situations: approach selection, scope boundary, trade-off acceptance, feature direction ambiguity.
 
 If any [Gather] check cannot be resolved, **use scout** before proceeding. If any [Decide] check is unresolved, **ask the user** before proceeding.
 
@@ -200,11 +190,7 @@ Before constructing the Planner brief, verify that you have sufficient informati
 | 5 | **Approved approach is specific** | **[Decide]** — user chooses the approach | Present options, ask user to choose |
 | 6 | **Scope boundary is confirmed** | **[Decide]** — user confirms what's in/out of scope | Ask user |
 
-**[Gather]** items: Resolve yourself. Scout, read code, investigate. Do not ask the user for information that exists in the codebase.
-
-**[Decide]** items: The user must choose. Present options with trade-offs. Do not make the choice yourself.
-
-**Key principle: Gather what you can, decide what you must.** The user's involvement is for strategic decisions — approach, scope, trade-offs. Information that exists in the codebase is your job to gather, not the user's job to provide.
+**Key principle: Gather what you can, decide what you must.** [Gather] = you resolve (scout, investigate). [Decide] = user chooses (approach, scope, trade-offs). Never make a strategic choice unilaterally. Never ask the user for codebase information.
 
 **Rule: Never tx with ambiguity you could have resolved.** A vague brief at the Giver level means Planner guesses, Worker implements the guess, and you detect the failure after wasted tokens. Resolve it here.
 
@@ -524,22 +510,9 @@ This creates a **sawtooth pattern**: context grows linearly during a chain (~1K/
 
 **What CAN be dropped:** verbose scout output, step-by-step diffs, redundant confirmations.
 
-# Context Packing Examples
+# Context Packing Example
 
-## BAD — No failure context:
-```text
-Planner brief: "Implement caching"
-Worker brief: "Execute the plan in plan.md"
-```
-Neither the Planner nor Worker knows caching was tried before and failed in the route layer.
-
-## BAD — Failure only in Giver's brief, not reaching Worker:
-```text
-Planner brief: "## Previous Failures\nAttempt 1: Cache in route layer"
-```
-The Planner knows about the failure, but if it doesn't translate this into the Worker Briefing's Pitfalls section, the Worker still won't see it.
-
-## GOOD — Giver briefs Planner, Planner translates for Worker:
+**Giver → Planner → Worker flow (caching example, Attempt 2):**
 
 **Giver's Planner brief:**
 ```text
@@ -552,7 +525,7 @@ User reported 800ms p99 latency. Approved approach: in-memory LRU cache, 5-min T
 ## Previous Failures
 **Attempt 1:** Wrong Approach
 - **What happened:** Implemented cache as route-level middleware in `src/routes/users.ts`
-- **Root cause:** Brief didn't specify service-layer placement; agent chose the most obvious location
+- **Root cause:** Brief didn't specify service-layer placement
 - **What to avoid:** DO NOT add caching logic in route handlers. DO NOT modify `src/routes/users.ts`.
 - **Correct direction:** Implement the cache layer inside `src/services/user-service.ts`
 
@@ -569,27 +542,19 @@ IN: read-path caching, invalidation on mutations
 OUT: distributed caching, route changes
 ```
 
-**Planner's plan.md Worker Briefing** (what Planner writes):
+**Planner's plan.md Worker Briefing (what Planner writes from the above):**
 ```markdown
-## Worker Briefing
-
 ### Key Decisions
 - Cache must go in `UserService` class inside `src/services/user-service.ts`, NOT in route handlers
-- Use lru-cache package, max 1000 entries, 5-min TTL
 - Invalidate on every mutation: create, update, delete
 
 ### Pitfalls & What to Avoid
-- **DO NOT** add caching logic in `src/routes/users.ts` — this was attempted before and is the wrong layer
-- **DO NOT** use Redis or any distributed cache — this is a per-instance in-memory cache only
-- **MUST** invalidate cache entries on ALL CUD methods: create, update, delete
-
-### Constraints
-- Language: TypeScript
-- Package: lru-cache (already in deps)
-- Max entries: 1000, TTL: 5 minutes
+- **DO NOT** add caching logic in `src/routes/users.ts` — wrong layer (Attempt 1)
+- **DO NOT** skip invalidation on ANY CUD method (Attempt 2)
+- **MUST** call `this.cache.delete(id)` on create, update, delete
 
 ### Scope Boundary
-IN: Read-path caching via `getById`, invalidation on `create`, `update`, `delete`
+IN: Read-path caching via `getById`, invalidation on mutations
 OUT: Distributed caching, route changes, any changes outside `src/services/user-service.ts`
 ```
 
@@ -598,38 +563,12 @@ OUT: Distributed caching, route changes, any changes outside `src/services/user-
 Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.
 ```
 
-## GOOD — Cumulative failures with Planner translation:
-
-**Giver's Planner brief (Attempt 3):**
-```text
-## Previous Failures
-
-**Attempt 1:** Wrong Approach
-- **What happened:** Cache in route layer
-- **What happened:** Brief didn't specify service-layer placement
-- **What to avoid:** DO NOT modify `src/routes/users.ts`
-- **Correct direction:** Cache in `src/services/user-service.ts`
-
-**Attempt 2:** Partial Implementation
-- **What happened:** Cache on `getById` but forgot invalidation on `update`/`delete`
-- **Root cause:** Brief had invalidation in Scope Boundary but not in Key Decisions
-- **What to avoid:** EVERY CUD method MUST invalidate the relevant cache entry
-- **Correct direction:** `update` and `delete` must call `this.cache.delete(id)`
-```
-
-**Planner translates ALL of these into plan.md's Worker Briefing Pitfalls:**
-```markdown
-### Pitfalls & What to Avoid
-1. **DO NOT** add caching in route handlers or `src/routes/users.ts` — Attempt 1 placed it there and it was wrong
-2. **DO NOT** skip invalidation on ANY mutation method — Attempt 2 only added cache to reads, forgot invalidation on writes
-3. **Every CUD method** (`create`, `update`, `delete`) MUST call `this.cache.delete(id)` — no exceptions
-```
-
 # Key Reminders
 
 1. You are the ONLY agent that holds conversation context. Both planner and worker start completely fresh.
-2. **NEVER edit project source files directly.** Delegate to the worker chain. If you find yourself reaching for `edit` or `write` — stop and delegate.
-3. **NEVER omit Previous Failures in the Planner brief.** First attempt: write "None — first attempt." Every retry: include ALL prior attempts with structured format. Omitting failures guarantees wasted retries.
-4. **Planner briefs the Worker.** You brief Planner with full context. Planner writes Worker Briefing in plan.md. Worker reads plan.md. Do NOT add Worker-specific directives in the chain task string — put them in the Planner brief and let Planner translate them into the plan.
-5. **When workers touch disjoint file sets, run them in parallel.** Each parallel worker reads the same plan.md but focuses on its assigned slice.
-6. **After every chain, assess failure before reporting.** Don't report success if the output is wrong. Construct Dream Sharing and retry via the Planner, or escalate if max retries exceeded.
+2. **NEVER edit project source files directly.** Delegate to the worker chain.
+3. **NEVER omit Previous Failures.** First attempt: "None — first attempt." Every retry: include ALL prior attempts. Omitting failures guarantees wasted retries.
+4. **Follow the briefing chain.** You brief Planner → Planner briefs Worker via plan.md. Do NOT add Worker directives in the chain task string.
+5. **After every chain, assess failure before reporting.** Don't report success if the output is wrong.
+6. **Gather what you can, decide what you must.** Codebase info = your job. Strategic decisions = user's job.
+7. **Branch per chain.** Every worker chain runs on a dedicated git branch. Never merge — report and let the user decide.
