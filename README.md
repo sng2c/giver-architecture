@@ -186,6 +186,17 @@ The skill will be activated automatically by pi-agent when the `giver` skill is 
 
 Creates symlinks in `~/.pi` for the giver skill and agent overrides (planner, worker, scout with `defaultContext: fresh`). Safe to re-run — skips existing links, warns on conflicts.
 
+## Analyze
+
+```bash
+python3 scripts/pi-analyze              # Latest project session
+python3 scripts/pi-analyze --all        # All sessions
+python3 scripts/pi-analyze --project giver-architecture
+python3 scripts/pi-analyze --json       # JSON output
+```
+
+Analyzes pi-subagents session logs and subagent artifacts: session turns/tokens, subagent breakdown by type (planner/scout/worker), token distribution, and Giver protocol compliance (phases, Dream Sharing, branch operations, error classification, self-reflection).
+
 ## License
 
 MIT
