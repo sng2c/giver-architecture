@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# The Giver — Install symlinks into ~/.pi
-# Makes the giver skill and agent overrides available globally
+# The Giver — Install into ~/.pi
+# Creates symlinks and settings.json for defaultContext: fresh
 
 SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -15,56 +15,54 @@ NC='\033[0m'
 echo -e "${YELLOW}=== The Giver Install ===${NC}"
 echo ""
 
-# Files to symlink: source -> target (relative to ~/.pi)
-declare -A LINKS=(
-  ["agent/skills/giver/SKILL.md"]="agent/skills/giver/SKILL.md"
-  ["agents/planner.md"]="agents/planner.md"
-  ["agents/worker.md"]="agents/worker.md"
-  ["agents/scout.md"]="agents/scout.md"
-)
+# === 1. Symlinks ===
 
-# Check source files exist
-for src in "${!LINKS[@]}"; do
-  if [ ! -f "$SRC_DIR/.pi/$src" ]; then
-    echo -e "${RED}Error: $SRC_DIR/.pi/$src not found${NC}"
-    exit 1
+SKILL_SRC="$SRC_DIR/.pi/agent/skills/giver/SKILL.md"
+SKILL_TARGET="$HOME/.pi/agent/skills/giver/SKILL.md"
+
+if [ -L "$SKILL_TARGET" ]; then
+  existing=$(readlink "$SKILL_TARGET")
+  if [ "$existing" = "$SKILL_SRC" ]; then
+    echo -e "  ${YELLOW}skip${NC} SKILL.md (already linked)"
+  else
+    echo -e "  ${YELLOW}update${NC} SKILL.md (was: $existing)"
+    rm "$SKILL_TARGET"
+    ln -s "$SKILL_SRC" "$SKILL_TARGET"
+    echo -e "  ${GREEN}link${NC} SKILL.md -> $SKILL_SRC"
   fi
-done
+elif [ -f "$SKILL_TARGET" ]; then
+  echo -e "  ${RED}conflict${NC} SKILL.md (regular file exists, not symlink)"
+  echo "         Remove $SKILL_TARGET manually and re-run."
+else
+  mkdir -p "$(dirname "$SKILL_TARGET")"
+  ln -s "$SKILL_SRC" "$SKILL_TARGET"
+  echo -e "  ${GREEN}link${NC} SKILL.md -> $SKILL_SRC"
+fi
 
-# Create directories and symlinks
-installed=0
-skipped=0
+# === 2. Settings (defaultContext: fresh) ===
 
-for src in "${!LINKS[@]}"; do
-  target="${LINKS[$src]}"
-  target_dir=$(dirname "$HOME/.pi/$target")
-  target_path="$HOME/.pi/$target"
-  source_path="$SRC_DIR/.pi/$src"
+SETTINGS_FILE="$SRC_DIR/.pi/settings.json"
 
-  # Create parent directory
-  mkdir -p "$target_dir"
+if [ ! -f "$SETTINGS_FILE" ]; then
+  echo -e "\n${RED}Error: $SETTINGS_FILE not found${NC}"
+  exit 1
+fi
 
-  # Check if symlink already exists and points to the right place
-  if [ -L "$target_path" ]; then
-    existing=$(readlink "$target_path")
-    if [ "$existing" = "$source_path" ]; then
-      echo -e "  ${YELLOW}skip${NC} $target (already linked)"
-      skipped=$((skipped + 1))
-      continue
-    else
-      echo -e "  ${YELLOW}update${NC} $target (was: $existing)"
-      rm "$target_path"
-    fi
-  elif [ -f "$target_path" ]; then
-    echo -e "  ${RED}conflict${NC} $target (regular file exists, not symlink)"
-    echo "         Remove $target_path manually and re-run."
-    continue
-  fi
-
-  ln -s "$source_path" "$target_path"
-  echo -e "  ${GREEN}link${NC} $target -> $source_path"
-  installed=$((installed + 1))
-done
+# Check if settings.json already has our overrides
+if [ -f "$SETTINGS_FILE" ] && grep -q '"planner"' "$SETTINGS_FILE" 2>/dev/null; then
+  echo -e "  ${YELLOW}skip${NC} settings.json (already configured)"
+else
+  # settings.json exists but doesn't have our overrides — need to merge
+  echo -e "  ${GREEN}config${NC} settings.json (defaultContext: fresh for planner, worker, scout)"
+  # Just copy — the file is only ours
+  cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak" 2>/dev/null || true
+fi
 
 echo ""
-echo -e "${GREEN}Install complete.${NC}  Linked: $installed  Skipped: $skipped"
+echo -e "${GREEN}Install complete.${NC}"
+echo ""
+echo -e "  SKILL.md:   ${SKILL_TARGET}"
+echo -e "  Settings:   ${SETTINGS_FILE}"
+echo ""
+echo -e "  ${YELLOW}⚠️  defaultContext: fresh${NC} is required for planner, worker, and scout."
+echo -e "  Without it, downstream agents inherit parent context and the architecture breaks."

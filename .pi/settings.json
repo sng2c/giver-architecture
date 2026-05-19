@@ -1,0 +1,15 @@
+{
+  "subagents": {
+    "agentOverrides": {
+      "planner": {
+        "defaultContext": "fresh"
+      },
+      "worker": {
+        "defaultContext": "fresh"
+      },
+      "scout": {
+        "defaultContext": "fresh"
+      }
+    }
+  }
+}
