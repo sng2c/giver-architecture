@@ -166,8 +166,7 @@ Fresh 에이전트는 이전에 어떤 접근이 실패했는지, 왜 실패했�
 | 파일 | `.pi` 경로 | 설명 |
 |------|-----------|------|
 | `giver/SKILL.md` | `.pi/agent/skills/giver/SKILL.md` | The Giver 스킬 — tx 체인, Dream Sharing, Planner/Worker 행동 지시 포함 |
-| `planner.md` | `.pi/agents/planner.md` | pi-subagents 내장 planner 오버라이드 — `defaultContext: fresh` 설정만 |
-| `worker.md` | `.pi/agents/worker.md` | pi-subagents 내장 worker 오버라이드 — `defaultContext: fresh` 설정만 |
+| `scout.md` | `.pi/agents/scout.md` | pi-subagents 내장 scout 오버라이드 — `defaultContext: fresh` 설정만 |
 
 ## Installation
 
