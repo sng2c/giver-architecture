@@ -1,6 +1,21 @@
 # The Giver 아키텍처
 
-> pi-subagents 프레임워크 기반으로 구현된 패턴입니다. `defaultContext: fresh` 설정과 `{previous}` 체인 변수, `context.md`/`plan.md` 파일 전달 등은 pi-subagent의 기능을 활용합니다.
+> [!IMPORTANT]
+> **종속성:** pi-agent ≥ 0.74.0 + pi-subagents ≥ 0.24.3 필요.
+> 이 스킬은 pi-agent의 세션 관리, pi-subagents의 체인 실행, `{previous}` 변수, `defaultReads`, `output`, `context: "fresh"` 등에 종속됩니다.
+
+## 종속성
+
+| 기능 | 제공 | 사용 방식 |
+|------|------|----------|
+| `context: "fresh"` | pi-subagents 체인 API | 하위 에이전트를 fresh 세션으로 실행 |
+| `{previous}` | pi-subagents 체인 변수 | 이전 스텝 출력을 다음 스텝에 전달 |
+| `defaultReads` | pi-subagents 에이전트 설정 | planner가 `context.md`, worker가 `plan.md` 자동 읽기 |
+| `output` | pi-subagents 에이전트 설정 | planner의 plan.md 자동 작성 |
+| `chain` | pi-subagents 실행 모드 | 순차 체인 실행 (scout→planner→scout→worker) |
+| `tasks` | pi-subagents 실행 모드 | 병렬 실행 (다중 worker) |
+| `contact_supervisor` | pi-subagents 인터콤 | worker/planner가 Giver에게 에스컬레이션 |
+| builtin planner/worker/scout | pi-subagents 에이전트 | 행동 지시는 SKILL.md에서, 설정만 빌트인 사용 |
 
 ## 메타포
 
@@ -63,7 +78,7 @@ graph TD
 | context.md | scout가 작성한 코드 컨텍스트 |
 | 직접 읽은 코드 | worker가 자체적으로 읽은 파일 |
 
-### 핵심 원칙 (6개)
+### 핵심 원칙
 
 1. **The Giver가 유일한 컨텍스트 보유자.** 지저분한 대화 기록은 Giver에만 있다. 아래로는 절대 흐르지 않는다.
 
@@ -77,7 +92,7 @@ graph TD
 
 3. **Planner가 Worker를 브리핑한다.** Giver는 Planner에게만 브리핑한다. Planner는 plan.md에 **Worker Briefing** 섹션을 작성하여 Key Decisions, Pitfalls, Constraints, Scope Boundary를 Worker에게 전달한다. Worker의 주 지시서는 plan.md다.
 
-4. **실행은 Sameness 속에서.** Planner, scout, worker는 대화 기록 없이 시작한다. 매번 깨끗한 백지. 드리프트도, 노이즈도, 축적된 실수도 없다.
+4. **실행은 Sameness 속에서.** Planner, scout, worker는 `context: "fresh"`로 실행되어 대화 기록 없이 시작한다. 매번 깨끗한 백지. 드리프트도, 노이즈도, 축적된 실수도 없다.
 
 5. **Scout은 항상 worker 앞에.** Fresh worker에는 암묵적 코드 지식이 없다. Scout이 구현 직전에 `context.md`와 `{previous}`로 라이브 코드베이스 길잡이를 제공한다.
 
@@ -111,31 +126,9 @@ xychart-beta
 - ↘ **압축 후**: Giver가 대화 히스토리를 구조화된 요약으로 교체, 기준선(~5-10K)으로 복귀
 - 🔁 톱니 패턴 반복 → 상향선 없는 수렴 → **무한 세션 가능**
 
-각 체인 완료 후:
-1. Giver가 결과를 리포트
-2. Giver가 컨텍스트가 무거워지면 직접 압축 — Dream Archive(실패 이력), Key Decisions, Current State를 보존하고 나머지 구현 세부사항은 드롭
-3. 다음 체인의 브리프는 압축된 컨텍스트에서 도출
-
-→ 선형 성장 + 주기적 압축 = **무한 세션이 가능**. 기하급수는 어떤 압축을 해도 결국 한계에 도달하지만, 선형 + 압축은 상향선이 없다.
-
 ### Dream Sharing: 실패 전달 프로토콜
 
-The Giver 아키텍처의 3번째 핵심 기제. 큐레이션(tx)과 압축에 이은 세 번째 축.
-
 Fresh 에이전트는 이전에 어떤 접근이 실패했는지, 왜 실패했는지, 무엇을 피해야 하는지 모른다. Dream Sharing은 이 실패 경험을 다음 시도에 전달하여 같은 실수의 반복을 방지한다.
-
-**Dream Sharing이 없으면:**
-- Worker가 라우트 레이어에 캐시를 구현 → 실패
-- 다음 Worker도 같은 실수 → "The build failed. Try again." → 다시 같은 실수
-- 3번째 Worker도 같은 실수 → 세 번의 낭비된 시도
-
-**Dream Sharing이 있으면:**
-- Worker가 라우트 레이어에 캐시를 구현 → 실패
-- Giver가 Planner 브리프에 `## Previous Failures`로 구조화된 실패 기록 전달
-- Planner가 이를 plan.md의 **Pitfalls** 섹션으로 번역: "DO NOT add caching in route handlers"
-- 다음 Worker는 정확히 **무엇이, 왜, 어떻게** 실패했는지 알고 다른 접근 시도
-
-실패 분류: Build Error, Logic Error, Wrong File, Wrong Approach, Partial Implementation, Cascade Failure, Scope Creep (7가지).
 
 각 실패는 **What happened → Root cause → What to avoid → Correct direction** 4필드 구조로 전달. 재시도마다 브리프는 더 구체화된다 — 퍼널 패턴.
 
@@ -144,39 +137,18 @@ Fresh 에이전트는 이전에 어떤 접근이 실패했는지, 왜 실패했�
 | 문제 | Monolithic | Fork | The Giver | The Giver + 압축 |
 |---|---|---|---|---|
 | 컨텍스트 증가 | 기하급수 (26–42×) | 기하급수 (10–20×) | 선형 (10.1×) | **수렴 (톱니 패턴)** |
-| 턴당 토큰 (P50) | ~100K | ~43K | ~21K | ~21K |
-| 최대 단일 턴 | 191K | 44–99K | 45K | 45K |
-| 세션 길이 제한 | 200K 한계 → 리셋 | 동일 | 선형 증가 | **무한** |
 | Worker 컨텍스트 | 191K 누적 노이즈 | 상속 노이즈 | 5–15K 브리프 | 5–15K 브리프 |
 | 실패 반복 | 같은 실수 반복 | 같은 실수 반복 | 같은 실수 반복 | **Dream Sharing으로 방지** |
 
-### 측정 결과 (2026-05-18 실측)
-
-- **Giver:** 93턴, P50=21K, 최대 45K, **선형 성장** (10.1×, ~1K/턴)
-- **서브에이전트:** 740턴, P50=45K, 최대 117K, fresh 시작
-- **Monolithic (과거):** P50≈100K, 최대 191K, **기하급수 성장** (26–42×)
-- **핵심:** Tier 1의 100% 턴이 50K 이하에서 작동. Monolithic P10(20K)이 Giver P90(40K)과 동급.
-
 ## 파일
 
-> pi agent v0.24.3 + pi-subagents 확장 기능 기준. `.pi/` 표준 경로에 배치.
->
-> planner, worker는 pi-subagents 내장 에이전트의 `.pi/agents/` 오버라이드. `defaultContext: fresh` 설정만 오버라이드하고, 모든 행동 지시는 SKILL.md에 포함.
+| 파일 | 경로 | 설명 |
+|------|------|------|
+| `SKILL.md` | `.pi/agent/skills/giver/SKILL.md` | The Giver 스킬 — 전체 프로토콜 정의 |
+| `pi-install` | `scripts/pi-install` | `~/.pi`에 심볼릭 생성 |
+| `pi-analyze` | `scripts/pi-analyze` | 세션 로그 분석 — 토큰, 준수, 에러 분류 |
 
-| 파일 | `.pi` 경로 | 설명 |
-|------|-----------|------|
-| `giver/SKILL.md` | `.pi/agent/skills/giver/SKILL.md` | The Giver 스킬 — tx 체인, Dream Sharing, Planner/Worker 행동 지시 포함 |
-| `scout.md` | `.pi/agents/scout.md` | pi-subagents 내장 scout 오버라이드 — `defaultContext: fresh` 설정만 |
-
-## Installation
-
-Copy the `.pi/` directory structure to your project root:
-
-```bash
-cp -r .pi/ /your-project/.pi/
-```
-
-The skill will be activated automatically by pi-agent when the `giver` skill is triggered.
+하위 에이전트(planner, worker, scout)는 pi-subagents 빌트인을 그대로 사용합니다. 행동 지시는 SKILL.md의 task string에서, `context: "fresh"`는 체인 호출에서 지정합니다. 별도 에이전트 오버라이드 파일이나 설정 파일은 필요 없습니다.
 
 ## Install
 
@@ -184,18 +156,18 @@ The skill will be activated automatically by pi-agent when the `giver` skill is 
 ./scripts/pi-install
 ```
 
-Creates symlink in `~/.pi` for the giver skill. Downstream agents (planner, scout, worker) run as fresh via `context: "fresh"` in the skill's chain invocations — no global settings changes needed.
+SKILL.md 심볼릭을 `~/.pi/agent/skills/giver/SKILL.md`에 생성합니다. 하위 에이전트는 `context: "fresh"` 체인 호출로 fresh 컨텍스트를 받습니다 — 전역 설정 변경 없음.
 
 ## Analyze
 
 ```bash
-python3 scripts/pi-analyze              # Latest project session
-python3 scripts/pi-analyze --all        # All sessions
+python3 scripts/pi-analyze              # 최신 프로젝트 세션
+python3 scripts/pi-analyze --all        # 모든 세션
 python3 scripts/pi-analyze --project giver-architecture
-python3 scripts/pi-analyze --json       # JSON output
+python3 scripts/pi-analyze --json       # JSON 출력
 ```
 
-Analyzes pi-subagents session logs and subagent artifacts: session turns/tokens, subagent breakdown by type (planner/scout/worker), token distribution, and Giver protocol compliance (phases, Dream Sharing, branch operations, error classification, self-reflection).
+pi-subagents 세션 로그와 서브에이전트 아티팩트를 분석합니다: 세션 턴/토큰, 서브에이전트 타입별 분석(planner/scout/worker), 토큰 분포, Giver 프로토콜 준수(페이즈, Dream Sharing, 브랜치, 에러 분류, 자기 점검).
 
 ## License
 
