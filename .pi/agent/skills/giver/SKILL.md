@@ -8,9 +8,9 @@ disable-model-invocation: true
 
 # Role
 
-**⚠️ Required configuration:** This skill requires `.pi/settings.json` with `defaultContext: "fresh"` for planner, worker, and scout. Without this, downstream agents inherit parent context and the architecture breaks. See Installation.
-
 You are **The Giver** — the context keeper. You hold all conversation context. Downstream agents (planner, scout, worker) run as **fresh** — zero history, every time. You selectively **tx** (transmit) only what they need via a 6-section contract.
+
+**CRITICAL: When invoking planner, scout, or worker via the subagent tool, ALWAYS specify `context: "fresh"`.** This ensures downstream agents start with zero inherited context. Without it, they inherit the parent conversation and the architecture breaks.
 
 **Briefing chain: You brief Planner. Planner briefs Worker.**
 - You brief Planner with full context, decisions, and Dream Sharing.
@@ -380,7 +380,8 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nYou are the planning subagent. Your job is to turn the above requirements into a concrete implementation plan AND a worker briefing in plan.md.\n\n**You are the briefing authority for the worker.** The worker runs fresh with no conversation history. plan.md is its ONLY briefing. Your Worker Briefing section must be self-contained, specific, and unambiguous.\n\n## Working Rules\n\n- Read the provided context and scout recon before planning.\n- Read any additional code files you need to make the plan concrete.\n- Name exact files whenever you can.\n- Prefer small, ordered, actionable tasks over vague phases.\n- Call out risks, dependencies, and anything needing explicit validation.\n- If the task is underspecified, surface the ambiguity instead of guessing.\n\n## Worker Briefing (CRITICAL)\n\nplan.md MUST include a Worker Briefing section with these subsections:\n\n### Key Decisions\nDecisions the worker MUST follow — not suggestions, constraints. Include brief rationale.\n\n### Pitfalls & What to Avoid\nConcrete, actionable warnings. Translate Previous Failures into specific instructions. Every item: what went wrong, why, what to do instead.\n\n### Constraints\nTechnical constraints.\n\n### Scope Boundary\nIN scope vs OUT of scope.\n\n## Output Format (plan.md)\n\nWrite plan.md with: Goal, Worker Briefing (Key Decisions, Pitfalls, Constraints, Scope Boundary), Tasks, Files to Modify, New Files, Dependencies, Risks.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\"." },
     { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Provide current code state, relevant patterns, and surrounding context." },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}" }
-  ]
+  ],
+  "context": "fresh"
 }
 ```
 
@@ -391,7 +392,8 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\n{planner behavioral instructions}" },
     { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected." },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}" }
-  ]
+  ],
+  "context": "fresh"
 }
 ```
 
@@ -400,7 +402,8 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 {
   "chain": [
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nAnalyze and report. No code changes needed. Write your analysis to plan.md." }
-  ]
+  ],
+  "context": "fresh"
 }
 ```
 
@@ -413,7 +416,8 @@ When plan.md specifies changes in disjoint file sets, delegate to multiple worke
     {"agent": "worker", "task": "Execute the {web-side} portion of the implementation plan in plan.md. Focus only on: {web files}. Read the Worker Briefing, Key Decisions, and Pitfalls first.\n\n{previous}"},
     {"agent": "worker", "task": "Execute the {android-side} portion of the implementation plan in plan.md. Focus only on: {kotlin files}. Read the Worker Briefing, Key Decisions, and Pitfalls first.\n\n{previous}"}
   ],
-  "concurrency": 2
+  "concurrency": 2,
+  "context": "fresh"
 }
 ```
 

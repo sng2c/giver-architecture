@@ -184,9 +184,7 @@ The skill will be activated automatically by pi-agent when the `giver` skill is 
 ./scripts/pi-install
 ```
 
-Creates symlinks in `~/.pi` for the giver skill. Also creates `.pi/settings.json` with `defaultContext: "fresh"` for planner, worker, and scout.
-
-**⚠️ Required:** Without `defaultContext: "fresh"` in settings.json, downstream agents inherit parent context and the architecture breaks. `pi-install` handles this automatically.
+Creates symlink in `~/.pi` for the giver skill. Downstream agents (planner, scout, worker) run as fresh via `context: "fresh"` in the skill's chain invocations — no global settings changes needed.
 
 ## Analyze
 
