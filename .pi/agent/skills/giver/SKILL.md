@@ -54,6 +54,8 @@ Example — when to use which chain:
 
 8. **Gather what you can, decide what you must.** Information that exists in the codebase is the Giver's job to gather (via scout, reading files, investigation). Strategic decisions — approach, scope, trade-offs — must involve the user. Never make a strategic choice unilaterally that the user should decide. Never ask the user for information that you can find in the codebase.
 
+9. **Branch per chain — every chain is reversible.** Every chain that includes a worker (code changes) MUST run on a dedicated git branch. This makes every attempt rollable-back and keeps the main branch clean. Create the branch before tx, report results on the branch, and let the user decide whether to merge.
+
 # Dream Sharing — Failure Feedback Protocol
 
 ## Why This Matters
@@ -103,6 +105,18 @@ List chronologically — cumulative memory. Each attempt's "What to avoid" narro
 - **Max retries exceeded** → 3 consecutive failures of the same type → stop and ask user
 - **Ambiguous requirement** → ask the user before retry
 - **Fundamental architecture mismatch** → escalate to user
+
+### Retry on branch
+
+Every retry uses the same branch. Before re-txing:
+
+1. Discard failed changes: `git checkout .`
+2. Verify clean state: `git status`
+3. Re-tx with enhanced Dream Sharing brief
+
+Do NOT create a new branch for retries — the branch name reflects the objective, not the attempt number. Failed attempts are discarded; only successful changes remain.
+
+Exception: If the retry represents a fundamentally different approach (not just fixing the previous attempt), create a new branch: `giver/feat/xxx-v2`.
 
 ### Progressive specificity
 ```
@@ -193,6 +207,53 @@ Before constructing the Planner brief, verify that you have sufficient informati
 **Key principle: Gather what you can, decide what you must.** The user's involvement is for strategic decisions — approach, scope, trade-offs. Information that exists in the codebase is your job to gather, not the user's job to provide.
 
 **Rule: Never tx with ambiguity you could have resolved.** A vague brief at the Giver level means Planner guesses, Worker implements the guess, and you detect the failure after wasted tokens. Resolve it here.
+
+## [Phase 1.5: Branch] (MANDATORY for chains with worker)
+
+Before tx-ing any chain that includes a worker (code changes), create a git branch. This makes every attempt rollable-back and keeps the main branch clean.
+
+### Branch naming
+
+```
+giver/<type>/<short-description>
+```
+
+- `type`: `feat` (new feature), `fix` (bug fix), `refactor` (restructuring), `chore` (maintenance)
+- `short-description`: kebab-case, 3-5 words max
+
+Examples:
+- `giver/feat/dark-mode-toggle`
+- `giver/fix/login-500-error`
+- `giver/refactor/auth-module`
+
+### Procedure
+
+1. Verify the working tree is clean (no uncommitted changes). If dirty, commit or stash first.
+2. Create and switch to the branch: `git checkout -b giver/<type>/<short-description>`
+3. Proceed to Phase 2 (tx).
+4. The chain runs on this branch. All worker changes land here.
+5. After Phase 4 (Report), do NOT merge — report the branch status to the user.
+
+### Branch lifecycle
+
+| Outcome | Action |
+|---------|--------|
+| ✅ Success | Report to user: "Changes are on `giver/feat/xxx`. Review and merge when ready." |
+| ⚠️ Partial | Report to user with status. User decides: merge partial, continue on branch, or discard. |
+| ❌ Failure | Report to user. For retry: stay on the same branch (changes from failed attempt can be reset with `git checkout .`), or create a new branch. |
+| ❌ Retry after failure | `git checkout .` to discard failed changes, then re-tx on the same branch. Or create a new branch like `giver/feat/xxx-v2`. |
+
+### Chains without worker
+
+Analysis-only chains (planner only, no code changes) do NOT need a branch. Skip Phase 1.5 and tx directly.
+
+### Why branch per chain?
+
+1. **Rollback is trivial.** Failed attempt? `git checkout .` or `git stash`. No need to manually undo changes.
+2. **Main branch stays clean.** Only merged, reviewed changes reach main.
+3. **Retry is safe.** Discard failed changes on the branch, re-tx from a clean state.
+4. **User controls merging.** The Giver never merges — it reports, the user decides.
+5. **Parallel work is possible.** Different chains on different branches, no conflicts.
 
 ## [Phase 2: tx — The Planner Brief (6-Section Contract)]
 Every **tx to the Planner** MUST contain these 6 sections. If it's not in the tx, the Planner doesn't know it. The Planner will translate relevant parts into the Worker Briefing section of plan.md.
@@ -381,7 +442,13 @@ When plan.md specifies changes in disjoint file sets, delegate to multiple worke
 ### Report
 1. What was done (1-2 lines)
 2. Key files changed
-3. Any open question or recommended next step
+3. Current branch name
+4. Any open question or recommended next step
+
+**Branch status (MANDATORY):** Report which branch the changes are on and its state:
+- ✅ Success: `"Changes are on giver/feat/xxx. Ready for review and merge."`
+- ⚠️ Partial: `"Partial changes on giver/feat/xxx. See open items above."`
+- ❌ Failure: `"Failed attempt on giver/feat/xxx. Discarding changes before retry."` → then `git checkout .` and re-tx
 
 ### Failure Review (MANDATORY after every chain)
 Before reporting, you MUST assess the chain output:
