@@ -4,6 +4,8 @@
 Analyzes pi-subagents session logs and subagent artifacts to measure
 how well The Giver protocol is working in practice.
 
+Matches actual SKILL.md definitions and real session log structures.
+
 Usage:
     python3 scripts/pi-analyze                    # Analyze latest session
     python3 scripts/pi-analyze --all              # Analyze all sessions
@@ -13,6 +15,7 @@ Usage:
 
 import json
 import os
+import re
 import sys
 import argparse
 from pathlib import Path
@@ -29,7 +32,7 @@ def find_sessions(project=None):
         project_dir = SESSIONS_DIR / project
         if project_dir.exists():
             return [project_dir]
-        # Try with -- prefix
+        # Try with -- prefix or partial match
         for d in SESSIONS_DIR.iterdir():
             if d.is_dir() and project in d.name:
                 return [d]
@@ -99,8 +102,338 @@ def analyze_subagent_artifacts(session_dir):
     return artifacts
 
 
+def extract_text_from_content(content):
+    """Extract all text from message content (list of blocks or string)."""
+    text = ""
+    if isinstance(content, list):
+        for block in content:
+            if isinstance(block, dict):
+                if block.get("type") == "text":
+                    text += block.get("text", "")
+    elif isinstance(content, str):
+        text = content
+    return text
+
+
+def extract_tool_calls(content):
+    """Extract tool calls from message content. Handles both 'tool_use' and 'toolCall' formats."""
+    calls = []
+    if isinstance(content, list):
+        for block in content:
+            if isinstance(block, dict):
+                btype = block.get("type", "")
+                if btype in ("toolCall", "tool_use"):
+                    name = block.get("name", block.get("tool", "?"))
+                    args = block.get("arguments", block.get("input", {}))
+                    calls.append({"name": name, "arguments": args})
+    return calls
+
+
+def detect_phases(text):
+    """Detect Giver protocol phases in text content.
+
+    Matches actual SKILL.md section headers and real usage patterns:
+    - Phase 0: Clarification (## [Phase 0: Clarification])
+    - Phase 1: Impact Analysis (## Phase 1, Impact Analysis)
+    - Phase 1.5: Branch (## [Phase 1.5: Branch])
+    - Phase 2: giving (## [Phase 2: giving], 6-section brief)
+    - Phase 4: Report & Compact (## [Phase 4: Report])
+    """
+    phases = []
+    text_lower = text.lower()
+
+    # Phase 0: Look for explicit section headers
+    if re.search(r'##\s*\[?\s*Phase\s*0\s*:?\s*\]?\s*[-:–—]?\s*clarification', text, re.IGNORECASE):
+        phases.append("phase0")
+    elif re.search(r'#\s*Phase\s*0\s*:', text, re.IGNORECASE):
+        phases.append("phase0")
+    elif 'phase 0' in text_lower and ('clarification' in text_lower or '질문' in text_lower or 'ambiguous' in text_lower):
+        # Only match if context suggests actual Phase 0, not just a mention
+        # Must have a header-like pattern or substantive discussion
+        header_match = re.search(r'phase 0\b', text_lower)
+        if header_match:
+            # Check if this is in a structured context (header, table, bullet)
+            start = max(0, header_match.start() - 30)
+            context = text[start:header_match.end() + 50]
+            if any(m in context for m in ['#', '##', '|', '•', '—', ':', '질문', 'Ambiguity', 'Clarity']):
+                phases.append("phase0")
+
+    # Phase 1: Impact Analysis - must be clearly structured
+    if re.search(r'##\s*\[?\s*Phase\s*1\s*:?\s*\.?5?\s*\]?\s*[-:–—]?\s*impact', text, re.IGNORECASE):
+        # Don't double-match 1.5
+        phases.append("phase1")
+    elif re.search(r'#\s*Phase\s+1\s*:', text, re.IGNORECASE):
+        # "Phase 1: Impact Analysis" as a standalone section header
+        if '1.5' not in text[text.lower().find('phase 1'):text.lower().find('phase 1') + 20]:
+            phases.append("phase1")
+    elif re.search(r'impact\s+analysis\s+report', text_lower):
+        # Structured impact analysis report
+        phases.append("phase1")
+    elif 'intrusion' in text_lower and any(kw in text_lower for kw in ['target', 'scope of change', 'risk']):
+        # Impact analysis with Intrusion/Target/Target sections
+        phases.append("phase1")
+
+    # Phase 1.5: Branch
+    if re.search(r'##\s*\[?\s*Phase\s*1\.5\s*', text, re.IGNORECASE):
+        phases.append("phase1.5")
+    elif re.search(r'phase\s*1\.5', text_lower):
+        phases.append("phase1.5")
+
+    # Phase 2: giving / 6-section contract
+    if re.search(r'##\s*\[?\s*Phase\s*2\s*', text, re.IGNORECASE):
+        phases.append("phase2")
+    elif _detect_six_section_brief(text):
+        # If text contains a 6-section contract, it's a giving
+        phases.append("phase2")
+
+    # Phase 3: giving — Transmit
+    # Only match explicit Giver protocol section headers, not project roadmap phases
+    # (e.g. "Phase 3 — Native Main 아키텍처" in PTT project are NOT Giver Phase 3)
+    if re.search(r'##\s*\[?\s*Phase\s*3\s*:\s*giving.*Transmit', text, re.IGNORECASE):
+        phases.append("phase3")
+    elif re.search(r'##\s*\[?\s*Phase\s*3\s*\]', text, re.IGNORECASE):
+        phases.append("phase3")
+
+    # Phase 4: Report & Compact
+    if re.search(r'##\s*\[?\s*Phase\s*4\s*', text, re.IGNORECASE):
+        phases.append("phase4")
+    elif re.search(r'context\s+compact', text_lower) or re.search(r'compaction', text_lower):
+        phases.append("phase4")
+
+    return phases
+
+
+def _detect_six_section_brief(text):
+    """Detect a 6-section Planner brief in text.
+
+    A giving brief must have ## Objective and at least 3 of the other 5 sections:
+    Context, Previous Failures, Target Files, Constraints, Scope Boundary.
+    """
+    required = r'##\s*objective'
+    optional = [
+        r'##\s*context',
+        r'##\s*previous\s+failures',
+        r'##\s*target\s+files',
+        r'##\s*constraints',
+        r'##\s*scope\s+boundary',
+    ]
+    text_lower = text.lower()
+    if not re.search(required, text_lower):
+        return False
+    found_optional = sum(1 for pat in optional if re.search(pat, text_lower))
+    return found_optional >= 2  # At least 2 other sections present
+
+
+def detect_giving_of_pain(text):
+    """Detect giving of pain (structured failure feedback) in text.
+
+    Matches SKILL.md structured format:
+    - **Attempt N:** [type]
+    - **What happened:**
+    - **Root cause:**
+    - **What to avoid:**
+    - **Correct direction:**
+    """
+    count = 0
+    text_lower = text.lower()
+
+    # Structured giving of pain: "Attempt N:" pattern
+    attempt_matches = re.findall(r'\*{0,2}\s*attempt\s+\d+', text_lower)
+    count += len(attempt_matches)
+
+    # "What happened" / "Root cause" / "What to avoid" structured fields
+    if re.search(r'what\s+happened', text_lower) and re.search(r'root\s+cause', text_lower):
+        count += 1
+    if re.search(r'what\s+to\s+avoid', text_lower) and re.search(r'correct\s+direction', text_lower):
+        count += 1
+
+    # "Previous Failures" section header
+    if re.search(r'##\s*previous\s+failures', text_lower):
+        count += 1
+
+    # "None — first attempt" (first try, no failures yet)
+    if re.search(r'none\s*[-—]\s*first\s+attempt', text_lower):
+        count += 1
+
+    return count
+
+
+def detect_self_reflection(text):
+    """Detect Giver self-reflection in failure analysis.
+
+    Matchable patterns from SKILL.md:
+    - "Was my brief sufficient?"
+    - "GIVER BRIEF" did not specify
+    - "my brief was insufficient" / "my brief was not sufficient"
+    - Giver self-reflection acknowledgment
+    """
+    count = 0
+    text_lower = text.lower()
+
+    # Direct quotes from SKILL.md
+    if re.search(r'was\s+my\s+brief\s+sufficient', text_lower):
+        count += 1
+    if re.search(r'giver\s+self.?\reflection', text_lower):
+        count += 1
+    if re.search(r'giver\s+brief\s+did\s+not\s+specify', text_lower):
+        count += 1
+    if re.search(r'giver\s+correction', text_lower):
+        count += 1
+    if re.search(r'my\s+brief\s+was\s+(insufficient|not sufficient|incomplete|ambiguous)', text_lower):
+        count += 1
+    if re.search(r'brief\s+did\s+not\s+(specify|include|mention)', text_lower):
+        count += 1
+    # Korean variants
+    if re.search(r'브리프가\s+(부족|불충분|모호)', text_lower):
+        count += 1
+    if re.search(r'내\s+브리프가', text_lower) and re.search(r'(부족|불충분|모호|충분하지)', text_lower):
+        count += 1
+
+    return count
+
+
+def detect_error_source_classification(text):
+    """Detect error source classification (Strategic/Tactical/Operational).
+
+    Must have at least 2 of the 3 classification labels to count.
+    """
+    text_lower = text.lower()
+    found = []
+    if re.search(r'\bstrategic\b', text_lower) and ('error' in text_lower or 'source' in text_lower or 'giver' in text_lower):
+        found.append("strategic")
+    if re.search(r'\btactical\b', text_lower) and ('error' in text_lower or 'source' in text_lower or 'planner' in text_lower):
+        found.append("tactical")
+    if re.search(r'\boperational\b', text_lower) and ('error' in text_lower or 'source' in text_lower or 'worker' in text_lower):
+        found.append("operational")
+
+    # Check for the Error Source Analysis table
+    if re.search(r'error\s+source', text_lower) and len(found) >= 1:
+        return found
+
+    # Check for Korean classification
+    if '전략적' in text and '전술적' in text:
+        return found + ["korean"]
+    if '오류 원인' in text or '에러 원인' in text:
+        return found
+
+    return found if found else []
+
+
+def detect_branch_operations(tool_calls):
+    """Detect git branch operations from bash tool calls.
+
+    - Branch create: git checkout -b (especially giver/ prefix)
+    - Branch reset: git checkout . or git stash
+    """
+    branches_created = 0
+    giver_branches = 0
+    resets = 0
+    stash_operations = 0
+
+    for call in tool_calls:
+        if call["name"] == "bash":
+            cmd = call.get("arguments", {}).get("command", "")
+            # Branch creation
+            if re.search(r'git\s+checkout\s+-b\s+', cmd):
+                branches_created += 1
+                if 'giver/' in cmd:
+                    giver_branches += 1
+            # Reset operations
+            if 'git checkout .' in cmd:
+                resets += 1
+            # Stash (also a form of reset for retry protocol)
+            if re.search(r'git\s+stash', cmd) and 'stash pop' not in cmd and 'stash show' not in cmd and 'stash list' not in cmd:
+                stash_operations += 1
+
+    return {
+        "branches_created": branches_created,
+        "giver_branches": giver_branches,
+        "resets": resets,
+        "stash_operations": stash_operations,
+    }
+
+
+def detect_subagent_invocations(tool_calls):
+    """Detect subagent chain, parallel task, and single invocations."""
+    chains = []
+    parallels = []
+    singles = []
+
+    for call in tool_calls:
+        if call["name"] != "subagent":
+            continue
+
+        args = call.get("arguments", {})
+        chain = args.get("chain", None)
+        tasks = args.get("tasks", None)
+        agent = args.get("agent", "")
+        action = args.get("action", "")
+        context = args.get("context", "")
+
+        # Skip management actions
+        if action in ("list", "get", "create", "update", "delete", "status", "doctor"):
+            continue
+
+        if chain:
+            agents = [s.get("agent", "?") for s in chain]
+            tasks_desc = [s.get("task", "")[:60] for s in chain]
+            chains.append({
+                "agents": agents,
+                "context": context,
+                "tasks": tasks_desc,
+            })
+        elif tasks:
+            for t in tasks:
+                parallels.append({
+                    "agent": t.get("agent", "?"),
+                    "context": t.get("context", ""),
+                    "task_preview": t.get("task", "")[:60],
+                })
+        elif agent:
+            singles.append({
+                "agent": agent,
+                "context": context,
+                "task_preview": args.get("task", "")[:60],
+            })
+
+    return {
+        "chains": chains,
+        "parallels": parallels,
+        "singles": singles,
+    }
+
+
+def detect_worker_briefing(text):
+    """Detect Worker Briefing section presence.
+
+    Matches: '### Key Decisions', '### Pitfalls & What to Avoid', etc.
+    """
+    text_lower = text.lower()
+    found = False
+    if re.search(r'worker\s+briefing', text_lower):
+        found = True
+    elif re.search(r'###\s*key\s+decisions', text_lower) and re.search(r'###\s*pitfalls', text_lower):
+        found = True
+    elif re.search(r'###\s*키\s*결정', text_lower) and re.search(r'###\s*주의\s*사항', text_lower):
+        found = True
+    return found
+
+
+def detect_compaction(text):
+    """Detect context compaction events."""
+    text_lower = text.lower()
+    if re.search(r'compact|compaction|compress', text_lower) and any(
+        kw in text_lower for kw in ['sawtooth', '요약', 'summariz', 'compressing', 'context']
+    ):
+        return True
+    return False
+
+
 def analyze_session_log(filepath):
-    """Analyze a session JSONL log for Giver protocol events"""
+    """Analyze a session JSONL log for Giver protocol events.
+
+    Parses both text content and tool calls from assistant messages.
+    """
     entries = parse_jsonl(filepath)
     if not entries:
         return None
@@ -112,13 +445,34 @@ def analyze_session_log(filepath):
         "total_input_tokens": 0,
         "total_output_tokens": 0,
         "total_cost": 0,
-        "giver_events": [],
-        "subagent_invocations": [],
+
+        # Phase detection
         "phases_detected": [],
-        "dream_sharing_count": 0,
-        "branch_operations": [],
-        "error_sources": [],
+
+        # Protocol compliance
+        "giving_of_pain_count": 0,
+        "self_reflection_count": 0,
+        "error_source_classifications": [],
+        "worker_briefing_detected": 0,
+        "compaction_events": 0,
+
+        # Git operations (from bash tool calls)
+        "branches_created": 0,
+        "giver_branches": 0,
+        "resets": 0,
+        "stash_operations": 0,
+
+        # Subagent invocations
+        "chains": [],
+        "parallels": [],
+        "singles": [],
+
+        # Aggregated counts
+        "subagent_calls_by_agent": Counter(),
+        "total_subagent_calls": 0,
     }
+
+    all_tool_calls = []
 
     for entry in entries:
         entry_type = entry.get("type", "")
@@ -134,53 +488,70 @@ def analyze_session_log(filepath):
             if usage:
                 session_info["total_input_tokens"] += usage.get("input", 0)
                 session_info["total_output_tokens"] += usage.get("output", 0)
-                session_info["total_cost"] += usage.get("cost", {}).get("total", 0) if isinstance(usage.get("cost"), dict) else 0
+                cost = usage.get("cost", {})
+                if isinstance(cost, dict):
+                    session_info["total_cost"] += cost.get("total", 0)
 
             if role == "assistant":
                 session_info["total_turns"] += 1
+                content = msg.get("content", "")
 
-                content = ""
-                if isinstance(msg.get("content"), list):
-                    for block in msg["content"]:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            content += block.get("text", "")
-                elif isinstance(msg.get("content"), str):
-                    content = msg["content"]
+                # Extract text and tool calls
+                text = extract_text_from_content(content)
+                tool_calls = extract_tool_calls(content)
+                all_tool_calls.extend(tool_calls)
 
-                # Detect Giver phases
-                content_lower = content.lower()
-                if "phase 0" in content_lower or "clarification" in content_lower:
-                    session_info["phases_detected"].append("phase0")
-                if "phase 1" in content_lower or "impact analysis" in content_lower:
-                    session_info["phases_detected"].append("phase1")
-                if "phase 1.5" in content_lower or "git checkout -b" in content_lower:
-                    session_info["phases_detected"].append("phase1.5")
-                if "phase 2" in content_lower or "6-section" in content_lower or "objective" in content_lower and "## context" in content_lower:
-                    session_info["phases_detected"].append("phase2")
-                if "phase 4" in content_lower or "report" in content_lower:
-                    session_info["phases_detected"].append("phase4")
+                # Detect phases from text
+                phases = detect_phases(text)
+                session_info["phases_detected"].extend(phases)
 
-                # Detect Dream Sharing
-                if "previous failures" in content_lower or "attempt 1" in content_lower:
-                    session_info["dream_sharing_count"] += 1
+                # Detect giving of pain
+                session_info["giving_of_pain_count"] += detect_giving_of_pain(text)
 
-                # Detect branch operations
-                if "git checkout -b giver/" in content_lower or "git checkout -b" in content:
-                    session_info["branch_operations"].append("create")
-                if "git checkout ." in content:
-                    session_info["branch_operations"].append("reset")
+                # Detect self-reflection
+                session_info["self_reflection_count"] += detect_self_reflection(text)
 
-                # Detect error source analysis
-                if "strategic" in content_lower and "tactical" in content_lower and "operational" in content_lower:
-                    session_info["error_sources"].append("classified")
-                if "giver self-reflection" in content_lower or "was my brief sufficient" in content_lower:
-                    session_info["error_sources"].append("self-reflection")
+                # Detect error source classification
+                error_sources = detect_error_source_classification(text)
+                session_info["error_source_classifications"].extend(error_sources)
+
+                # Detect Worker Briefing
+                if detect_worker_briefing(text):
+                    session_info["worker_briefing_detected"] += 1
+
+                # Detect compaction
+                if detect_compaction(text):
+                    session_info["compaction_events"] += 1
+
+    # Post-processing: extract git and subagent operations from tool calls
+    branch_ops = detect_branch_operations(all_tool_calls)
+    session_info["branches_created"] = branch_ops["branches_created"]
+    session_info["giver_branches"] = branch_ops["giver_branches"]
+    session_info["resets"] = branch_ops["resets"]
+    session_info["stash_operations"] = branch_ops["stash_operations"]
+
+    subagent_ops = detect_subagent_invocations(all_tool_calls)
+    session_info["chains"] = subagent_ops["chains"]
+    session_info["parallels"] = subagent_ops["parallels"]
+    session_info["singles"] = subagent_ops["singles"]
+
+    # Count subagent calls by agent
+    for chain in subagent_ops["chains"]:
+        for agent in chain["agents"]:
+            session_info["subagent_calls_by_agent"][agent] += 1
+            session_info["total_subagent_calls"] += 1
+    for p in subagent_ops["parallels"]:
+        session_info["subagent_calls_by_agent"][p["agent"]] += 1
+        session_info["total_subagent_calls"] += 1
+    for s in subagent_ops["singles"]:
+        session_info["subagent_calls_by_agent"][s["agent"]] += 1
+        session_info["total_subagent_calls"] += 1
 
     return session_info
 
 
 def format_tokens(n):
-    """Format token count with commas and K/M suffix"""
+    """Format token count with K/M suffix"""
     if n >= 1_000_000:
         return f"{n/1_000_000:.1f}M"
     elif n >= 1_000:
@@ -188,11 +559,19 @@ def format_tokens(n):
     return str(n)
 
 
+def format_duration(ms):
+    """Format duration in seconds or minutes"""
+    seconds = ms / 1000
+    if seconds >= 60:
+        return f"{seconds/60:.1f}min"
+    return f"{seconds:.1f}s"
+
+
 def print_report(sessions_data, artifacts_data):
     """Print the analysis report"""
-    print("=" * 60)
+    print("=" * 70)
     print("  The Giver — Protocol Analysis Report")
-    print("=" * 60)
+    print("=" * 70)
 
     # Session summary
     total_sessions = len(sessions_data)
@@ -205,10 +584,45 @@ def print_report(sessions_data, artifacts_data):
     print(f"   Input:    {format_tokens(total_input)} tokens")
     print(f"   Output:   {format_tokens(total_output)} tokens")
 
-    # Subagent stats
+    # Subagent invocation stats (from session logs)
+    total_chains = sum(len(s["chains"]) for s in sessions_data)
+    total_parallels = sum(len(s["parallels"]) for s in sessions_data)
+    total_singles = sum(len(s["singles"]) for s in sessions_data)
+    total_calls = sum(s["total_subagent_calls"] for s in sessions_data)
+
+    print(f"\n🔗 Giver delegations (from session logs)")
+    print(f"   Chains:   {total_chains}")
+    print(f"   Parallel: {total_parallels}")
+    print(f"   Singles:  {total_singles}")
+    print(f"   Total subagent calls: {total_calls}")
+
+    # Agent call distribution
+    all_agent_calls = Counter()
+    for s in sessions_data:
+        all_agent_calls.update(s["subagent_calls_by_agent"])
+    if all_agent_calls:
+        print(f"\n   Calls by agent:")
+        for agent, count in sorted(all_agent_calls.items()):
+            print(f"     {agent}: {count}")
+
+    # Chain context compliance
+    fresh_chains = 0
+    total_chains_with_context = 0
+    for s in sessions_data:
+        for chain in s["chains"]:
+            ctx = chain.get("context", "")
+            if ctx:
+                total_chains_with_context += 1
+                if ctx == "fresh":
+                    fresh_chains += 1
+    if total_chains_with_context > 0:
+        print(f"\n   Chain context compliance:")
+        print(f"     fresh:    {fresh_chains}/{total_chains_with_context} ({fresh_chains/total_chains_with_context*100:.0f}%)")
+
+    # Subagent artifacts (from meta files)
     if artifacts_data:
-        print(f"\n🔗 Subagent Runs")
-        agent_stats = defaultdict(lambda: {"count": 0, "input": 0, "output": 0, "turns": 0, "duration": 0})
+        print(f"\n🔗 Subagent Artifact Stats (from meta files)")
+        agent_stats = defaultdict(lambda: {"count": 0, "input": 0, "output": 0, "turns": 0, "duration": 0, "success": 0, "fail": 0})
         for a in artifacts_data:
             agent = a["agent"]
             stats = agent_stats[agent]
@@ -217,61 +631,162 @@ def print_report(sessions_data, artifacts_data):
             stats["output"] += a["usage"].get("output", 0)
             stats["turns"] += a["usage"].get("turns", 0)
             stats["duration"] += a["duration_ms"]
+            if a["exit_code"] == 0:
+                stats["success"] += 1
+            else:
+                stats["fail"] += 1
 
         for agent, stats in sorted(agent_stats.items()):
+            success_rate = f"{stats['success']}/{stats['count']}" if stats['count'] > 0 else "N/A"
             print(f"\n   {agent}:")
-            print(f"     Runs:     {stats['count']}")
+            print(f"     Runs:     {stats['count']} ({success_rate} success)")
             print(f"     Input:    {format_tokens(stats['input'])} tokens")
             print(f"     Output:   {format_tokens(stats['output'])} tokens")
             print(f"     Turns:    {stats['turns']:,}")
-            print(f"     Duration: {stats['duration']/1000:.1f}s")
+            print(f"     Duration: {format_duration(stats['duration'])}")
 
         # Token distribution
-        print(f"\n📈 Token Distribution by Agent")
         total_sub_input = sum(a["usage"].get("input", 0) for a in artifacts_data)
         total_sub_output = sum(a["usage"].get("output", 0) for a in artifacts_data)
-        for agent in sorted(agent_stats.keys()):
-            stats = agent_stats[agent]
-            pct_in = (stats["input"] / total_sub_input * 100) if total_sub_input else 0
-            pct_out = (stats["output"] / total_sub_output * 100) if total_sub_output else 0
-            print(f"   {agent:10s}  in={pct_in:5.1f}%  out={pct_out:5.1f}%")
+        if total_sub_input > 0 or total_sub_output > 0:
+            print(f"\n📈 Token Distribution by Agent")
+            for agent in sorted(agent_stats.keys()):
+                stats = agent_stats[agent]
+                pct_in = (stats["input"] / total_sub_input * 100) if total_sub_input else 0
+                pct_out = (stats["output"] / total_sub_output * 100) if total_sub_output else 0
+                bar_in = "█" * int(pct_in / 5) + "░" * (20 - int(pct_in / 5))
+                bar_out = "█" * int(pct_out / 5) + "░" * (20 - int(pct_out / 5))
+                print(f"   {agent:10s}")
+                print(f"     in:  {bar_in} {pct_in:5.1f}%")
+                print(f"     out: {bar_out} {pct_out:5.1f}%")
 
     # Protocol compliance
-    print(f"\n✅ Protocol Compliance")
+    print(f"\n{'=' * 70}")
+    print(f"✅ Protocol Compliance")
+    print(f"{'=' * 70}")
 
+    # Phases
     phases_all = []
-    dream_sharing_total = 0
-    branch_total = {"create": 0, "reset": 0}
-    error_source_detected = 0
-    self_reflection_count = 0
-
     for s in sessions_data:
         phases_all.extend(s["phases_detected"])
-        dream_sharing_total += s["dream_sharing_count"]
-        branch_total["create"] += s["branch_operations"].count("create")
-        branch_total["reset"] += s["branch_operations"].count("reset")
-        error_source_detected += len(s["error_sources"])
-        self_reflection_count += s["error_sources"].count("self-reflection")
-
     phase_counts = Counter(phases_all)
-    print(f"   Phases detected:  {dict(phase_counts)}")
-    print(f"   Dream Sharing:    {dream_sharing_total} uses")
-    print(f"   Branch creates:   {branch_total['create']}")
-    print(f"   Branch resets:    {branch_total['reset']}")
-    print(f"   Error classified: {error_source_detected}")
-    print(f"   Self-reflection:   {self_reflection_count}")
+
+    # De-duplicate phases per session (each phase counted once per session)
+    phases_per_session = []
+    for s in sessions_data:
+        unique_phases = set(s["phases_detected"])
+        phases_per_session.append(unique_phases)
+    sessions_with_phases = Counter()
+    for ps in phases_per_session:
+        for p in ps:
+            sessions_with_phases[p] += 1
+
+    total_giving_of_pain = sum(s["giving_of_pain_count"] for s in sessions_data)
+    total_self_reflection = sum(s["self_reflection_count"] for s in sessions_data)
+    total_error_classifications = sum(len(s["error_source_classifications"]) for s in sessions_data)
+    total_branches = sum(s["branches_created"] for s in sessions_data)
+    total_giver_branches = sum(s["giver_branches"] for s in sessions_data)
+    total_resets = sum(s["resets"] for s in sessions_data)
+    total_stash = sum(s["stash_operations"] for s in sessions_data)
+    total_worker_briefings = sum(s["worker_briefing_detected"] for s in sessions_data)
+    total_compactions = sum(s["compaction_events"] for s in sessions_data)
+
+    # Phase 3 (giving — Transmit) via subagent chain/task invocations
+    total_phase3_via_delegation = sum(
+        len(s["chains"]) + len(s["parallels"]) + sum(1 for sg in s["singles"] if sg["agent"] in ("planner", "scout", "worker"))
+        for s in sessions_data
+    )
+
+    # Error source types
+    error_types = Counter()
+    for s in sessions_data:
+        error_types.update(s["error_source_classifications"])
+
+    print(f"\n   Phase flow (sessions):")
+    print(f"     Phase 0 (Clarification):       {sessions_with_phases.get('phase0', 0):>3} sessions  ({sessions_with_phases.get('phase0', 0)/total_sessions*100:.0f}% of sessions)")
+    print(f"     Phase 1 (Impact Analysis):      {sessions_with_phases.get('phase1', 0):>3} sessions  ({sessions_with_phases.get('phase1', 0)/total_sessions*100:.0f}%)")
+    print(f"     Phase 1.5 (Branch):             {sessions_with_phases.get('phase1.5', 0):>3} sessions  ({sessions_with_phases.get('phase1.5', 0)/total_sessions*100:.0f}%)")
+    print(f"     Phase 2 (giving/6-section):      {sessions_with_phases.get('phase2', 0):>3} sessions  ({sessions_with_phases.get('phase2', 0)/total_sessions*100:.0f}%)")
+    # Phase 3: text-detected + delegation-based
+    phase3_text_sessions = sessions_with_phases.get('phase3', 0)
+    sessions_with_giving = sum(1 for s in sessions_data if len(s["chains"]) > 0 or len(s["parallels"]) > 0 or any(sg["agent"] in ("planner", "scout", "worker") for sg in s["singles"]))
+    print(f"     Phase 3 (giving/delegation):    {sessions_with_giving:>3} sessions  ({sessions_with_giving/total_sessions*100:.0f}%) [+{phase3_text_sessions} text-detected]")
+    print(f"     Phase 4 (Report & Compact):     {sessions_with_phases.get('phase4', 0):>3} sessions  ({sessions_with_phases.get('phase4', 0)/total_sessions*100:.0f}%)")
+
+    print(f"\n   Phase mentions (text, all occurrences):")
+    for phase in ["phase0", "phase1", "phase1.5", "phase2", "phase3", "phase4"]:
+        print(f"     {phase:12s}: {phase_counts.get(phase, 0)}")
+    print(f"\n   Phase 3 delegations (chain/task/single calls):")
+    print(f"     Total giving actions:            {total_phase3_via_delegation}")
+
+    print(f"\n   giving of pain:")
+    print(f"     Structured failure entries:    {total_giving_of_pain}")
+    print(f"     Giver self-reflection:         {total_self_reflection}")
+
+    print(f"\n   Error source classification:")
+    print(f"     Total classifications:          {total_error_classifications}")
+    for etype, count in error_types.most_common():
+        print(f"     {etype}: {count}")
+
+    print(f"\n   Branch operations:")
+    print(f"     git checkout -b (any):         {total_branches}")
+    print(f"     git checkout -b giver/*:       {total_giver_branches}")
+    print(f"     git checkout . (reset):         {total_resets}")
+    print(f"     git stash (snapshot):           {total_stash}")
+    print(f"     Retry resets (stash/checkout.): {total_resets + total_stash}")
+    if total_branches > 0 and total_giver_branches == 0:
+        print(f"     ⚠️  Branches exist but none use giver/* naming convention")
+
+    print(f"\n   Worker Briefing detected:         {total_worker_briefings}")
+    print(f"   Context compaction events:        {total_compactions}")
+
+    # Compliance score
+    has_p0 = sessions_with_phases.get("phase0", 0) > 0
+    has_p1 = sessions_with_phases.get("phase1", 0) > 0
+    has_p2 = sessions_with_phases.get("phase2", 0) > 0
+    has_p3 = sessions_with_giving > 0
+    has_p4 = sessions_with_phases.get("phase4", 0) > 0
+    has_pain = total_giving_of_pain > 0
+    has_self_reflect = total_self_reflection > 0
+    has_branches = total_branches > 0  # Any branch creation (not just giver/ prefix)
+    has_giver_branches = total_giver_branches > 0  # Strict: giver/ prefix
+
+    score = sum([has_p0, has_p1, has_p2, has_p3, has_p4, has_pain, has_self_reflect, has_branches])
+    total = 8
+    print(f"\n   Compliance score: {score}/{total}")
+    items = [
+        ("Phase 0 (Clarification)", has_p0),
+        ("Phase 1 (Impact Analysis)", has_p1),
+        ("Phase 2 (giving/6-section)", has_p2),
+        ("Phase 3 (giving/delegation)", has_p3),
+        ("Phase 4 (Report & Compact)", has_p4),
+        ("giving of pain", has_pain),
+        ("Self-reflection on failure", has_self_reflect),
+        ("Branch per chain", has_branches),
+    ]
+    for label, ok in items:
+        mark = "✅" if ok else "❌"
+        print(f"     {mark} {label}")
 
     # Per-session detail for latest session
     if sessions_data:
         latest = sessions_data[-1]
-        print(f"\n📋 Latest Session Detail")
+        print(f"\n{'=' * 70}")
+        print(f"📋 Latest Session Detail")
+        print(f"{'=' * 70}")
         print(f"   File:       {latest['file']}")
         print(f"   Timestamp:  {latest['timestamp']}")
         print(f"   Turns:      {latest['total_turns']}")
         print(f"   Input:      {format_tokens(latest['total_input_tokens'])}")
         print(f"   Output:     {format_tokens(latest['total_output_tokens'])}")
+        print(f"   Chains:     {len(latest['chains'])}")
+        print(f"   Parallels:  {len(latest['parallels'])}")
+        print(f"   Singles:    {len(latest['singles'])}")
+        print(f"   Phases:     {list(set(latest['phases_detected']))}")
+        for chain in latest["chains"]:
+            print(f"   Chain: {' → '.join(chain['agents'])} (ctx={chain.get('context', 'default')})")
 
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 70}")
 
 
 def main():
