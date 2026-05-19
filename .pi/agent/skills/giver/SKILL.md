@@ -192,13 +192,13 @@ Add in-memory LRU cache for /api/users/:id read path. Approach: per-instance LRU
 
 ### What the fresh agent receives
 
-| 소스 | 내용 |
+| Source | Content |
 |---|---|
-| 태스크 스트링 | The Giver가 큐레이션한 6섹션 브리프 |
-| {previous} | 직전 scout의 코드베이스 리컨 |
-| plan.md | planner가 작성한 구현 계획 |
-| context.md | scout가 작성한 코드 컨텍스트 |
-| 직접 읽은 코드 | worker가 자체적으로 읽은 파일 |
+| Task string | The Giver's curated 6-section brief |
+| {previous} | Previous scout's codebase recon |
+| plan.md | Planner's implementation plan |
+| context.md | Scout's code context |
+| Direct file reads | Files the worker reads on its own |
 
 ### Why scout must precede worker
 Fresh worker has no implicit code knowledge — it doesn't know the current state of any file. Scout provides a fresh snapshot of the actual code via `context.md` and `{previous}`. Without scout, worker operates on stale assumptions about what the code looks like.
@@ -212,7 +212,7 @@ In the full chain, scout runs twice: first to find relevant files (before planne
     { "agent": "scout", "task": "Recon: {1-line objective}. Find all files, functions, and patterns related to: {specific aspects}" },
     { "agent": "planner", "task": "## Objective\n{full objective}\n\n## Context\n{full context brief from Phase 2}\n\n## Previous Failures\n{structured failure log or 'None — first attempt'}\n\n## Scout Recon\n{previous}\n\n## Target Files\nPer scout results above\n\n## Constraints\n{constraints}\n\n## Scope Boundary\n{what's in/out of scope}" },
     { "agent": "scout", "task": "Recon for implementation: {1-line objective}. Focus on the exact code sections that plan.md specifies for changes. Read the target files listed in plan.md and provide their current state, relevant patterns, and surrounding context that an implementor would need." },
-    { "agent": "worker", "task": "## Objective\n{full objective}\n\n## Context\n{condensed context brief — key decisions, constraints, scope}\n\n## Previous Failures\n{structured failure log — include ALL attempts}\n\n## Scout Recon\n{previous}\n\n## Plan\nRead plan.md for the full implementation plan.\n\n## Key Decisions\n{critical decisions worker must not override}\n\n## Scope Boundary\n{what's in/out of scope}" }
+    { "agent": "worker", "task": "## Objective\n{full objective}\n\n## Context\n{condensed context brief — key decisions, constraints, scope}\n\n## Previous Failures\n{structured failure log — include ALL attempts}\n\n## Scout Recon\n{previous}\n\n## Plan\nRead plan.md for the full implementation plan.\n\n## Key Decisions\n{critical decisions worker must not override — decisions planner made that worker must follow}\n\n## Scope Boundary\n{what's in/out of scope}" }
   ]
 }
 ```
@@ -223,7 +223,7 @@ In the full chain, scout runs twice: first to find relevant files (before planne
   "chain": [
     { "agent": "planner", "task": "## Objective\n{full objective}\n\n## Context\n{full context brief from Phase 2}\n\n## Previous Failures\n{structured failure log or 'None — first attempt'}\n\n## Target Files\n{exact paths with what role each plays}\n\n## Constraints\n{constraints}\n\n## Scope Boundary\n{what's in/out of scope}" },
     { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read the target files listed in plan.md and provide their current code state, relevant patterns, and surrounding context. Also read plan.md to understand what changes are planned, then recon the specific code areas that will be affected." },
-    { "agent": "worker", "task": "## Objective\n{full objective}\n\n## Context\n{condensed context brief — key decisions, constraints, scope}\n\n## Previous Failures\n{structured failure log — include ALL attempts}\n\n## Scout Recon\n{previous}\n\n## Plan\nRead plan.md for the full implementation plan.\n\n## Key Decisions\n{critical decisions worker must not override}\n\n## Scope Boundary\n{what's in/out of scope}" }
+    { "agent": "worker", "task": "## Objective\n{full objective}\n\n## Context\n{condensed context brief — key decisions, constraints, scope}\n\n## Previous Failures\n{structured failure log — include ALL attempts}\n\n## Scout Recon\n{previous}\n\n## Plan\nRead plan.md for the full implementation plan.\n\n## Key Decisions\n{critical decisions worker must not override — decisions planner made that worker must follow}\n\n## Scope Boundary\n{what's in/out of scope}" }
   ]
 }
 ```
@@ -234,8 +234,8 @@ When plan.md specifies changes in disjoint file sets, delegate to multiple worke
 ```json
 {
   "tasks": [
-    {"agent": "worker", "task": "## Objective\n{web-side changes}\n\n## Previous Failures\n{partition: only failures related to web files. If no prior attempts on web files, write 'None — first attempt'}\n\n## Target Files\n{web files only}\n\n## ..."},
-    {"agent": "worker", "task": "## Objective\n{android-side changes}\n\n## Previous Failures\n{partition: only failures related to android files. If no prior attempts on android files, write 'None — first attempt'}\n\n## Target Files\n{kotlin files only}\n\n## ..."}
+    {"agent": "worker", "task": "## Objective\n{web-side changes}\n\n## Previous Failures\n{partition: only failures related to web files. If no prior attempts on web files, write 'None — first attempt'}\n\n## Target Files\n{web files only}\n\n## Context\n{condensed context for web changes}\n\n## Constraints\n{web-specific constraints}\n\n## Scope Boundary\n{web scope}"},
+    {"agent": "worker", "task": "## Objective\n{android-side changes}\n\n## Previous Failures\n{partition: only failures related to android files. If no prior attempts on android files, write 'None — first attempt'}\n\n## Target Files\n{kotlin files only}\n\n## Context\n{condensed context for android changes}\n\n## Constraints\n{android-specific constraints}\n\n## Scope Boundary\n{android scope}"}
   ],
   "concurrency": 2
 }
@@ -327,14 +327,6 @@ Worker doesn't know whether it was a type error, missing import, or wrong signat
 
 ## GOOD — Structured Dream Sharing (first retry):
 ```text
-## Previous Failures
-**Attempt 1:** Wrong Approach
-
-- **What happened:** Implemented cache as route-level middleware in `src/routes/users.ts`
-- **Root cause:** Brief didn't specify service-layer placement; agent chose the most obvious location
-- **What to avoid:** DO NOT add caching logic in route handlers. DO NOT modify `src/routes/users.ts`.
-- **Correct direction:** Implement the cache layer inside `src/services/user-service.ts`, as a private field of the UserService class.
-
 ## Objective
 Add an in-memory LRU cache layer to the user service.
 
@@ -342,7 +334,12 @@ Add an in-memory LRU cache layer to the user service.
 User reported 800ms p99 latency. Approved approach: in-memory LRU cache, 5-min TTL, per-instance.
 
 ## Previous Failures
-**Attempt 1:** Wrong Approach — see above
+**Attempt 1:** Wrong Approach
+
+- **What happened:** Implemented cache as route-level middleware in `src/routes/users.ts`
+- **Root cause:** Brief didn't specify service-layer placement; agent chose the most obvious location
+- **What to avoid:** DO NOT add caching logic in route handlers. DO NOT modify `src/routes/users.ts`.
+- **Correct direction:** Implement the cache layer inside `src/services/user-service.ts`, as a private field of the UserService class.
 
 ## Target Files
 src/services/user-service.ts
@@ -359,6 +356,12 @@ OUT: distributed caching, route changes
 
 ## GOOD — Cumulative Dream Sharing (second retry):
 ```text
+## Objective
+Add LRU cache to UserService (service layer only).
+
+## Context
+Two prior attempts failed: wrong layer, then missing invalidation.
+
 ## Previous Failures
 
 **Attempt 1:** Wrong Approach
@@ -372,15 +375,6 @@ OUT: distributed caching, route changes
 - **Root cause:** Brief had invalidation in Scope Boundary but not in Key Decisions
 - **What to avoid:** EVERY CUD method MUST invalidate the relevant cache entry
 - **Correct direction:** `update` and `delete` must call `this.cache.delete(id)`
-
-## Objective
-Add LRU cache to UserService (service layer only).
-
-## Context
-Two prior attempts failed: wrong layer, then missing invalidation.
-
-## Previous Failures
-See above — two failed attempts.
 
 ## Target Files
 src/services/user-service.ts
