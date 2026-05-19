@@ -5,11 +5,11 @@ set -e
 # Same gist IDs are always updated (no new gists created)
 
 SKILL_GIST_ID="9d2c84f8926e63705800498c4e3d2ab9"
-ARCH_GIST_ID="d2af61b767624526205167e1194c4155"
+README_GIST_ID="d2af61b767624526205167e1194c4155"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL_FILE="$PROJECT_DIR/.pi/agent/skills/giver/SKILL.md"
-ARCH_FILE="$PROJECT_DIR/ARCHITECTURE.md"
+README_FILE="$PROJECT_DIR/README.md"
 
 # Colors
 GREEN='\033[0;32m'
@@ -20,7 +20,7 @@ echo -e "${YELLOW}=== The Giver Deploy ===${NC}"
 echo ""
 
 # Check files exist
-for f in "$SKILL_FILE" "$ARCH_FILE"; do
+for f in "$SKILL_FILE" "$README_FILE"; do
     if [ ! -f "$f" ]; then
         echo "Error: $f not found"
         exit 1
@@ -48,20 +48,20 @@ gh api --method PATCH "/gists/$SKILL_GIST_ID" \
     }
 echo "  ✓ https://gist.github.com/sng2c/$SKILL_GIST_ID"
 
-# Update ARCHITECTURE.md gist
-echo -e "${GREEN}[2/2]${NC} Updating ARCHITECTURE.md gist ($ARCH_GIST_ID)..."
-ARCH_DESC="The Giver 아키텍처"
+# Update README.md gist
+echo -e "${GREEN}[2/2]${NC} Updating README.md gist ($README_GIST_ID)..."
+README_DESC="The Giver 아키텍처"
 
 payload=$(jq -n \
-    --arg desc "$ARCH_DESC" \
-    --arg content "$(cat "$ARCH_FILE")" \
-    '{description: $desc, files: {"ARCHITECTURE.md": {content: $content}}}')
-gh api --method PATCH "/gists/$ARCH_GIST_ID" \
+    --arg desc "$README_DESC" \
+    --arg content "$(cat "$README_FILE")" \
+    '{description: $desc, files: {"README.md": {content: $content}}}')
+gh api --method PATCH "/gists/$README_GIST_ID" \
     --input <(echo "$payload") \
     > /dev/null
-echo "  ✓ https://gist.github.com/sng2c/$ARCH_GIST_ID"
+echo "  ✓ https://gist.github.com/sng2c/$README_GIST_ID"
 
 echo ""
 echo -e "${GREEN}Deploy complete.${NC}"
 echo "  SKILL.md:      https://gist.github.com/sng2c/$SKILL_GIST_ID"
-echo "  ARCHITECTURE:  https://gist.github.com/sng2c/$ARCH_GIST_ID"
+echo "  README:        https://gist.github.com/sng2c/$README_GIST_ID"
