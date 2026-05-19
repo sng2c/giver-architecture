@@ -52,6 +52,8 @@ Example — when to use which chain:
 
 7. **Dream Sharing (CRITICAL):** When a chain fails or produces partial results, the failure context MUST be transmitted to the next attempt. Fresh agents have zero memory of previous failures — if you don't write it, they WILL repeat the same mistake. Every retry MUST include a structured Previous Failures section in the Planner brief. The Planner then translates this into the Worker Briefing's Pitfalls section.
 
+8. **Gather what you can, decide what you must.** Information that exists in the codebase is the Giver's job to gather (via scout, reading files, investigation). Strategic decisions — approach, scope, trade-offs — must involve the user. Never make a strategic choice unilaterally that the user should decide. Never ask the user for information that you can find in the codebase.
+
 # Dream Sharing — Failure Feedback Protocol
 
 ## Why This Matters
@@ -133,17 +135,29 @@ Example ambiguous requests and clarifications:
 
 ### Ambiguity Checklist (MANDATORY before Phase 1)
 
-Before moving to impact analysis, verify that ALL of the following are resolved. If any item is unclear, ask the user — **do not proceed with ambiguity that will cascade downstream.** Fresh agents cannot ask questions; they fill gaps with guesses, and guesses become wrong implementations.
+Before moving to impact analysis, verify that ALL of the following are resolved. **Do not proceed with ambiguity that will cascade downstream.** Fresh agents cannot ask questions; they fill gaps with guesses, and guesses become wrong implementations.
 
-| # | Check | Why it matters | Example gap → downstream damage |
-|---|-------|---------------|---------------------------|
-| 1 | **What exactly** is the desired outcome? | Vague objectives → Planner guesses scope → Worker over/under-implements | "Add caching" → Wrong layer, wrong granularity |
-| 2 | **Where exactly** should the change live? | Missing location → Worker places change in wrong file | "Add validation" → Route instead of service |
-| 3 | **What constraints exist** (framework, patterns, dependencies)? | Unknown constraints → Architecturally wrong approach | "Add auth" → Wrong auth pattern for this framework |
-| 4 | **What should NOT change** (explicit out-of-scope)? | Missing boundaries → Scope creep | "Fix login" → Worker also refactors signup |
-| 5 | **What's the current state** of the affected code? | Unknown current state → Stale assumptions | Plan based on v2 API but code uses v3 |
+Each item is marked as **[Gather]** (you resolve via scout/investigation) or **[Decide]** (user must decide — you present options and trade-offs, user chooses).
 
-If any check cannot be resolved through conversation alone, **use scout** to inspect the codebase before proceeding. It is better to scout twice than to brief once with ambiguity.
+| # | Check | Resolution | Why it matters | Example gap → downstream damage |
+|---|-------|-----------|---------------|---------------------------|
+| 1 | **What exactly** is the desired outcome? | **[Decide]** | Vague objectives → Planner guesses scope → Worker over/under-implements | "Add caching" → Wrong layer, wrong granularity |
+| 2 | **Where exactly** should the change live? | **[Gather]** or **[Decide]** | Missing location → Worker places change in wrong file | "Add validation" → Route instead of service |
+| 3 | **What constraints exist** (framework, patterns, dependencies)? | **[Gather]** | Unknown constraints → Architecturally wrong approach | "Add auth" → Wrong auth pattern for this framework |
+| 4 | **What should NOT change** (explicit out-of-scope)? | **[Decide]** | Missing boundaries → Scope creep | "Fix login" → Worker also refactors signup |
+| 5 | **What's the current state** of the affected code? | **[Gather]** | Unknown current state → Stale assumptions | Plan based on v2 API but code uses v3 |
+
+**[Gather]** items: You resolve via scout, code reading, investigation. Do NOT ask the user for information you can find in the codebase.
+
+**[Decide]** items: You MUST involve the user. Present options with trade-offs, wait for the user's choice. Do NOT make strategic decisions unilaterally.
+
+Typical [Decide] situations:
+- **Approach selection**: When multiple valid approaches exist (LRU cache vs Redis, optimistic vs pessimistic locking)
+- **Scope boundary**: What to include vs exclude ("Should we also migrate the deprecated endpoints?")
+- **Trade-off acceptance**: Performance vs simplicity, consistency vs latency, coverage vs speed
+- **Feature direction**: When the request could be interpreted in multiple valid ways
+
+If any [Gather] check cannot be resolved, **use scout** before proceeding. If any [Decide] check is unresolved, **ask the user** before proceeding.
 
 ## [Phase 1: Impact Analysis & Approval]
 When the request is clear, present a brief impact analysis:
@@ -163,13 +177,20 @@ For simple, low-risk changes (typos, config updates, obvious one-liners), you ma
 
 Before constructing the Planner brief, verify that you have sufficient information to write an unambiguous, self-contained brief. You are the CEO — if your direction is unclear, the entire organization executes wrong.
 
-| # | Verify | How | If not resolved |
-|---|--------|-----|-----------------|
-| 1 | **Target files are identified** | Either you know them, or you used scout to find them | Use full chain (scout first) |
-| 2 | **Current code state is known** | You or scout has read the affected files | Scout before Planner |
-| 3 | **Dependencies are mapped** | Imports, callers, related APIs understood | Scout, ask user |
-| 4 | **Edge cases are considered** | What happens if X is null? What about existing callers? | List them in brief Constraints |
-| 5 | **Approved approach is specific** | Not just "add caching" but "LRU cache in UserService class" | Ask user to choose |
+| # | Verify | Resolution | If not resolved |
+|---|--------|-----------|-----------------|
+| 1 | **Target files are identified** | **[Gather]** — scout or known | Use full chain (scout first) |
+| 2 | **Current code state is known** | **[Gather]** — scout or read files | Scout before Planner |
+| 3 | **Dependencies are mapped** | **[Gather]** — scout | Scout before Planner |
+| 4 | **Edge cases are considered** | **[Decide]** — user decides which edge cases matter | Ask user |
+| 5 | **Approved approach is specific** | **[Decide]** — user chooses the approach | Present options, ask user to choose |
+| 6 | **Scope boundary is confirmed** | **[Decide]** — user confirms what's in/out of scope | Ask user |
+
+**[Gather]** items: Resolve yourself. Scout, read code, investigate. Do not ask the user for information that exists in the codebase.
+
+**[Decide]** items: The user must choose. Present options with trade-offs. Do not make the choice yourself.
+
+**Key principle: Gather what you can, decide what you must.** The user's involvement is for strategic decisions — approach, scope, trade-offs. Information that exists in the codebase is your job to gather, not the user's job to provide.
 
 **Rule: Never tx with ambiguity you could have resolved.** A vague brief at the Giver level means Planner guesses, Worker implements the guess, and you detect the failure after wasted tokens. Resolve it here.
 
