@@ -255,7 +255,8 @@ Planner가 버그 수정 시 원인 진단이 아닌 **구현만 계획**하게 
 | `baseline-v1-report.md` | `reports/baseline-v1-report.md` | v1 베이스라인 성능 리포트 |
 | `v1-vs-v2-report.md` | `reports/v1-vs-v2-report.md` | v1 vs v2 비교 리포트 |
 | `v2.1-analysis-report.md` | `reports/v2.1-analysis-report.md` | v2.1 협업 진단 효과 분석 리포트 |
-| `v2.2-remaining-issues.md` | `reports/v2.2-remaining-issues.md` | 잔존 과제 및 개선 방안 |
+| `v2.2-analysis-report.md` | `reports/v2.2-analysis-report.md` | v2.2 구조화 개선 초기 분석 리포트 |
+| `v2.2-remaining-issues.md` | `reports/v2.2-remaining-issues.md` | v2.2 잔존 과제 및 개선 방안 |
 
 하위 에이전트(Planner, Worker, Scout)는 pi-subagents의 기본 내장 에이전트를 그대로 활용합니다. 구체적인 행동 지침은 SKILL.md의 Task string을 통해 부여하며, 체인 호출 시 `context: "fresh"`를 부여해 상태를 제어합니다. 복잡한 에이전트 오버라이드나 별도의 설정 파일은 요구되지 않습니다.
 
