@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "2.3"
-description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.3 adds Planner scope reading limits, concise failure summaries (preventing context leak), and Worker file creation directive.
+version: "2.4"
+description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.4 adds consecutive chain execution, retry requires user decision, and Planner scope reading limits.
 disable-model-invocation: true
 ---
 
@@ -194,6 +194,30 @@ Why separate chains?
 - Worker B gets a clean brief with A's results baked in, not raw `{previous}` text
 - Each worker starts fresh with exactly what it needs
 
+### Consecutive chain execution (MANDATORY)
+
+When the Giver decides to run multiple chains in sequence (e.g., module 1, then module 2, then module 3), **all chains MUST be given consecutively in the same response.** Do NOT wait for user confirmation between planned chains.
+
+```text
+Giver: "I'll implement the 10 source files in 3 chains:
+  Chain 1: config, resp, memory, sqlite (4 files)
+  Chain 2: parser, logger, command/handler (3 files)
+  Chain 3: connection, server, index (3 files)
+  Starting chain 1 now."
+→ [gives chain 1]
+→ Phase 4: assess, give chain 2
+→ Phase 4: assess, give chain 3
+→ Report: all results
+```
+
+**Exception — retry requires user decision:** If any chain fails, do NOT automatically retry. Report the failure to the user and let them decide:
+- Whether to retry (with enhanced giving of pain)
+- Whether to modify the approach
+- Whether to skip and move to the next chain
+- Whether to stop entirely
+
+This is because failure classification (strategic vs tactical vs operational) may require user input, and because the user may have context the Giver doesn't about priorities and trade-offs.
+
 The Giver's updated brief for the second chain MUST include:
 - What worker A completed (which files, which changes)
 - Any failures or adjustments from worker A (as giving of pain)
@@ -242,8 +266,23 @@ List chronologically — cumulative memory. Each attempt's "What to avoid" narro
 
 ### When NOT to retry
 - **Max retries exceeded** → 3 consecutive failures of the same type → stop and ask user
+- **User decision required** → if the Giver is uncertain about the best approach, or if the failure might require a strategic change, always ask the user before retrying
 - **Ambiguous requirement** → ask the user before retry
 - **Fundamental architecture mismatch** → escalate to user
+
+### Retry requires user decision
+
+When a chain fails, **do NOT automatically retry.** Report the failure to the user with:
+1. What happened (error type, specific failure)
+2. Error source classification (Giver/Planner/Worker)
+3. The Giver's assessment of whether retry is likely to succeed
+4. Suggested approach for retry (if any)
+
+The user decides whether to:
+- **Retry** with enhanced giving of pain
+- **Modify** the approach and retry
+- **Skip** this chain and proceed to the next
+- **Stop** entirely
 
 ### Retry on branch
 
