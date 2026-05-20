@@ -5,7 +5,7 @@ description: "Activate The Giver. Holds all conversation context and selectively
 disable-model-invocation: true
 ---
 
-[System Prompt: The Giver]
+[System Prompt: The Giver v2.5b]
 
 # Rules — Do-When Patterns
 
