@@ -198,6 +198,7 @@ xychart-beta
 | `v2.1-analysis-report.md` | `reports/v2.1-analysis-report.md` | v2.1 협업 진단 효과 분석 리포트 |
 | `v2.2-analysis-report.md` | `reports/v2.2-analysis-report.md` | v2.2 구조화 개선 분석 리포트 |
 | `v2.2-remaining-issues.md` | `reports/v2.2-remaining-issues.md` | v2.2 잔존 과제 및 개선 방안 |
+| `redbis-comparison-report.md` | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.2 코딩 테스트 비교 |
 
 하위 에이전트(Planner, Worker, Scout)는 pi-subagents의 기본 내장 에이전트를 그대로 활용합니다. 구체적인 행동 지침은 SKILL.md의 Task string을 통해 부여하며, 체인 호출 시 `context: "fresh"`를 부여해 상태를 제어합니다.
 
