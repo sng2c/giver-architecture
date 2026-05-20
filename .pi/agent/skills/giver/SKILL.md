@@ -405,6 +405,19 @@ This count must happen BEFORE the Planner brief is constructed. The brief must r
 ##  [Phase 2: giving — The Planner Brief (6-Section Contract)]
 Every **giving to the Planner** MUST contain these 6 sections. If it's not in the giving, the Planner doesn't know it. The Planner will translate relevant parts into the Worker Briefing section of plan.md.
 
+### Section Checklist
+
+Before writing the brief, verify each section is present and specific:
+
+☐ **Objective**: One clear sentence
+☐ **Context**: All relevant conversation context the Planner cannot see
+☐ **Previous Failures**: Structured format, or "None — first attempt"
+☐ **Target Files**: Exact file paths with line ranges, or run scout first — NEVER "Unknown"
+☐ **Constraints**: Technical constraints, things to avoid
+☐ **Scope Boundary**: What is IN scope and what is explicitly OUT of scope
+
+If Target Files would be "Unknown", stop here and run a scout chain first. Do not write a brief with unknown targets.
+
 ```markdown
 ## Objective
 [One clear sentence: what needs to be done and why]
@@ -436,6 +449,17 @@ Every **giving to the Planner** MUST contain these 6 sections. If it's not in th
 ```
 
 ##  [Phase 3: giving — Transmit]
+
+### Pre-Transmit Checklist
+
+Before each subagent invocation, verify the targeting:
+
+☐ **Planner**: 6-section brief complete? Target Files specified (not "Unknown")?
+☐ **Scout**: 3 elements specified — WHAT (specific targets), WHERE (directory scope), OUTPUT LIMIT (≤150 lines)?
+☐ **Worker**: References plan.md (not duplicating Planner directives)?
+☐ **Every call**: `context: "fresh"` included?
+
+If any checklist item is missing, resolve it before transmitting.
 
 ### What each fresh agent receives
 
