@@ -238,6 +238,8 @@ Planner가 버그 수정 시 원인 진단이 아닌 **구현만 계획**하게 
 | 6 | v2 | 🟢 브랜치 네이밍 프로젝트 컨벤션 존중 | v1: `giver/` 4% (2/52) | N/A (새 프로젝트에서 검증) |
 | 7 | v2 | 🔴 체인당 Worker 1개 | v1: 다중 Worker가 Giver 평가 우회 | 5체인 모두 1 Worker/chain 달성 |
 | 8 | v2.1 | 🔴 버그픽스/트러블슈팅 협업 진단 | Planner가 원인 진단 및 해결 선택 독자 결정 | Planner -64%, Phase 0.5 75% 준수 |
+| 9 | v2.2 | 🟡 태스크 분할 트리거 확장 | v2.1: 4.9M Worker 분할 미적용 | 함수 3+ 추출·30턴+·100줄+ 조건 추가 |
+| 10 | v2.2 | 🟡 Scout output limit 200→150줄 | v2.1: Scout 평균 133K (v2 105K 대비 증가) | 검증 필요 |
 
 ## 파일 및 시스템 구성
 
@@ -249,7 +251,8 @@ Planner가 버그 수정 시 원인 진단이 아닌 **구현만 계획**하게 
 | `analysis-logic.md` | `docs/analysis-logic.md` | pi-analyze의 감지 패턴 및 메트릭 계산 로직 문서 |
 | `baseline-v1-report.md` | `reports/baseline-v1-report.md` | v1 베이스라인 성능 리포트 |
 | `v1-vs-v2-report.md` | `reports/v1-vs-v2-report.md` | v1 vs v2 비교 리포트 |
-| `v2.1-analysis-report.md` | `reports/v2.1-analysis-report.md` | v2.1 혐업 진단 효과 분석 리포트 |
+| `v2.1-analysis-report.md` | `reports/v2.1-analysis-report.md` | v2.1 협업 진단 효과 분석 리포트 |
+| `remaining-issues-and-improvements.md` | `reports/remaining-issues-and-improvements.md` | 잔존 과제 및 개선 방안 |
 
 하위 에이전트(Planner, Worker, Scout)는 pi-subagents의 기본 내장 에이전트를 그대로 활용합니다. 구체적인 행동 지침은 SKILL.md의 Task string을 통해 부여하며, 체인 호출 시 `context: "fresh"`를 부여해 상태를 제어합니다. 복잡한 에이전트 오버라이드나 별도의 설정 파일은 요구되지 않습니다.
 
@@ -282,6 +285,7 @@ pi-subagents의 세션 로그와 생성된 아티팩트들을 스캔하여 사�
 | v1 | 2026-05-19 | 토큰 효율 분석 기반 베이스라인 확립 |
 | v2 | 2026-05-19 | `context:"fresh"` 절대 규칙, fork 금지, 타겟팅 스카웃, 태스크 분할, 체인당 Worker 1개, 브랜치 유연성 |
 | v2.1 | 2026-05-20 | 버그픽스/트러블슈팅 협업 진단 규칙 — Planner가 원인 진단과 해결 선택을 독자적으로 하지 못하고, Giver가 사용자와 함께 분석한 후 구현만 위임 |
+| v2.2 | 2026-05-20 | 태스크 분할 트리거 확장(3+ 함수 추출·30턴+·100줄+), Scout output limit 200→150줄 |
 
 ## License
 
