@@ -125,7 +125,7 @@ Example — when to use which chain:
 
 9. **Gather what you can, decide what you must.** Information that exists in the codebase is the Giver's job to gather (via scout, reading files, investigation). Strategic decisions — approach, scope, trade-offs — must involve the user. Never make a strategic choice unilaterally that the user should decide. Never ask the user for information that you can find in the codebase.
 
-10. **Task Splitting (mandatory for complex tasks):** Changes touching 3+ files, 3+ function extractions, 30+ expected turns, OR **3+ imported modules with deep dependencies** MUST be split. One worker per chain. See Task Splitting section.
+10. **Task Splitting (mandatory for complex tasks):** Changes touching 3+ files, 3+ function extractions, 30+ expected turns, OR **3+ imported modules with deep dependencies** MUST be split. Splitting must be informed by Scout dependency analysis — do NOT split based on file count alone. See Task Splitting section.
 
 11. **Branch per chain — every chain is reversible.** Every chain that includes a worker (code changes) MUST run on a dedicated git branch. This makes every attempt rollable-back and keeps the main branch clean.
 
@@ -468,19 +468,46 @@ Examples (respecting project convention):
 ### Chains without worker
 Analysis-only chains (planner only, no code changes) do NOT need a branch. Skip Phase 1.5 and give directly.
 
-### Step 2: Count and decide splitting
+### Step 2: Scout for dependencies, then decide splitting
 
-After creating the branch, count the Target Files and assess complexity before constructing the Planner brief:
+Before deciding how to split, run a Scout chain to analyze the dependency graph. Do NOT decide splitting based on file count alone — a 2-file task with 5 imports can be harder than a 4-file task with shallow dependencies.
 
-1. **Count Target Files.** How many files will this task touch?
-2. **Count function extractions.** How many functions/methods will be extracted from a single file?
-3. **Estimate turn count.** Is this likely to need 30+ turns?
-4. **Decide:**
-   - 1-2 files, \<30 turns, \<3 extractions → single worker
-   - 3-4 files, or 3+ extractions, or 3+ dependency modules → 2 parallel workers (split by directory or layer)
-   - 5+ files, or 30+ expected turns, or deep dependency chain → separate sequential chains, 2-3 files each
+**Phase 1.5 Scout (dependency analysis):**
 
-This count must happen BEFORE the Planner brief is constructed. The brief must reflect the splitting decision — each worker receives its specific file list and scope, not the entire project scope.
+```json
+{
+  "chain": [
+    { "agent": "scout", "task": "# Dependency Analysis\n\n## What\nAnalyze the import/dependency graph for all files listed in Target Files. For each file, list:\n1. What it imports from other modules (with module paths)\n2. What other modules import from it (reverse dependencies)\n3. External dependencies that need interfaces provided in the brief\n\n## Where\n{target directories} ONLY\n\n## Output limit\nKeep output under 200 lines. For each file: imports list, reverse dependency list, estimated complexity (shallow/medium/deep).\n", "context": "fresh" }
+  ]
+}
+```
+
+**After Scout returns, decide splitting based on dependency analysis:**
+
+1. **Count dependency modules.** How many modules do Target Files import from?
+2. **Assess dependency depth.** Are the imports shallow (type-only) or deep (calls complex logic)?
+3. **Identify sequential dependencies.** Which files depend on files that other targets also depend on?
+4. **Decide based on dependency graph, not file count:**
+   - Shallow dependencies (type-only imports) → single worker
+   - 3+ dependency modules with logic imports → 2 parallel workers (split by dependency layer)
+   - Deep dependency chain (imports implementation, not just types) → separate sequential chains by dependency layer
+   - **Group files by dependency layer:** files with no imports first, then files that import from layer 1, then files that import from layers 1+2, etc.
+
+**Example — splitting by dependency layer:**
+```
+Layer 0 (no imports): config.ts, protocol/resp.ts, storage/interface.ts
+Layer 1 (imports from layer 0): storage/memory.ts, storage/sqlite.ts, logger.ts
+Layer 2 (imports from layers 0+1): command/handler.ts, protocol/parser.ts
+Layer 3 (imports from layers 0+1+2): server/connection.ts, server/index.ts
+
+Chain 1: Layer 0 + Layer 1 (shallow, foundational)
+Chain 2: Layer 2 (depends on chain 1)
+Chain 3: Layer 3 (deep dependencies, needs interfaces from chains 1+2)
+```
+
+This grouping ensures each chain's Worker only needs Dependency Interfaces from previously completed chains, not from files it's implementing alongside.
+
+The splitting decision must happen AFTER Scout returns dependency analysis. Each worker receives its specific file list, scope, and Dependency Interfaces for modules from earlier chains.
 
 ### Why branch per chain?
 
@@ -600,6 +627,11 @@ Keep output under 150 lines. Do NOT include entire files — excerpt only the re
 **Good** (structured 3-element template):
 ```
 { "agent": "scout", "task": "# Recon\n\n## What\nLRU cache implementation in user-service.ts\n\n## Where\nsrc/services/ and src/types/ ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures — do NOT include entire files." }
+```
+
+**For dependency analysis** (Phase 1.5, before splitting):
+```
+{ "agent": "scout", "task": "# Dependency Analysis\n\n## What\nImport/dependency graph for: config.ts, protocol/resp.ts, storage/memory.ts\nFor each file:\n1. What it imports from other project modules (with paths)\n2. Whether imports are type-only or logic calls\n\n## Where\nsrc/ ONLY\n\n## Output limit\nKeep output under 200 lines. Group files by dependency layer: layer 0 (no project imports), layer 1 (imports from layer 0), etc." }
 ```
 
 ### Planner task string template
