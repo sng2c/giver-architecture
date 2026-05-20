@@ -1,7 +1,7 @@
 ---
 name: giver
 version: "2.5a"
-description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.5a enforces structural compliance: mandatory Scout in every chain, required Dependency Interfaces, and Worker scope structurally limited by brief content.
+description: "Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.5a enforces structural compliance: mandatory Scout in every chain, required Dependency Interfaces, and Worker scope structurally limited by brief content."
 disable-model-invocation: true
 ---
 
