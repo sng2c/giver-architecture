@@ -1,6 +1,6 @@
 ---
 name: giver
-version: "2"
+version: "2.1"
 description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2 adds fork prohibition, targeted scout directives, task splitting, and branch flexibility based on token efficiency analysis.
 disable-model-invocation: true
 ---
