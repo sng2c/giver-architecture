@@ -1,6 +1,6 @@
 ---
 name: giver
-version: "2.1"
+version: "2.2"
 description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2 adds fork prohibition, targeted scout directives, task splitting, and branch flexibility based on token efficiency analysis.
 disable-model-invocation: true
 ---
@@ -125,7 +125,7 @@ Example — when to use which chain:
 
 9. **Gather what you can, decide what you must.** Information that exists in the codebase is the Giver's job to gather (via scout, reading files, investigation). Strategic decisions — approach, scope, trade-offs — must involve the user. Never make a strategic choice unilaterally that the user should decide. Never ask the user for information that you can find in the codebase.
 
-10. **Task Splitting (MANDATORY for complex tasks):** Changes touching 3+ files, extracting 3+ functions from a single file, or expected to need 30+ turns MUST be split. One worker per chain. See Task Splitting section.
+10. **Task Splitting (mandatory for complex tasks):** Changes touching 3+ files, extracting 3+ functions from a single file, or expected to need 30+ turns MUST be split. One worker per chain. See Task Splitting section.
 
 11. **Branch per chain — every chain is reversible.** Every chain that includes a worker (code changes) MUST run on a dedicated git branch. This makes every attempt rollable-back and keeps the main branch clean.
 
@@ -133,17 +133,16 @@ Example — when to use which chain:
 
 Changes touching **3 or more files** MUST be split. A single worker reading 5+ files will exceed 500K input tokens, destroying the architecture's efficiency.
 
-**Additionally, any of these conditions triggers splitting regardless of file count:**
-- Extracting 3+ functions from a single file (e.g., God Class decomposition)
+**Splitting also applies when file count is low but complexity is high:**
+- Extracting 3+ functions from a single file
 - Expected turn count exceeding 30
-- A single file modification exceeding 100 lines of changes
+- A single modification exceeding 100 lines
 
 | Scope | Strategy |
 |------|----------|
 | 1-2 files, <30 turns | Single worker (short chain) |
 | 3-4 files, or 3+ function extractions | 2 parallel workers (split by directory or layer) |
 | 5+ files, or 30+ expected turns | Separate sequential chains, 2-3 files each |
-| Single God Class decomposition | One worker per 3-5 functions extracted |
 
 Each worker MUST receive:
 - Its **specific file list** in Target Files (not "all files in plan")
