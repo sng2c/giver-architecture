@@ -1,0 +1,42 @@
+{
+  "approach": "giver-v2.5-clean",
+  "label": "v25r-chain2",
+  "run_id": "e1d49098",
+  "agents": [
+    {
+      "role": "planner",
+      "index": 0,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 64845,
+      "output_tokens": 5078,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 10,
+      "tool_count": 16,
+      "duration_ms": 77147,
+      "exit_code": true,
+      "success": true,
+      "context_type": "clean",
+      "timestamp_epoch": 1779314677428
+    },
+    {
+      "role": "worker",
+      "index": 0,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 137423,
+      "output_tokens": 2559,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 14,
+      "tool_count": 17,
+      "duration_ms": 91587,
+      "exit_code": true,
+      "success": true,
+      "context_type": "clean",
+      "timestamp_epoch": 1779314784242
+    }
+  ],
+  "total_input": 202268,
+  "total_output": 7637,
+  "total_duration_ms": 168734
+}

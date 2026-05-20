@@ -134,3 +134,59 @@ v2.5 achieves the biggest single-step improvement in the Giver architecture:
 - **Chain 3 Worker: 208K → 75K** (-64%, from 🟠 to 🟢)
 
 The Dependency Interface Provision is the key innovation — it enables the Worker-only pattern and reduces Worker over-reading by providing everything the Worker needs in the brief.
+
+---
+
+## Appendix: Clean v2.5 Re-run (No Connection Errors)
+
+After discovering that the initial v2.5 experiment had connection errors (Chain 2 Worker connection failure → emergency Worker-only retry), we re-ran the experiment on a fresh v2.5 branch.
+
+### Results
+
+| | v2.4 | v2.5 (clean) | Change |
+|---|------|-------------|--------|
+| **Chain 1** | | | |
+| Planner | 30,630 🟢 | 44,511 🟢 | +45% |
+| Scout | 13,689 🟢 | — (skipped) | — |
+| Worker | 170,412 🟡 | 237,972 🟠 | +40% |
+| Chain total | 214,731 | 282,483 | +31% |
+| **Chain 2** | | | |
+| Planner | 46,003 🟢 | 64,845 🟢 | +41% |
+| Scout | 14,265 🟢 | — (skipped) | — |
+| Worker | 76,780 🟢 | 137,423 🟡 | +80% |
+| Chain total | 137,048 | 202,268 | +48% |
+
+### Critical Finding: SKILL Compliance Failure
+
+The Giver **did not follow v2.5 rules** in this run:
+
+1. **No Scout** — Giver went directly Planner → Worker, skipping the Scout step
+2. **No Dependency Interfaces in Worker brief** — Worker brief just says "Execute plan.md"
+3. **Worker over-reading** — Worker read test files and source files extensively (238K, 137K)
+
+Compared to previous v2.5 run (with errors):
+- Previous v2.5 Chain 1 Worker: 132K (had Scout + Dependency Interfaces)
+- Clean v2.5 Chain 1 Worker: 238K (no Scout, no Dependency Interfaces)
+- **80% more tokens** when SKILL rules are not followed
+
+### Root Cause
+
+The Giver model decided to skip the Scout step and embed Dependency Interfaces in the Planner brief instead of following the P→S→W pipeline. This is a **compliance failure**, not a design flaw. The v2.5 SKILL rules were clear but the model chose a more efficient-looking shortcut (fewer agent invocations) that actually resulted in more total tokens due to Worker over-reading.
+
+### Lesson Learned
+
+SKILL compliance is the fundamental challenge. The architecture improvements (Dependency Interfaces, Scout-driven splitting) only work when followed. Compliance correlates with "auto-repeat in template" (100%) vs "requires judgment" (0-4%). The model judged it could skip the Scout, bypassing the architecture's efficiency gains.
+
+### Comparison (all runs)
+
+| Metric | v2.4 | v2.5 (error) | v2.5 (clean) |
+|--------|------|--------------|---------------|
+| Total tokens | 640K | 443K* | 485K** |
+| vs Monolithic | +25% | +48%* | +43%** |
+| Ideal agents | 7/9 (78%) | 5/7 (71%)* | 2/4 (50%)** |
+| Waste rate | 34.2% | 13.8%* | 44.4%** |
+| Scout used | ✅ | ✅ | ❌ |
+| DI provided | ❌ | ✅ | Partial |
+
+*v2.5 (error): includes invalid Chain 2 retry data (Worker-only after connection error)
+**v2.5 (clean): only 2 chains, no Scout, compliance failure
