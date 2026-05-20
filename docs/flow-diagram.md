@@ -85,12 +85,12 @@
 | v2.3 | — | Previous Failures 2-4줄, Worker 파일 생성 | — |
 | v2.4 | ~1000 | 연속 체인, 재시도 사용자 결정 | 640K (-25% vs 857K 모놀리식) |
 | v2.5 | ~1090 | DI 제공, 의존성 깊이 분할, Scout 의존성 분석 | 290K (Worker-only, 규칙 미준수) |
-| **v2.5a** | **843** | **do-when 패턴, failover 명시** | **재실험 필요** |
+| **v2.5b** | **843** | **do-when 패턴, failover 명시** | **재실험 필요** |
 
 ## Key Metrics
 
 ```
-                  모놀리식    v2.4        v2.5(clean)   v2.5a
+                  모놀리식    v2.4        v2.5(clean)   v2.5b
 Total tokens:      857K 🔴    640K 🟠     485K*        ? 
 vs 모놀리식:       —         +25%       +43%*        ?
 Ideal rate:       0%         78%        33%*         ?
