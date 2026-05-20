@@ -22,5 +22,6 @@
   ],
   "total_input": 75148,
   "total_output": 1762,
-  "total_duration_ms": 54178
+  "total_duration_ms": 54178,
+  "note": "NOT a planned v2.5 chain. This is Chain 2 retry after Worker connection error. Giver directly wrote Worker brief with Dependency Interfaces as emergency workaround."
 }

@@ -54,5 +54,6 @@
   ],
   "total_input": 148995,
   "total_output": 7929,
-  "total_duration_ms": 167531
+  "total_duration_ms": 167531,
+  "note": "Chain 2 Worker (fd6031d5) had connection error. Successful result is from retry (be6df5e9)."
 }

@@ -37,14 +37,20 @@
 | Worker | 208,547 🟠 | 75,148 🟢 | **-64%** |
 | Chain total | 288,675 | 75,148 | **-74%** |
 
-### Chain 3 Detail: The Deep Dependencies Case
+### Chain 3 Detail: The Deep Dependencies Case — **Actually Chain 2 Retry After Error**
 
-v2.5 chain 3 eliminates the Planner and Scout entirely. The Giver writes the Worker brief directly, including:
-- Full Dependency Interfaces for IStorage, RESP, Config, Logger
-- Detailed implementation specs for each file
-- Explicit instruction: "do NOT read these files, use these signatures"
+**⚠️ Important caveat**: Chain 3 (be6df5e9, Worker-only) was NOT a planned v2.5 pattern. It was an **error recovery** after Chain 2's Worker connection failed. The Giver directly wrote a detailed Worker brief with Dependency Interfaces as an emergency workaround.
 
-Result: Worker input drops from 208K 🟠 to 75K 🟢 — a **64% reduction** for the most problematic case.
+| Step | What happened | Tokens |
+|------|---------------|--------|
+| Chain 2 (d7d28fdc) | Planner→Scout→Worker | 149K |
+| | Worker connection error! | — |
+| User retry | Connection error persisted | — |
+| Chain 2 retry (be6df5e9) | Giver writes Worker brief directly | 75K |
+
+v2.5 chain 3 Worker input: 75K 🟢 vs v2.4 chain 3 Worker: 208K 🟠 — but these are different chains with different scope.
+
+The 75K Worker result shows that Dependency Interface Provision enables efficient Worker-only delegation, but this was not a controlled comparison. The only valid comparison is Chain 1 vs Chain 1.
 
 ### Overall Comparison
 
@@ -67,29 +73,42 @@ Result: Worker input drops from 208K 🟠 to 75K 🟢 — a **64% reduction** fo
 
 ### What Worked
 
-1. **Dependency Interface Provision eliminates Worker over-reading** (chain 3: 208K → 75K, -64%)
-   - Worker received full type signatures in brief → no need to read dependency files
-   - Direct Worker-only chain for simple delegation (Giver writes brief directly)
+1. **Dependency Interface Provision in Planner brief** (chain 1: 170K→132K, -22%)
+   - Worker received Dependency Interfaces in brief → reduced over-reading
+   - But 132K is still 🟡, not 🟢 — Worker compliance needs improvement
 
-2. **Worker-only chain for deep dependencies** (chain 3: no Planner or Scout needed)
-   - When Dependency Interfaces are complete, the Giver can skip Planner and Scout
-   - Saves Planner (49K) and Scout (31K) overhead = 80K saved
+2. **Dependency Interface Provision enables direct Worker delegation** (chain 2 retry: 75K 🟢)
+   - When Worker knows all interfaces upfront, 75K is achievable
+   - But this was error recovery, not intentional v2.5 design
 
 3. **Waste rate dropped from 34% to 14%**
 
 ### What Didn't Work
 
-1. **Chain 1 Scout increased 3x** (14K → 44K)
+1. **Chain 2 Worker connection error** — the Giver had to retry as a direct Worker brief
+   - This is NOT a planned v2.5 pattern, it's error recovery
+   - Can't attribute the 75K result to v2.5 design with confidence
+
+2. **Chain 1 Scout increased 3x** (14K → 44K)
    - Scout was asked for both recon and dependency analysis
-   - But this is 44K 🟢 — still within ideal range
+   - Still 🟢, but larger input than v2.4
 
-2. **Chain 2 Worker slightly worse** (77K → 89K)
-   - Worker received Dependency Interfaces in brief, but still read some files
-   - 89K is 🟡 (borderline), not ideal 🟢
+3. **Chain 2 Worker slightly worse** (77K → 89K)
+   - Worker received Dependency Interfaces but still read some files
+   - 89K is 🟡, not ideal 🟢
 
-3. **Ideal rate dropped from 78% to 71%** (7/9 → 5/7)
-   - But total agents decreased: 7/9 means 2 agents over 80K, 5/7 means 2 agents over 80K
+4. **Ideal rate dropped from 78% to 71%** (7/9 → 5/7)
+   - But total agents decreased: 2 agents over 80K in both cases
    - Same number of violations, fewer total agents
+
+### Valid vs Invalid Comparisons
+
+| Comparison | Valid? | Reason |
+|-----------|-------|--------|
+| Chain 1 v2.4 vs v2.5 | ✅ | Same scope, both P→S→W |
+| Chain 2 v2.4 vs v2.5 | ⚠️ | Different scope (3 files vs 4 files) |
+| Chain 3 v2.4 vs v2.5 | ❌ | v2.5 is error recovery, not planned pattern |
+| Total v2.4 vs v2.5 | ⚠️ | Chain 3 comparison is invalid |
 
 ### Structural Finding: Three Agent Patterns
 
