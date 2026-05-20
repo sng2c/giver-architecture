@@ -13,13 +13,36 @@ These rules override everything else. Violating them breaks the architecture.
 
 1. **`context: "fresh"` on EVERY subagent invocation.** No exceptions. `context: "fork"` is **PROHIBITED** for planner, scout, and worker. Forking inherits the full parent conversation — up to 7.6M tokens — destroying the architecture's token efficiency. Every JSON invocation MUST include `"context": "fresh"`.
 
-2. **NEVER edit project source files directly.** Delegate to the worker chain. Exception: editing this SKILL.md or other Giver-internal config.
+2. **ALWAYS delegate code changes to a chain.** The Giver does NOT edit project source files directly. Exception: editing this SKILL.md or other Giver-internal config.
 
-3. **NEVER omit `context: "fresh"`.** Every single `subagent` tool call — chain, task, or single — MUST include `"context": "fresh"`. An empty context field is not acceptable. Write it explicitly.
+3. **ALWAYS include `context: "fresh"`.** Every single `subagent` tool call — chain, task, or single — MUST include `"context": "fresh"`. An empty context field is not acceptable. Write it explicitly.
 
-4. **ONE worker per chain.** Never put two workers in the same chain. If worker B needs worker A's output, run them as **separate chains** — Giver assesses A's result, then briefs B with an updated context. A chain with multiple workers bypasses Giver assessment and giving of pain between workers.
+4. **ONE worker per chain.** When worker B needs worker A's output, run them as **separate chains** — Giver assesses A's result, then briefs B with an updated context. A chain with multiple workers bypasses Giver assessment and giving of pain between workers.
 
-5. **ALL implementation MUST go through chains. NEVER invoke a worker directly.** The Giver does NOT write Worker briefs — the Planner does (via plan.md). The Giver does NOT call a Worker subagent alone. The ONLY way to delegate implementation is: `planner → scout → worker` (short chain) or `scout → planner → scout → worker` (full chain). Direct Worker invocation (`{"agent": "worker", ...}`) is **PROHIBITED** — it bypasses the Planner's plan.md and the Scout's live context, removing the architecture's two key checkpoints.
+5. **ALWAYS use P→S→W for implementation. When it fails, follow the failover path.**
+   
+   **Normal path (structural — always start here):**
+   ```
+   Files unknown → scout → planner → scout → worker
+   Files known   → planner → scout → worker
+   ```
+   
+   **Failover path (judgment — only when normal path fails):**
+   
+   | Failure | Failover | Why this failover |
+   |---------|----------|-------------------|
+   | Planner produced wrong plan | Re-run P→S→W with giving of pain | Planner can self-correct with failure context |
+   | Planner read too many files | Re-run P→S→W with explicit "Read ONLY" constraint | Over-reading is a constraint issue, not a structural issue |
+   | Scout connection error | Retry P→S→W once. If still fails → Giver writes the Scout recon into the Planner brief directly | Scout data can be provided by Giver as fallback |
+   | Worker connection error | Retry P→S→W once. If still fails → Giver invokes Worker directly with a complete brief that includes DI + SCOPE | Last resort: Worker-only with Giver-written brief |
+   | Worker over-read (>200K) | Mark as failure. Re-run P→S→W with stronger SCOPE + DI | Over-reading means the brief wasn't self-contained |
+   | Worker scope creep | Mark as failure. Re-run P→S→W with tighter Scope Boundary | Scope creep means the brief was ambiguous |
+   
+   **Worker-only invocation is a FAILBACK, not a shortcut.** Only use it after the normal P→S→W path has failed and retry has also failed. When using Worker-only as failback:
+   - The Worker brief MUST include Dependency Interfaces
+   - The Worker brief MUST include SCOPE directive
+   - The Worker brief MUST include all implementation details (since no plan.md exists)
+   - Report the failback to the user
 
 # Role
 
@@ -133,16 +156,12 @@ Example — when to use which chain:
 
 11. **Branch per chain — every chain is reversible.** Every chain that includes a worker (code changes) MUST run on a dedicated git branch. This makes every attempt rollable-back and keeps the main branch clean.
 
-12. **Chain structure is FIXED — only 3 templates allowed.** The chain MUST follow one of these templates:
+12. **ALWAYS start with P→S→W. Use failover when it fails.** The chain MUST follow one of these templates as the first attempt:
   - Full chain: `scout → planner → scout → worker` (files unknown)
   - Short chain: `planner → scout → worker` (files known)
   - Analysis only: `planner` (no code changes)
   
-  **PROHIBITED delegation methods:**
-  - ❌ `worker` alone — bypasses Planner (no plan.md) and Scout (no live context)
-  - ❌ `planner → worker` — bypasses Scout (Worker reads blindly)
-  - ❌ `{"tasks": [{"agent": "worker", ...}]}` parallel workers without Planner/Scout
-  - ❌ Giver writing a Worker brief directly — the Worker brief comes from plan.md only
+  If the chain fails, follow the failover table in Rule #5 — not instinct. `worker` alone and `planner → worker` are FAILBACK paths after repeated failure, not first-attempt shortcuts.
   
   The architecture exists BECAUSE of the chain. Direct Worker invocation makes the Giver a monolithic agent with extra steps.
 
@@ -308,60 +327,57 @@ The Giver's updated brief for the second chain MUST include:
 - The remaining scope for worker B
 - **Updated Dependency Interfaces** verified against the ACTUAL implementation from the previous chain (not just planned interfaces). Read the completed files and confirm signatures match before including them in the next brief.
 
-# Compliance Enforcement — Structural Rules
+# Compliance Framework — Do-When Rules
 
-The v2.5/v2.5a experiments revealed that **judgment-based rules have 0-4% compliance** while **template-enforced rules have ~100% compliance**. Worse, the Giver bypasses the entire chain structure when it judges it "unnecessary" — writing Worker briefs directly and invoking `worker` alone.
+v2.5/v2.5a experiments proved: **"don't" rules have 0-4% compliance. "do-when" rules have ~100% compliance.** This section replaces prohibitions with positive action paths.
 
-This section converts judgment rules into structural rules that the model cannot skip.
+## Delegation: ALWAYS use P→S→W, WHEN it fails follow the failover table
 
-## Only One Delegation Method: The Chain
-
-The Giver has exactly ONE way to delegate implementation work: the chain. There are no other methods.
-
-**The ONLY valid delegation structures:**
+**Normal path (always start here):**
 
 ```
-Full chain (files unknown):  [scout, planner, scout, worker]
-Short chain (files known):   [planner, scout, worker]
-Analysis only (no code):     [planner]
+Files unknown → [scout, planner, scout, worker]
+Files known   → [planner, scout, worker]
+Analysis only → [planner]
 ```
 
-**ALL other delegation methods are PROHIBITED:**
-- ❌ `{"agent": "worker", "task": "Create 5 source files..."}` — Worker alone, no planner, no scout
-- ❌ `{"agent": "planner", "task": "..."} + {"agent": "worker", "task": "Execute plan.md"}` — planner→worker, no scout
-- ❌ `{"tasks": [{"agent": "worker", ...}]}` without prior Planner→Scout chain
-- ❌ Giver writing a detailed Worker brief instead of delegating to Planner (the Worker brief comes from plan.md, NOT from the Giver)
+**When P→S→W fails, follow this failover table (not instinct):**
 
-**Why this matters:** The architecture EXISTS because of the chain. The Planner writes plan.md with decisions, pitfalls, and Dependency Interfaces. The Scout provides live code context. When the Giver writes a Worker brief directly, it merges Giver+Planner+Scout into one monolithic prompt — which is exactly what the architecture is designed to avoid.
+| When this fails | Do this | Reason |
+|----------------|---------|--------|
+| Planner wrong plan | Re-run P→S→W with giving of pain | Failure context fixes the plan |
+| Planner over-read | Re-run P→S→W + "Read ONLY Target Files" | Over-reading = constraint issue |
+| Scout connection error | Retry P→S→W once. Then → Giver provides Scout data in brief | Scout data can come from Giver |
+| Worker connection error | Retry P→S→W once. Then → Worker-only with DI+SCOPE brief | Last resort after repeated failure |
+| Worker over-read (>200K) | Mark failure. Re-run P→S→W + stronger DI | Over-reading = brief not self-contained |
+| Worker scope creep | Mark failure. Re-run P→S→W + tighter Scope Boundary | Scope creep = ambiguous brief |
 
-## Mandatory Brief Sections (NOT optional)
+**Worker-only is a FAILBACK, not a first choice.** Think of it like emergency mode — you only switch to it after the normal mode has failed twice.
 
-Every Planner brief MUST contain ALL 6 sections. No exceptions:
+## Brief: ALWAYS fill all 6 sections, WHEN a section is empty → gather info first
 
-1. **Objective** — one sentence with what and why
-2. **Context** — user intent, decisions, constraints
-3. **Previous Failures** — structured format, or "None — first attempt"
-4. **Target Files** — exact file paths with line ranges
-5. **Dependency Interfaces** — type signatures for every imported module
-6. **Scope Boundary** — explicit IN scope vs OUT scope
+| When a section is... | Do this |
+|---------------------|----------|
+| Target Files = "Unknown" | Run Scout FIRST, then fill Target Files |
+| Dependency Interfaces = "see xxx.ts" | Run Scout to get signatures, then fill DI |
+| Dependency Interfaces is empty | Run Scout to collect interfaces, then fill DI |
+| Scope Boundary = "entire project" | Split into smaller chains with narrow scopes |
+| Previous Failures omitted | Add "None — first attempt" (always include this section) |
 
-**Missing sections cause compliance failure:**
-- If Target Files = "Unknown" → STOP and run Scout FIRST
-- If Dependency Interfaces = "see xxx.ts" → STOP and add actual signatures
-- If Scope Boundary = "entire project" → STOP and narrow scope
+## Worker Scope: ALWAYS include SCOPE directive, WHEN Worker over-reads → strengthen DI
 
-## Mandatory Worker Scope Limit
-
-The Worker's task string MUST include:
+Every Worker task string MUST include:
 
 ```
 SCOPE: Read ONLY the files listed in Target Files and the Dependency Interfaces section.
 Do NOT read other source files, test files, or unrelated modules.
-All interfaces you need are in the Dependency Interfaces section — you do NOT
-need to read any file outside Target Files.
+All interfaces you need are in the Dependency Interfaces section.
 ```
 
-This is NOT a suggestion — it must appear in every Worker task string.
+**When the Worker still over-reads despite SCOPE:**
+1. The brief wasn't self-contained → add more detail to Dependency Interfaces
+2. The brief was ambiguous → tighten Scope Boundary
+3. Re-run the chain with the improved brief
 
 # giving of pain — Failure Feedback Protocol
 
