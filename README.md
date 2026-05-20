@@ -215,6 +215,7 @@ xychart-beta
 |------|------|------|
 | `SKILL.md` | `.pi/agent/skills/giver/SKILL.md` | The Giver 스킬 핵심 파일 — 전체 프로토콜 정의 |
 | `pi-install` | `scripts/pi-install` | `~/.pi` 환경에 심볼릭 링크를 생성하는 설치 스크립트 |
+| `redbis-extract-data` | `scripts/redbis-extract-data` | 실험 데이터 추출 스크립트 (모놀리식 vs Giver 비교) |
 | `pi-analyze` | `scripts/pi-analyze` | 세션 로그 분석 툴 — 토큰 사용량, 규정 준수 여부, 에러 분류 등 측정 |
 | `analysis-logic.md` | `docs/analysis-logic.md` | pi-analyze의 감지 패턴 및 메트릭 계산 로직 문서 |
 | `baseline-v1-report.md` | `reports/baseline-v1-report.md` | v1 베이스라인 성능 리포트 |
