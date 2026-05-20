@@ -1,0 +1,26 @@
+{
+  "approach": "monolithic",
+  "label": "monolithic",
+  "run_id": "71521e3d",
+  "agents": [
+    {
+      "role": "worker",
+      "index": 0,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 857363,
+      "output_tokens": 6409,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 33,
+      "tool_count": 41,
+      "duration_ms": 331543,
+      "exit_code": 0,
+      "success": true,
+      "context_type": "FORK",
+      "timestamp_epoch": 1779265746938
+    }
+  ],
+  "total_input": 857363,
+  "total_output": 6409,
+  "total_duration_ms": 331543
+}

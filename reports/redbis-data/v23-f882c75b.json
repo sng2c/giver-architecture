@@ -1,0 +1,58 @@
+{
+  "approach": "giver-v2.3",
+  "label": "v23-f882c75b",
+  "run_id": "f882c75b",
+  "agents": [
+    {
+      "role": "planner",
+      "index": 0,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 300594,
+      "output_tokens": 14017,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 22,
+      "tool_count": 39,
+      "duration_ms": 370844,
+      "exit_code": 0,
+      "success": true,
+      "context_type": "clean",
+      "timestamp_epoch": 1779267678259
+    },
+    {
+      "role": "scout",
+      "index": 1,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 21409,
+      "output_tokens": 1232,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 4,
+      "tool_count": 11,
+      "duration_ms": 56431,
+      "exit_code": 0,
+      "success": true,
+      "context_type": "clean",
+      "timestamp_epoch": 1779267734696
+    },
+    {
+      "role": "worker",
+      "index": 2,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 81590,
+      "output_tokens": 2391,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 12,
+      "tool_count": 17,
+      "duration_ms": 98694,
+      "exit_code": 1,
+      "success": false,
+      "context_type": "clean",
+      "timestamp_epoch": 1779267833395
+    }
+  ],
+  "total_input": 403593,
+  "total_output": 17640,
+  "total_duration_ms": 525969
+}
