@@ -116,16 +116,16 @@ Example — when to use which chain:
 7. **Targeted Scout (CRITICAL):** Scout recon MUST be targeted, not exhaustive. Every scout invocation MUST include:
    - **SPECIFIC targets**: file names, function names, API patterns — never "find all related things"
    - **Scope limit**: which directories to search
-   - **Output limit**: "Keep output under 200 lines. Include ONLY code sections directly relevant to the objective — not entire files."
+   - **Output limit**: "Keep output under 150 lines. Include ONLY code sections directly relevant to the objective — not entire files."
    
    Bad: `"Recon: Add caching. Find all files related to caching."`
-   Good: `"Recon the LRU cache implementation in src/services/user-service.ts. Find: getById method, cache invalidation patterns, TTL config. Scope: src/services/ and src/types/ ONLY. Keep output under 200 lines. Excerpt relevant functions and signatures only — do NOT include entire files."`
+   Good: `"Recon the LRU cache implementation in src/services/user-service.ts. Find: getById method, cache invalidation patterns, TTL config. Scope: src/services/ and src/types/ ONLY. Keep output under 150 lines. Excerpt relevant functions and signatures only — do NOT include entire files."`
 
 8. **giving of pain (CRITICAL):** When a chain fails or produces partial results, the failure context MUST be transmitted to the next attempt. Fresh agents have zero memory of previous failures — if you don't write it, they WILL repeat the same mistake. Every retry MUST include a structured Previous Failures section in the Planner brief.
 
 9. **Gather what you can, decide what you must.** Information that exists in the codebase is the Giver's job to gather (via scout, reading files, investigation). Strategic decisions — approach, scope, trade-offs — must involve the user. Never make a strategic choice unilaterally that the user should decide. Never ask the user for information that you can find in the codebase.
 
-10. **Task Splitting (MANDATORY for 3+ files):** Changes touching 3 or more files MUST be split — parallel for independent slices, separate chains for dependent slices. One worker per chain. See Task Splitting section.
+10. **Task Splitting (MANDATORY for complex tasks):** Changes touching 3+ files, extracting 3+ functions from a single file, or expected to need 30+ turns MUST be split. One worker per chain. See Task Splitting section.
 
 11. **Branch per chain — every chain is reversible.** Every chain that includes a worker (code changes) MUST run on a dedicated git branch. This makes every attempt rollable-back and keeps the main branch clean.
 
@@ -133,11 +133,17 @@ Example — when to use which chain:
 
 Changes touching **3 or more files** MUST be split. A single worker reading 5+ files will exceed 500K input tokens, destroying the architecture's efficiency.
 
-| Files changed | Strategy |
-|---------------|----------|
-| 1-2 files | Single worker (short chain) |
-| 3-4 files | 2 parallel workers (split by directory or layer) |
-| 5+ files | Separate sequential chains, 2-3 files each |
+**Additionally, any of these conditions triggers splitting regardless of file count:**
+- Extracting 3+ functions from a single file (e.g., God Class decomposition)
+- Expected turn count exceeding 30
+- A single file modification exceeding 100 lines of changes
+
+| Scope | Strategy |
+|------|----------|
+| 1-2 files, <30 turns | Single worker (short chain) |
+| 3-4 files, or 3+ function extractions | 2 parallel workers (split by directory or layer) |
+| 5+ files, or 30+ expected turns | Separate sequential chains, 2-3 files each |
+| Single God Class decomposition | One worker per 3-5 functions extracted |
 
 Each worker MUST receive:
 - Its **specific file list** in Target Files (not "all files in plan")
@@ -433,13 +439,13 @@ Every scout invocation MUST be targeted. Include these 3 elements:
 
 1. **WHAT to recon**: Specific files, functions, patterns
 2. **WHERE to search**: Directory scope limit
-3. **OUTPUT LIMIT**: "Keep output under 200 lines. Excerpt only relevant functions and signatures."
+3. **OUTPUT LIMIT**: "Keep output under 150 lines. Excerpt only relevant functions and signatures."
 
 ```text
 Recon the {specific objective} in {target directory/file}.
 Find: {specific function names, API patterns, config keys}.
 Scope: {directories} ONLY.
-Keep output under 200 lines. Do NOT include entire files — excerpt only the relevant functions and their signatures.
+Keep output under 150 lines. Do NOT include entire files — excerpt only the relevant functions and their signatures.
 ```
 
 **Bad** (vague, triggers full project dump):
@@ -452,7 +458,7 @@ Keep output under 200 lines. Do NOT include entire files — excerpt only the re
 "Recon the LRU cache implementation in src/services/user-service.ts.
 Find: getById method, cache invalidation patterns, TTL config.
 Scope: src/services/ and src/types/ ONLY.
-Keep output under 200 lines. Excerpt relevant functions and signatures only — do NOT include entire files."
+Keep output under 150 lines. Excerpt relevant functions and signatures only — do NOT include entire files."
 ```
 
 ### Planner task string template
@@ -545,9 +551,9 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 ```json
 {
   "chain": [
-    { "agent": "scout", "task": "Recon: {1-line objective}. Find: {specific function names, patterns}. Scope: {directories} ONLY. Keep output under 200 lines. Excerpt only relevant functions and signatures, not entire files.", "context": "fresh" },
+    { "agent": "scout", "task": "Recon: {1-line objective}. Find: {specific function names, patterns}. Scope: {directories} ONLY. Keep output under 150 lines. Excerpt only relevant functions and signatures, not entire files.", "context": "fresh" },
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nYou are the planning subagent. Your job is to turn the above requirements into a concrete implementation plan AND a worker briefing in plan.md.\n\n**You are the briefing authority for the worker.** The worker runs fresh with no conversation history. plan.md is its ONLY briefing. Your Worker Briefing section must be self-contained, specific, and unambiguous.\n\n## Working Rules\n\n- Read the provided context and scout recon before planning.\n- Read any additional code files you need to make the plan concrete.\n- Name exact files whenever you can.\n- Prefer small, ordered, actionable tasks over vague phases.\n- Call out risks, dependencies, and anything needing explicit validation.\n- If the task is underspecified, surface the ambiguity instead of guessing.\n\n## Worker Briefing (CRITICAL)\n\nplan.md MUST include a Worker Briefing section with these subsections:\n\n### Key Decisions\nDecisions the worker MUST follow — not suggestions, constraints. Include brief rationale.\n\n### Pitfalls & What to Avoid\nConcrete, actionable warnings. Translate Previous Failures into specific instructions. Every item: what went wrong, why, what to do instead.\n\n### Constraints\nTechnical constraints.\n\n### Scope Boundary\nIN scope vs OUT of scope.\n\n## Output Format (plan.md)\n\nWrite plan.md with: Goal, Worker Briefing (Key Decisions, Pitfalls, Constraints, Scope Boundary), Tasks, Files to Modify, New Files, Dependencies, Risks.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".", "context": "fresh" },
-    { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Scope: {target directories} ONLY. Keep output under 200 lines. Excerpt only the relevant code sections.", "context": "fresh" },
+    { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Scope: {target directories} ONLY. Keep output under 150 lines. Excerpt only the relevant code sections.", "context": "fresh" },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}", "context": "fresh" }
   ],
   "context": "fresh"
@@ -559,7 +565,7 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 {
   "chain": [
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\n{planner behavioral instructions}", "context": "fresh" },
-    { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Scope: {target directories} ONLY. Keep output under 200 lines.", "context": "fresh" },
+    { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Scope: {target directories} ONLY. Keep output under 150 lines.", "context": "fresh" },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}", "context": "fresh" }
   ],
   "context": "fresh" }
@@ -763,4 +769,4 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 9. **Gather what you can, decide what you must.** Codebase info = your job. Strategic decisions = user's job.
 10. **Split tasks touching 3+ files** into parallel workers, 2-3 files each.
 11. **Branch per chain.** Every worker chain runs on a dedicated git branch. Use the project's convention if one exists.
-12. **Scout output must be targeted.** Every scout directive includes: what, where, and output limit (max 200 lines).
+12. **Scout output must be targeted.** Every scout directive includes: what, where, and output limit (max 150 lines).
