@@ -337,7 +337,9 @@ Before constructing the Planner brief, verify that you have sufficient informati
 
 **Rule: Never give with ambiguity you could have resolved.** A vague brief at the Giver level means Planner guesses, Worker implements the guess, and you detect the failure after wasted tokens. Resolve it here.
 
-## [Phase 1.5: Branch] (MANDATORY for chains with worker)
+## [Phase 1.5: Branch + Split Decision] (MANDATORY for chains with worker)
+
+### Step 1: Create a git branch
 
 Before delegating any chain that includes a worker (code changes), create a git branch. This makes every attempt rollable-back and keeps the main branch clean.
 
@@ -377,6 +379,20 @@ Examples (respecting project convention):
 
 ### Chains without worker
 Analysis-only chains (planner only, no code changes) do NOT need a branch. Skip Phase 1.5 and give directly.
+
+### Step 2: Count and decide splitting
+
+After creating the branch, count the Target Files and assess complexity before constructing the Planner brief:
+
+1. **Count Target Files.** How many files will this task touch?
+2. **Count function extractions.** How many functions/methods will be extracted from a single file?
+3. **Estimate turn count.** Is this likely to need 30+ turns?
+4. **Decide:**
+   - 1-2 files, \<30 turns, \<3 extractions → single worker
+   - 3-4 files, or 3+ extractions → 2 parallel workers (split by directory or layer)
+   - 5+ files, or 30+ expected turns → separate sequential chains, 2-3 files each
+
+This count must happen BEFORE the Planner brief is constructed. The brief must reflect the splitting decision — each worker receives its specific file list and scope, not the entire project scope.
 
 ### Why branch per chain?
 
