@@ -25,7 +25,7 @@ PROJECT = "redbis-coding-test"
 # Known chain IDs by approach
 V22_CHAINS = ['b081a2d1', 'fde94195', '1e7b6908', '7cc68247']
 V23_CHAINS = ['88b50634', 'dfb0ca9a', 'f882c75b']
-V24_CHAINS = ['f272a284', 'f460e455']  # in progress
+V24_CHAINS = ['f272a284', 'f460e455', 'bf7539db']  # in progress
 MONO_WORKER = '71521e3d'
 
 

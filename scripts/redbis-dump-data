@@ -20,7 +20,7 @@ OUTPUT_DIR = Path(__file__).parent.parent / "reports" / "redbis-data"
 
 V22_CHAINS = ['b081a2d1', 'fde94195', '1e7b6908', '7cc68247']
 V23_CHAINS = ['88b50634', 'dfb0ca9a', 'f882c75b']
-V24_CHAINS = ['f272a284', 'f460e455']
+V24_CHAINS = ['f272a284', 'f460e455', 'bf7539db']
 MONO_WORKER = '71521e3d'
 
 
