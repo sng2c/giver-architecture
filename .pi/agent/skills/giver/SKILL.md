@@ -196,7 +196,21 @@ Config (src/config.ts) — exported values:
 4. Behavioral notes (like "supports * and ? wildcards") prevent the Worker from reading source to find out
 5. If the dependency interface is complex (>20 methods), include only the methods actually used by Target Files
 
-This replaces the old pattern of "see src/xxx.ts for reference" with explicit interfaces. The Worker should never need to read a file outside Target Files.
+**Combining Phase 1.5 Scout with Interface Collection:**
+
+The Phase 1.5 dependency analysis Scout SHOULD also collect the interface signatures of imported modules. This way, a single Scout run provides both the dependency graph (for splitting) and the interface signatures (for Dependency Interfaces in the brief). The Scout task should request:
+1. Import/dependency graph (for splitting decisions)
+2. Type signatures of each imported module (for Dependency Interfaces)
+3. Behavioral notes for non-obvious behaviors (e.g., "supports * and ? wildcards")
+
+**Verifying Interfaces After Each Chain (MANDATORY):**
+
+After each chain completes, the Giver MUST verify that the Dependency Interfaces in subsequent briefs match the ACTUAL implementation, not just the planned interfaces. During Phase 4 assessment:
+1. Read the completed files from the current chain
+2. Compare actual exported interfaces with what was in the brief
+3. If interfaces changed, update Dependency Interfaces for subsequent chains
+
+Example: If chain 1 planned `loadConfig(): Config` but actually implemented `loadConfig(): Config & {host: string}`, the next chain's brief MUST reflect the actual interface.
 
 ## Parallel workers (independent slices — no dependency)
 
@@ -271,6 +285,7 @@ The Giver's updated brief for the second chain MUST include:
 - What worker A completed (which files, which changes)
 - Any failures or adjustments from worker A (as giving of pain)
 - The remaining scope for worker B
+- **Updated Dependency Interfaces** verified against the ACTUAL implementation from the previous chain (not just planned interfaces). Read the completed files and confirm signatures match before including them in the next brief.
 
 # giving of pain — Failure Feedback Protocol
 
@@ -472,15 +487,17 @@ Analysis-only chains (planner only, no code changes) do NOT need a branch. Skip 
 
 Before deciding how to split, run a Scout chain to analyze the dependency graph. Do NOT decide splitting based on file count alone — a 2-file task with 5 imports can be harder than a 4-file task with shallow dependencies.
 
-**Phase 1.5 Scout (dependency analysis):**
+**Phase 1.5 Scout (dependency analysis + interface collection):**
 
 ```json
 {
   "chain": [
-    { "agent": "scout", "task": "# Dependency Analysis\n\n## What\nAnalyze the import/dependency graph for all files listed in Target Files. For each file, list:\n1. What it imports from other modules (with module paths)\n2. What other modules import from it (reverse dependencies)\n3. External dependencies that need interfaces provided in the brief\n\n## Where\n{target directories} ONLY\n\n## Output limit\nKeep output under 200 lines. For each file: imports list, reverse dependency list, estimated complexity (shallow/medium/deep).\n", "context": "fresh" }
+    { "agent": "scout", "task": "# Dependency Analysis\n\n## What\nAnalyze the import/dependency graph for all files listed in Target Files. For each file, list:\n1. What it imports from other modules (with module paths)\n2. What other modules import from it (reverse dependencies)\n3. Type signatures of each imported module (for Dependency Interfaces in the brief)\n4. Behavioral notes for non-obvious behaviors (e.g., 'supports * and ? wildcards')\n\n## Where\n{target directories} ONLY\n\n## Output limit\nKeep output under 250 lines. For each file: imports list, dependency layer, and exported type signatures of imported modules. Group files by dependency layer (layer 0 = no project imports, layer 1 = imports from layer 0, etc.).\n", "context": "fresh" }
   ]
 }
 ```
+
+This single Scout run provides BOTH the dependency graph (for splitting) AND the interface signatures (for Dependency Interfaces). No need for a separate Scout invocation.
 
 **After Scout returns, decide splitting based on dependency analysis:**
 
@@ -492,6 +509,14 @@ Before deciding how to split, run a Scout chain to analyze the dependency graph.
    - 3+ dependency modules with logic imports → 2 parallel workers (split by dependency layer)
    - Deep dependency chain (imports implementation, not just types) → separate sequential chains by dependency layer
    - **Group files by dependency layer:** files with no imports first, then files that import from layer 1, then files that import from layers 1+2, etc.
+
+**Fallback if Scout fails or returns incomplete data:**
+Use the file-count heuristic as a fallback:
+   - 1-2 files, <30 turns → single worker
+   - 3-4 files → 2 parallel workers
+   - 5+ files → separate sequential chains, 2-3 files each
+
+Scout dependency analysis is preferred but not always available. When in doubt, prefer more chains (smaller scope per chain) over fewer chains (larger scope per chain).
 
 **Example — splitting by dependency layer:**
 ```
@@ -804,6 +829,7 @@ The Giver's updated brief for the second chain MUST include:
 - What worker A completed (which files, which changes)
 - Any failures or adjustments from worker A (as giving of pain)
 - The remaining scope for worker B
+- **Updated Dependency Interfaces** verified against the ACTUAL implementation from the previous chain (not just planned interfaces). Read the completed files and confirm signatures match before including them in the next brief.
 
 ## [Phase 4: Report & Compact]
 
@@ -825,6 +851,7 @@ Before reporting, you MUST assess the chain output:
 2. **Scope check:** Read the changed files. Did the worker modify files outside the declared Scope Boundary? Did the worker add features that weren't requested?
 3. **Correctness check:** Read the changed files. Do the changes actually implement the Objective? Do they follow the Constraints?
 4. **Completeness check:** Cross-reference each item in plan.md against the actual changes. Were all items addressed?
+5. **Interface verification check:** If this chain implemented files that subsequent chains depend on, verify that the Dependency Interfaces in subsequent briefs match the ACTUAL implementation — not just the planned interfaces. Read the completed files and update Dependency Interfaces for the next chain if interfaces changed.
 
 #### Error Source Analysis
 After detecting a failure, **classify the error source BEFORE writing giving of pain.** The error source determines the retry strategy:
