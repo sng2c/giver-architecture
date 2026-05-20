@@ -195,6 +195,37 @@ Fork를 전면 금지하고 `context:"fresh"` 원칙을 100% 강제하는 등 6�
 
 > 상세 리포트: [`reports/v1-vs-v2-report.md`](reports/v1-vs-v2-report.md)
 
+### v2.1 검증: 협업 진단이 Planner를 가볍게 만든다 (7체인, 26 서브에이전트)
+
+v2.1에서 추가된 **Phase 0.5(협업 진단)** 규칙의 효과를 검증. 버그 수정 시 Giver가 사용자와 함께 원인과 방식을 결정한 후 Planner에게 구현만 위임.
+
+| 주요 지표 | v2 결과 | v2.1 결과 | 변화 및 평가 |
+|-----------|---------|----------|-------------|
+| **Fork 호출** | 0건 | **0건** | ✅ 절연 규칙 유지 |
+| **`context:"fresh"` 준수율** | 100% | **100%** | ✅ 절연 규칙 유지 |
+| **Planner 평균** | 513K | **182K** | ✅ **64% 감소** (Phase 0.5 효과) |
+| **Planner 이상적(≤80K)** | 0% | **25%** | ✅ **Planner 첫 이상적 달성** |
+| Scout 평균 | 105K | **133K** | ➡️ 리팩토링 태스크 비중 증가 |
+| Worker 평균 | 1.4M | **975K** | ✅ 30% 감소 |
+| **Worker 버그 수정** | 8K 🟢 | **38K** 🟢 | ✅ 이상적 범위 유지 |
+| **Phase 0.5 준수율** | N/A | **75%** (3/4) | ✅ 협업 진단 작동 중 |
+
+Planner가 버그 수정 시 원인 진단이 아닌 **구현만 계획**하게 되면서 입력이 급감. 실제 사례: 사용자가 재생 바 desync 버그의 "Option B-구조"를 선택하자, Planner가 진단 없이 해당 방식의 구현 계획만 작성하여 **77K 🟢** — Planner 최초 이상적 달성.
+
+> 상세 리포트: [`reports/v2.1-analysis-report.md`](reports/v2.1-analysis-report.md)
+
+### 전체 트렌드: v1 → v2 → v2.1
+
+| 지표 | v1 | v2 | v2.1 | v1 대비 |
+|------|-----|-----|------|---------|
+| Fork 호출 | 8건 | 0건 | **0건** | ✅ 제거 유지 |
+| `context:"fresh"` | 3% | 100% | **100%** | ✅ 완전 유지 |
+| Scout 평균 | 275K | 105K | **133K** | ✅ 52% 절감 |
+| Planner 평균 | 691K | 513K | **182K** | ✅ **74% 절감** |
+| Worker 평균 | 1.9M | 1.4M | **975K** | ✅ 49% 절감 |
+| Planner 이상적 | 0% | 0% | **25%** | ✅ 첫 달성 |
+| Worker 버그 수정 | — | 8K 🟢 | **38K** 🟢 | ✅ 이상적 범위 |
+
 ### 개선 항목 이력
 
 | # | 버전 | 항목 | 근거 | 효과 |
@@ -206,7 +237,7 @@ Fork를 전면 금지하고 `context:"fresh"` 원칙을 100% 강제하는 등 6�
 | 5 | v2 | 🟢 3+ 파일 태스크 분할 | v1: 대형 리팩토링 Worker 과다 | 검증 필요 (5+ 파일 태스크 미발생) |
 | 6 | v2 | 🟢 브랜치 네이밍 프로젝트 컨벤션 존중 | v1: `giver/` 4% (2/52) | N/A (새 프로젝트에서 검증) |
 | 7 | v2 | 🔴 체인당 Worker 1개 | v1: 다중 Worker가 Giver 평가 우회 | 5체인 모두 1 Worker/chain 달성 |
-| 8 | v2.1 | 🔴 버그픽스/트러블슈팅 협업 진단 | Planner가 원인 진단 및 해결 선택 독자 결정 | 검증 필요 |
+| 8 | v2.1 | 🔴 버그픽스/트러블슈팅 협업 진단 | Planner가 원인 진단 및 해결 선택 독자 결정 | Planner -64%, Phase 0.5 75% 준수 |
 
 ## 파일 및 시스템 구성
 
@@ -216,6 +247,9 @@ Fork를 전면 금지하고 `context:"fresh"` 원칙을 100% 강제하는 등 6�
 | `pi-install` | `scripts/pi-install` | `~/.pi` 환경에 심볼릭 링크를 생성하는 설치 스크립트 |
 | `pi-analyze` | `scripts/pi-analyze` | 세션 로그 분석 툴 — 토큰 사용량, 규정 준수 여부, 에러 분류 등 측정 |
 | `analysis-logic.md` | `docs/analysis-logic.md` | pi-analyze의 감지 패턴 및 메트릭 계산 로직 문서 |
+| `baseline-v1-report.md` | `reports/baseline-v1-report.md` | v1 베이스라인 성능 리포트 |
+| `v1-vs-v2-report.md` | `reports/v1-vs-v2-report.md` | v1 vs v2 비교 리포트 |
+| `v2.1-analysis-report.md` | `reports/v2.1-analysis-report.md` | v2.1 혐업 진단 효과 분석 리포트 |
 
 하위 에이전트(Planner, Worker, Scout)는 pi-subagents의 기본 내장 에이전트를 그대로 활용합니다. 구체적인 행동 지침은 SKILL.md의 Task string을 통해 부여하며, 체인 호출 시 `context: "fresh"`를 부여해 상태를 제어합니다. 복잡한 에이전트 오버라이드나 별도의 설정 파일은 요구되지 않습니다.
 
