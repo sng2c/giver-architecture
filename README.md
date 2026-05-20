@@ -155,6 +155,8 @@ The Giver 아키텍처는 컨텍스트 관리를 3개의 독립된 계층으로 
 | 11 | v2.2 | 🟢 Phase 1.5 파일 카운트 단계 | 태스크 분할 0% 준수 | 검증 필요 |
 | 12 | v2.2 | 🟢 Phase 2/3 체크리스트 | Target Files "Unknown" 방지 | ✅ Target Files 지정 확인 |
 | 13 | v2.2 | 🟢 Scout 3요소 템플릿 구조화 | Scout 타겟팅 40% 준수 | ✅ 2/2 Scout 이상적 🟢 |
+| 14 | v2.3 | 🔴 Previous Failures 요약 필수 | Planner 3.3M 입력 (전체 출력 복사) | 통제 실험에서 누수 72% 차지 |
+| 15 | v2.3 | 🟡 Worker 파일 생성 강조 | Worker가 진행 보고서 작성 대신 파일 생성 | 통제 실험 1차 체인에서 실패 |
 
 > 🔴 = 프로토콜 위반 방지 · 🟡 = 토큰 절감 · 🟢 = 구조화(준수율 향상)
 
@@ -215,6 +217,7 @@ xychart-beta
 | `v2.1-analysis-report.md` | `reports/v2.1-analysis-report.md` | v2.1 협업 진단 효과 분석 리포트 |
 | `v2.2-analysis-report.md` | `reports/v2.2-analysis-report.md` | v2.2 구조화 개선 분석 리포트 |
 | `v2.2-remaining-issues.md` | `reports/v2.2-remaining-issues.md` | v2.2 잔존 과제 및 개선 방안 |
+| `redbis-comparison-report.md` | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.2 통제 실험 비교 |
 | `redbis-comparison-report.md` | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.2 코딩 테스트 비교 |
 
 하위 에이전트(Planner, Worker, Scout)는 pi-subagents의 기본 내장 에이전트를 그대로 활용합니다. 구체적인 행동 지침은 SKILL.md의 Task string을 통해 부여하며, 체인 호출 시 `context: "fresh"`를 부여해 상태를 제어합니다.

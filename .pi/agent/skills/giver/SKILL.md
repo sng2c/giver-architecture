@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "2.2"
-description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2 adds fork prohibition, targeted scout directives, task splitting, and branch flexibility based on token efficiency analysis.
+version: "2.3"
+description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.3 adds concise failure summaries (preventing context leak) and explicit file creation directive for Worker.
 disable-model-invocation: true
 ---
 
@@ -217,7 +217,7 @@ A brief "the build failed" tells the next agent nothing. A giving of pain brief 
 
 ## Structured Failure Format
 
-Every retry MUST include a `## Previous Failures` section in the Planner brief:
+Every retry MUST include a `## Previous Failures` section in the Planner brief. This section MUST be a concise summary — **NEVER copy the full output of a previous chain into the brief.** Full outputs can exceed 3M tokens and destroy the architecture's efficiency. Each failure entry should be 2-4 lines max: what failed, why, and what to do instead.
 
 ```markdown
 ## Previous Failures
@@ -580,6 +580,8 @@ The Worker task string is minimal because all directives come from plan.md:
 ```
 Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.
 
+IMPORTANT: Write actual source files to disk. Do NOT write progress reports, summaries, or TODO comments instead of implementation. Every file listed in plan.md MUST be written as a complete, working source file.
+
 {previous}
 ```
 
@@ -590,7 +592,7 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
     { "agent": "scout", "task": "# Recon\n\n## What\n{1-3 specific targets: function names, API patterns, config keys to find}\n\n## Where\n{directories or files} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures — do NOT include entire files.", "context": "fresh" },
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nYou are the planning subagent. Your job is to turn the above requirements into a concrete implementation plan AND a worker briefing in plan.md.\n\n**You are the briefing authority for the worker.** The worker runs fresh with no conversation history. plan.md is its ONLY briefing. Your Worker Briefing section must be self-contained, specific, and unambiguous.\n\n## Working Rules\n\n- Read the provided context and scout recon before planning.\n- Read any additional code files you need to make the plan concrete.\n- Name exact files whenever you can.\n- Prefer small, ordered, actionable tasks over vague phases.\n- Call out risks, dependencies, and anything needing explicit validation.\n- If the task is underspecified, surface the ambiguity instead of guessing.\n\n## Worker Briefing (CRITICAL)\n\nplan.md MUST include a Worker Briefing section with these subsections:\n\n### Key Decisions\nDecisions the worker MUST follow — not suggestions, constraints. Include brief rationale.\n\n### Pitfalls & What to Avoid\nConcrete, actionable warnings. Translate Previous Failures into specific instructions. Every item: what went wrong, why, what to do instead.\n\n### Constraints\nTechnical constraints.\n\n### Scope Boundary\nIN scope vs OUT of scope.\n\n## Output Format (plan.md)\n\nWrite plan.md with: Goal, Worker Briefing (Key Decisions, Pitfalls, Constraints, Scope Boundary), Tasks, Files to Modify, New Files, Dependencies, Risks.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".", "context": "fresh" },
     { "agent": "scout", "task": "# Implementation Recon\n\n## What\n{specific code areas that plan.md targets — function names, class methods, variable usages}\n\n## Where\n{target directories or files specified in plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY the code sections plan.md references — do NOT include entire files.", "context": "fresh" },
-    { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}", "context": "fresh" }
+    { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports, summaries, or TODO comments instead of implementation. Every file listed in plan.md MUST be written as a complete, working source file.\n\n{previous}", "context": "fresh" }
   ],
   "context": "fresh"
 }
@@ -602,7 +604,7 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
   "chain": [
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\n{planner behavioral instructions}", "context": "fresh" },
     { "agent": "scout", "task": "# Implementation Recon\n\n## What\n{specific code areas that plan.md targets — function names, class methods, variable usages}\n\n## Where\n{target directories or files specified in plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY the code sections plan.md references — do NOT include entire files.", "context": "fresh" },
-    { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}", "context": "fresh" }
+    { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports or TODO comments instead of implementation.\n\n{previous}", "context": "fresh" }
   ],
   "context": "fresh" }
 ```
