@@ -21,6 +21,12 @@ OUTPUT_DIR = Path(__file__).parent.parent / "reports" / "redbis-data"
 V22_CHAINS = ['b081a2d1', 'fde94195', '1e7b6908', '7cc68247']
 V23_CHAINS = ['88b50634', 'dfb0ca9a', 'f882c75b']
 V24_CHAINS = ['f272a284', 'f460e455', 'bf7539db']
+# v2.5: each agent has its own run_id (chain = [planner, scout, worker] with different ids)
+V25_CHAINS = {
+    'v25-chain1': [('8ac2976c', 'planner', 0), ('c8f11a5d', 'scout', 0), ('fdfd5056', 'worker', 0)],
+    'v25-chain2': [('d7d28fdc', 'planner', 0), ('00bc041b', 'scout', 0), ('fd6031d5', 'worker', 0)],
+    'v25-chain3': [('be6df5e9', 'worker', 0)],
+}
 MONO_WORKER = '71521e3d'
 
 
@@ -88,6 +94,61 @@ def dump_chain(art_dir, run_id, approach, label):
     return chain_data
 
 
+def dump_v25_chain(art_dir, label, agent_specs):
+    """Dump v2.5 chain data where each agent has its own run_id."""
+    chain_data = {
+        'approach': 'giver-v2.5',
+        'label': label,
+        'run_id': agent_specs[0][0],  # first agent's run_id as chain ID
+        'agents': []
+    }
+
+    for rid, agent, idx in agent_specs:
+        meta_path = os.path.join(art_dir, f'{rid}_{agent}_{idx}_meta.json')
+        input_path = os.path.join(art_dir, f'{rid}_{agent}_{idx}_input.md')
+
+        if not os.path.exists(meta_path):
+            print(f"  SKIP {rid}_{agent}_{idx} (no meta)")
+            continue
+
+        meta = json.load(open(meta_path))
+
+        context_type = None
+        if os.path.exists(input_path):
+            content = open(input_path).read()
+            if 'running from a fork' in content.lower():
+                context_type = 'FORK'
+            elif 'running from a fresh' in content.lower():
+                context_type = 'FRESH'
+            else:
+                context_type = 'clean'
+
+        agent_data = {
+            'role': agent,
+            'index': len(chain_data['agents']),
+            'model': meta.get('model', ''),
+            'input_tokens': meta['usage']['input'],
+            'output_tokens': meta['usage']['output'],
+            'cache_read': meta['usage'].get('cacheRead', 0),
+            'cache_write': meta['usage'].get('cacheWrite', 0),
+            'turns': meta['usage'].get('turns', 0),
+            'tool_count': meta.get('toolCount', 0),
+            'duration_ms': meta.get('durationMs', 0),
+            'exit_code': meta.get('exitCode', 0),
+            'success': meta.get('exitCode', 0) == 0,
+            'context_type': context_type,
+            'timestamp_epoch': meta.get('timestamp', 0),
+        }
+
+        chain_data['agents'].append(agent_data)
+
+    chain_data['total_input'] = sum(a['input_tokens'] for a in chain_data['agents'])
+    chain_data['total_output'] = sum(a['output_tokens'] for a in chain_data['agents'])
+    chain_data['total_duration_ms'] = sum(a['duration_ms'] for a in chain_data['agents'])
+
+    return chain_data
+
+
 def main():
     include_v24 = '--include-v24' in sys.argv
 
@@ -117,9 +178,17 @@ def main():
         for rid in V24_CHAINS:
             chains.append(('giver-v2.4', f'v24-{rid}', rid))
 
+    # Giver v2.5 (each agent has own run_id)
+    if include_v24:
+        for label, specs in V25_CHAINS.items():
+            chains.append(('giver-v2.5', label, specs))
+
     written = []
     for approach, label, run_id in chains:
-        data = dump_chain(art_dir, run_id, approach, label)
+        if approach == 'giver-v2.5':
+            data = dump_v25_chain(art_dir, label, run_id)
+        else:
+            data = dump_chain(art_dir, run_id, approach, label)
         if not data['agents']:
             print(f"  SKIP {label} (no agents found)")
             continue

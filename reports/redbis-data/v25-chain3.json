@@ -1,0 +1,26 @@
+{
+  "approach": "giver-v2.5",
+  "label": "v25-chain3",
+  "run_id": "be6df5e9",
+  "agents": [
+    {
+      "role": "worker",
+      "index": 0,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 75148,
+      "output_tokens": 1762,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 11,
+      "tool_count": 10,
+      "duration_ms": 54178,
+      "exit_code": 0,
+      "success": true,
+      "context_type": "clean",
+      "timestamp_epoch": 1779313271115
+    }
+  ],
+  "total_input": 75148,
+  "total_output": 1762,
+  "total_duration_ms": 54178
+}
