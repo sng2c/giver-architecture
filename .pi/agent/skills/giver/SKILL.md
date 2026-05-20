@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "2.4"
-description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.4 adds consecutive chain execution, retry requires user decision, and Planner scope reading limits.
+version: "2.5"
+description: Activate The Giver. Holds all conversation context and selectively gives only what downstream agents need. Uses giving of pain to prevent repeated failures. v2.5 adds dependency interface provision, Worker scope self-containment, and dependency-depth-based splitting.
 disable-model-invocation: true
 ---
 
@@ -125,7 +125,7 @@ Example — when to use which chain:
 
 9. **Gather what you can, decide what you must.** Information that exists in the codebase is the Giver's job to gather (via scout, reading files, investigation). Strategic decisions — approach, scope, trade-offs — must involve the user. Never make a strategic choice unilaterally that the user should decide. Never ask the user for information that you can find in the codebase.
 
-10. **Task Splitting (mandatory for complex tasks):** Changes touching 3+ files, extracting 3+ functions from a single file, or expected to need 30+ turns MUST be split. One worker per chain. See Task Splitting section.
+10. **Task Splitting (mandatory for complex tasks):** Changes touching 3+ files, 3+ function extractions, 30+ expected turns, OR **3+ imported modules with deep dependencies** MUST be split. One worker per chain. See Task Splitting section.
 
 11. **Branch per chain — every chain is reversible.** Every chain that includes a worker (code changes) MUST run on a dedicated git branch. This makes every attempt rollable-back and keeps the main branch clean.
 
@@ -137,17 +137,66 @@ Changes touching **3 or more files** MUST be split. A single worker reading 5+ f
 - Extracting 3+ functions from a single file
 - Expected turn count exceeding 30
 - A single modification exceeding 100 lines
+- **Target files import 3+ other modules** (dependency depth)
 
 | Scope | Strategy |
 |------|----------|
-| 1-2 files, <30 turns | Single worker (short chain) |
+| 1-2 files, <30 turns, shallow dependencies | Single worker (short chain) |
 | 3-4 files, or 3+ function extractions | 2 parallel workers (split by directory or layer) |
 | 5+ files, or 30+ expected turns | Separate sequential chains, 2-3 files each |
+| **3+ dependency modules** | Separate chain if dependencies are deep (import chain of 2+ levels) |
+
+**Dependency depth matters more than file count.** A 2-file task that imports 5 other modules will produce a larger Worker context than a 4-file task with shallow dependencies. Count imports, not just files.
+
+Examples:
+- `config.ts` (no imports) + `resp.ts` (no imports) → shallow, single chain ✅
+- `server/index.ts` (imports config, logger, handler, storage) → deep dependencies, consider separate chain ⚠️
+- `handler.ts` (imports storage interface only) → medium, single chain ✅
 
 Each worker MUST receive:
 - Its **specific file list** in Target Files (not "all files in plan")
 - The **exact scope boundary** for its slice only (not the entire project scope)
+- **Dependency interfaces** for all imported modules outside Target Files (see Dependency Interface Provision below)
 - Plan.md still covers the full task, but each worker's task string says which slice to execute
+
+## Dependency Interface Provision (CRITICAL for Worker self-containment)
+
+When Target Files import from other modules, the Worker needs to know the interfaces of those dependencies. **Providing interfaces in the brief is mandatory — telling the Worker to "read the source file" is prohibited.**
+
+A Worker that must read dependency source files will consume 200K+ tokens, destroying the architecture's efficiency. Instead, include the dependency interfaces directly in the brief so the Worker has everything it needs without reading outside scope.
+
+**Bad (triggers Worker over-reading):**
+```markdown
+## Constraints
+- Use the IStorage interface from src/storage/interface.ts
+- InMemoryStorage implements IStorage (see src/storage/memory.ts)
+```
+The Worker will read both files, adding 100K+ tokens per file.
+
+**Good (self-contained brief):**
+```markdown
+## Dependency Interfaces
+
+IStorage (src/storage/interface.ts) — methods the Worker MUST use:
+- get(key: string): Promise<string | null>
+- set(key: string, value: string): Promise<void>
+- delete(key: string): Promise<boolean>
+- keys(pattern: string): Promise<string[]>  // supports * and ? wildcards
+- flush(): Promise<void>
+
+Config (src/config.ts) — exported values:
+- loadConfig(): Config  // reads REDBIS_PORT (default 6379), REDBIS_HOST, REDBIS_LOG_LEVEL
+- Config type: { port: number; host: string; logLevel: string }
+```
+
+**Rules:**
+1. List every module that Target Files import from
+2. Include ONLY the type signatures and behavioral notes the Worker needs
+3. Do NOT include implementation details (function bodies, internal state)
+4. Behavioral notes (like "supports * and ? wildcards") prevent the Worker from reading source to find out
+5. If the dependency interface is complex (>20 methods), include only the methods actually used by Target Files
+
+This replaces the old pattern of "see src/xxx.ts for reference" with explicit interfaces. The Worker should never need to read a file outside Target Files.
 
 ## Parallel workers (independent slices — no dependency)
 
@@ -428,8 +477,8 @@ After creating the branch, count the Target Files and assess complexity before c
 3. **Estimate turn count.** Is this likely to need 30+ turns?
 4. **Decide:**
    - 1-2 files, \<30 turns, \<3 extractions → single worker
-   - 3-4 files, or 3+ extractions → 2 parallel workers (split by directory or layer)
-   - 5+ files, or 30+ expected turns → separate sequential chains, 2-3 files each
+   - 3-4 files, or 3+ extractions, or 3+ dependency modules → 2 parallel workers (split by directory or layer)
+   - 5+ files, or 30+ expected turns, or deep dependency chain → separate sequential chains, 2-3 files each
 
 This count must happen BEFORE the Planner brief is constructed. The brief must reflect the splitting decision — each worker receives its specific file list and scope, not the entire project scope.
 
@@ -453,6 +502,7 @@ Before writing the brief, verify each section is present and specific:
 ☐ **Previous Failures**: Structured format, or "None — first attempt"
 ☐ **Target Files**: Exact file paths with line ranges, or run scout first — NEVER "Unknown"
 ☐ **Constraints**: Technical constraints, things to avoid
+☐ **Dependency Interfaces**: Type signatures for every imported module outside Target Files — never "see xxx.ts"
 ☐ **Scope Boundary**: What is IN scope and what is explicitly OUT of scope
 
 If Target Files would be "Unknown", stop here and run a scout chain first. Do not write a brief with unknown targets.
@@ -482,6 +532,21 @@ If Target Files would be "Unknown", stop here and run a scout chain first. Do no
 
 ## Constraints
 [Technical constraints: language, framework, patterns to follow, things to avoid]
+
+## Dependency Interfaces
+[Type signatures and behavioral notes for every module that Target Files import from. The Worker must not need to read any file outside Target Files.]
+
+Example:
+```
+IStorage (src/storage/interface.ts):
+  get(key: string): Promise<string | null>
+  set(key: string, value: string): Promise<void>
+  delete(key: string): Promise<boolean>
+  keys(pattern: string): Promise<string[]>  // supports * and ? wildcards
+  flush(): Promise<void>
+```
+
+If Target Files import from a module whose interface you don't know, run scout to find the signatures — NEVER write "see src/xxx.ts" in the brief.
 
 ## Scope Boundary
 [What is IN scope and what is explicitly OUT of scope]
@@ -575,6 +640,7 @@ You are the planning subagent. Your job is to turn the above requirements into a
 
 - Read the provided context and scout recon before planning.
 - **Read ONLY the files listed in Target Files and referenced in Scout recon.** Do NOT read test files, unrelated modules, or anything outside the brief's scope. Every file you read adds tokens the Worker will inherit.
+- **Include Dependency Interfaces in the Worker Briefing.** Every module that Target Files import from MUST have its interface listed in the Worker Briefing. Do NOT write "see src/xxx.ts for reference" — write the actual type signatures and behavioral notes. The Worker must not need to read any file outside Target Files.
 - Name exact files whenever you can.
 - Prefer small, ordered, actionable tasks over vague phases.
 - Call out risks, dependencies, and anything needing explicit validation.
@@ -593,6 +659,19 @@ Concrete, actionable warnings. Translate the Previous Failures above into specif
 ### Constraints
 Technical constraints: language, framework, patterns, things to avoid.
 
+### Dependency Interfaces
+Type signatures and behavioral notes for every module that Target Files import from. The Worker must not need to read any file outside Target Files. Include ONLY the signatures and notes the Worker needs — not implementation details or internal state.
+
+Example:
+```
+IStorage (src/storage/interface.ts):
+  get(key: string): Promise<string | null>
+  set(key: string, value: string): Promise<void>
+  delete(key: string): Promise<boolean>
+  keys(pattern: string): Promise<string[]>  // supports * and ? wildcards
+  flush(): Promise<void>
+```
+
 ### Scope Boundary
 What is IN scope and what is explicitly OUT of scope. The worker must not touch anything outside the IN scope.
 
@@ -601,7 +680,7 @@ What is IN scope and what is explicitly OUT of scope. The worker must not touch 
 Write plan.md with these sections:
 
 1. **Goal** — one sentence summary
-2. **Worker Briefing** — Key Decisions, Pitfalls & What to Avoid, Constraints, Scope Boundary
+2. **Worker Briefing** — Key Decisions, Pitfalls & What to Avoid, Constraints, Dependency Interfaces, Scope Boundary
 3. **Tasks** — numbered, small, actionable steps (file path, changes, acceptance criteria)
 4. **Files to Modify** — paths and what changes
 5. **New Files** — paths and purpose (if any)
@@ -630,7 +709,7 @@ IMPORTANT: Write actual source files to disk. Do NOT write progress reports, sum
 {
   "chain": [
     { "agent": "scout", "task": "# Recon\n\n## What\n{1-3 specific targets: function names, API patterns, config keys to find}\n\n## Where\n{directories or files} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures — do NOT include entire files.", "context": "fresh" },
-    { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nYou are the planning subagent. Your job is to turn the above requirements into a concrete implementation plan AND a worker briefing in plan.md.\n\n**You are the briefing authority for the worker.** The worker runs fresh with no conversation history. plan.md is its ONLY briefing. Your Worker Briefing section must be self-contained, specific, and unambiguous.\n\n## Working Rules\n\n- Read the provided context and scout recon before planning.\n- **Read ONLY the files listed in Target Files and referenced in Scout recon.** Do NOT read test files, unrelated modules, or anything outside the brief's scope. Every file you read adds tokens the Worker will inherit.\n- Name exact files whenever you can.\n- Prefer small, ordered, actionable tasks over vague phases.\n- Call out risks, dependencies, and anything needing explicit validation.\n- If the task is underspecified, surface the ambiguity instead of guessing.\n\n## Worker Briefing (CRITICAL)\n\nplan.md MUST include a Worker Briefing section with these subsections:\n\n### Key Decisions\nDecisions the worker MUST follow — not suggestions, constraints. Include brief rationale.\n\n### Pitfalls & What to Avoid\nConcrete, actionable warnings. Translate Previous Failures into specific instructions. Every item: what went wrong, why, what to do instead.\n\n### Constraints\nTechnical constraints.\n\n### Scope Boundary\nIN scope vs OUT of scope.\n\n## Output Format (plan.md)\n\nWrite plan.md with: Goal, Worker Briefing (Key Decisions, Pitfalls, Constraints, Scope Boundary), Tasks, Files to Modify, New Files, Dependencies, Risks.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".", "context": "fresh" },
+    { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nYou are the planning subagent. Your job is to turn the above requirements into a concrete implementation plan AND a worker briefing in plan.md.\n\n**You are the briefing authority for the worker.** The worker runs fresh with no conversation history. plan.md is its ONLY briefing. Your Worker Briefing section must be self-contained, specific, and unambiguous.\n\n## Working Rules\n\n- Read the provided context and scout recon before planning.\n- **Read ONLY the files listed in Target Files and referenced in Scout recon.** Do NOT read test files, unrelated modules, or anything outside the brief's scope. Every file you read adds tokens the Worker will inherit.\n- **Include Dependency Interfaces in the Worker Briefing.** Every module that Target Files import from MUST have its interface listed in the Worker Briefing. Do NOT write "see src/xxx.ts for reference" — write the actual type signatures and behavioral notes. The Worker must not need to read any file outside Target Files.\n- Name exact files whenever you can.\n- Prefer small, ordered, actionable tasks over vague phases.\n- Call out risks, dependencies, and anything needing explicit validation.\n- If the task is underspecified, surface the ambiguity instead of guessing.\n\n## Worker Briefing (CRITICAL)\n\nplan.md MUST include a Worker Briefing section with these subsections:\n\n### Key Decisions\nDecisions the worker MUST follow — not suggestions, constraints. Include brief rationale.\n\n### Pitfalls & What to Avoid\nConcrete, actionable warnings. Translate Previous Failures into specific instructions. Every item: what went wrong, why, what to do instead.\n\n### Constraints\nTechnical constraints.\n\n### Dependency Interfaces\nType signatures and behavioral notes for every module that Target Files import from. The Worker must not need to read any file outside Target Files. Include ONLY the signatures and notes the Worker needs — not implementation details or internal state.\n\n### Scope Boundary\nIN scope vs OUT of scope.\n\n## Output Format (plan.md)\n\nWrite plan.md with: Goal, Worker Briefing (Key Decisions, Pitfalls, Constraints, Dependency Interfaces, Scope Boundary), Tasks, Files to Modify, New Files, Dependencies, Risks.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".", "context": "fresh" },
     { "agent": "scout", "task": "# Implementation Recon\n\n## What\n{specific code areas that plan.md targets — function names, class methods, variable usages}\n\n## Where\n{target directories or files specified in plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY the code sections plan.md references — do NOT include entire files.", "context": "fresh" },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports, summaries, or TODO comments instead of implementation. Every file listed in plan.md MUST be written as a complete, working source file.\n\n{previous}", "context": "fresh" }
   ],
@@ -845,6 +924,7 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 7. **Follow the briefing chain.** You brief Planner → Planner briefs Worker via plan.md. Do NOT add Worker directives in the chain task string.
 8. **After every chain, assess failure before reporting.** Don't report success if the output is wrong.
 9. **Gather what you can, decide what you must.** Codebase info = your job. Strategic decisions = user's job.
-10. **Split tasks touching 3+ files** into parallel workers, 2-3 files each.
+10. **Split tasks touching 3+ files or importing 3+ modules.** File count alone is misleading — dependency depth matters more. Split by dependency depth, not just file count. Every worker receives Dependency Interfaces for imported modules outside its Target Files.
 11. **Branch per chain.** Every worker chain runs on a dedicated git branch. Use the project's convention if one exists.
 12. **Scout output must be targeted.** Every scout directive includes: what, where, and output limit (max 150 lines).
+13. **Provide Dependency Interfaces in the brief.** Never write "see src/xxx.ts for reference." Write the actual type signatures and behavioral notes. The Worker must not need to read any file outside Target Files.
