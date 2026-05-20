@@ -86,34 +86,36 @@ The Giver 아키텍처는 컨텍스트 관리를 3개의 독립된 계층으로 
 
 ### 통제 실험: 동일 과제 모놀리식 vs Giver v2.2
 
-동일 인력이 동일 과제(Redis 프록시 10개 모듈, 113개 테스트)를 모놀리식과 Giver v2.2로 각각 구현.
+동일 인력이 동일 과제(Redis 프록시 10개 모듈, 113개 테스트)를 모놀리식과 Giver v2.3로 각각 구현. **모놀리식 토큰 실측 포함.**
 
-| 항목 | 모놀리식 | Giver v2.2 |
+| 항목 | 모놀리식 | Giver v2.3 |
 |------|----------|-----------|
 | 결과 | ✅ 113/113 테스트 통과 | ✅ 113/113 테스트 통과 |
 | 산출물 | 540줄 (10개 파일) | 498줄 (10개 파일) |
-| 방식 | 단일 에이전트 연속 대화 (76턴) | Giver + 4개 체인 (Fresh 격리) |
+| 방식 | 단일 Worker (FORK 상속, 41턴) | 3개 체인 (Fresh 격리) |
+| **Input 토큰 (실측)** | **857K 🔴** | **160K 🟢 (정상 체인)** |
 | 실패 시 격리 | ❌ 이전 컨텍스트 오염 | ✅ 새 체인으로 재시도 |
 
 **Giver v2.2 체인별 상세:**
 
 | # | 과제 | Planner | Scout | Worker | 합계 | 이상적 |
 |---|------|--------:|------:|-------:|-----:|:------:|
-| 1 | 4개 기초 모듈 | 49K 🟢 | 34K 🟢 | 489K 🟠 | 572K | 2/3 |
-| 2 | 3개 코어 모듈 | 3,297K 🔴 | 25K 🟢 | 213K 🟠 | 3,536K | 1/3 |
-| 3 | 3개 코어 모듈 (재시도) | 153K 🟡 | 51K 🟢 | 170K 🟡 | 374K | 1/3 |
-| 4 | 3개 서버 모듈 | 11K 🟢 | 34K 🟢 | 83K 🟡 | **129K** | **2/3** |
+| 1 | 4개 기초 모듈 | 85K 🟡 | 19K 🟢 | 55K 🟢 | **160K** | 2/3 |
+| 2 | 3개 중간 모듈 | 283K 🟠 | 10K 🟢 | 369K 🟠 | 662K | 1/3 |
+| 3 | 2개 서버 모듈 | 301K 🟠 | 21K 🟢 | 82K 🟡 | 404K | 1/3 |
 
-> 🔴 2번 체인 Planner 3.3M: Previous Failures에 이전 결과 전체 포함(컨텍스트 누수). 정상 합계(누수 제외): 1,074K.
+> 모놀리식 Worker 857K 🔴 (fork 상속, 41턴). Giver 정상 체인(1번) 160K → **모놀리식 대비 -81% 절감 (실측)**.
+>
+> 2번/3번 체인 Planner가 283K/301K로 높은 이유: Planner가 스코프 외 파일까지 읽음. Task Splitting은 체인당 모듈 수에 적용되었으나, 각 Planner가 전체 테스트 코드를 읽음.
 
 **giving of pain 효과 — 점진적 개선:**
 
-| 체인 | 합계 | 1차 대비 | 비고 |
-|------|-----:|---------:|------|
-| 1차 | 572K | — | Worker 파일 생성 실패 |
-| 2차 | 3,536K | — | Planner 컨텍스트 누수 |
-| 3차 | 374K | -35% | Previous Failures 포함 |
-| 4차 | **129K** | **-77%** | ✅ 가장 효율적 |
+| 체인 | 합계 | 모놀리식 대비 | 비고 |
+|------|-----:|:------------:|------|
+| 모놀리식 (단일 Worker) | **857K** | 기준 | FORK 상속, 41턴 |
+| Giver 정상 (1번) | **160K** | **-81%** | ✅ 스코프 좁음 |
+| Giver 비정상 (2번) | 662K | -23% | Planner 과도 읽기 |
+| Giver 비정상 (3번) | 404K | -53% | Planner 과도 읽기 |
 
 > 상세 리포트: [`reports/redbis-comparison-report.md`](reports/redbis-comparison-report.md)
 
@@ -218,7 +220,7 @@ xychart-beta
 | `v2.2-analysis-report.md` | `reports/v2.2-analysis-report.md` | v2.2 구조화 개선 분석 리포트 |
 | `v2.2-remaining-issues.md` | `reports/v2.2-remaining-issues.md` | v2.2 잔존 과제 및 개선 방안 |
 | `redbis-comparison-report.md` | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.2 통제 실험 비교 |
-| `redbis-comparison-report.md` | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.2 코딩 테스트 비교 |
+| `redbis-comparison-report.md` | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.3 코딩 테스트 비교 (실측) |
 
 하위 에이전트(Planner, Worker, Scout)는 pi-subagents의 기본 내장 에이전트를 그대로 활용합니다. 구체적인 행동 지침은 SKILL.md의 Task string을 통해 부여하며, 체인 호출 시 `context: "fresh"`를 부여해 상태를 제어합니다.
 
