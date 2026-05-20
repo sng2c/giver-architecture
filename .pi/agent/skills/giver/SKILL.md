@@ -487,17 +487,14 @@ Scope: {directories} ONLY.
 Keep output under 150 lines. Do NOT include entire files — excerpt only the relevant functions and their signatures.
 ```
 
-**Bad** (vague, triggers full project dump):
+**Bad** (no structure, triggers full project dump):
 ```
-"Recon: Add caching. Find all files related to caching."
+{ "agent": "scout", "task": "Recon: Add caching." }
 ```
 
-**Good** (targeted, scoped, bounded):
+**Good** (structured 3-element template):
 ```
-"Recon the LRU cache implementation in src/services/user-service.ts.
-Find: getById method, cache invalidation patterns, TTL config.
-Scope: src/services/ and src/types/ ONLY.
-Keep output under 150 lines. Excerpt relevant functions and signatures only — do NOT include entire files."
+{ "agent": "scout", "task": "# Recon\n\n## What\nLRU cache implementation in user-service.ts\n\n## Where\nsrc/services/ and src/types/ ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures — do NOT include entire files." }
 ```
 
 ### Planner task string template
@@ -590,9 +587,9 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 ```json
 {
   "chain": [
-    { "agent": "scout", "task": "Recon: {1-line objective}. Find: {specific function names, patterns}. Scope: {directories} ONLY. Keep output under 150 lines. Excerpt only relevant functions and signatures, not entire files.", "context": "fresh" },
+    { "agent": "scout", "task": "# Recon\n\n## What\n{1-3 specific targets: function names, API patterns, config keys to find}\n\n## Where\n{directories or files} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures — do NOT include entire files.", "context": "fresh" },
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\nYou are the planning subagent. Your job is to turn the above requirements into a concrete implementation plan AND a worker briefing in plan.md.\n\n**You are the briefing authority for the worker.** The worker runs fresh with no conversation history. plan.md is its ONLY briefing. Your Worker Briefing section must be self-contained, specific, and unambiguous.\n\n## Working Rules\n\n- Read the provided context and scout recon before planning.\n- Read any additional code files you need to make the plan concrete.\n- Name exact files whenever you can.\n- Prefer small, ordered, actionable tasks over vague phases.\n- Call out risks, dependencies, and anything needing explicit validation.\n- If the task is underspecified, surface the ambiguity instead of guessing.\n\n## Worker Briefing (CRITICAL)\n\nplan.md MUST include a Worker Briefing section with these subsections:\n\n### Key Decisions\nDecisions the worker MUST follow — not suggestions, constraints. Include brief rationale.\n\n### Pitfalls & What to Avoid\nConcrete, actionable warnings. Translate Previous Failures into specific instructions. Every item: what went wrong, why, what to do instead.\n\n### Constraints\nTechnical constraints.\n\n### Scope Boundary\nIN scope vs OUT of scope.\n\n## Output Format (plan.md)\n\nWrite plan.md with: Goal, Worker Briefing (Key Decisions, Pitfalls, Constraints, Scope Boundary), Tasks, Files to Modify, New Files, Dependencies, Risks.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".", "context": "fresh" },
-    { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Scope: {target directories} ONLY. Keep output under 150 lines. Excerpt only the relevant code sections.", "context": "fresh" },
+    { "agent": "scout", "task": "# Implementation Recon\n\n## What\n{specific code areas that plan.md targets — function names, class methods, variable usages}\n\n## Where\n{target directories or files specified in plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY the code sections plan.md references — do NOT include entire files.", "context": "fresh" },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}", "context": "fresh" }
   ],
   "context": "fresh"
@@ -604,7 +601,7 @@ Execute the implementation plan in plan.md. Start by reading plan.md (especially
 {
   "chain": [
     { "agent": "planner", "task": "{6-section brief}\n\n---\n\n## Your Role\n\n{planner behavioral instructions}", "context": "fresh" },
-    { "agent": "scout", "task": "Implementation recon: {1-line objective}. plan.md has been written. Read plan.md to understand what changes are planned, then recon the specific code areas that will be affected. Scope: {target directories} ONLY. Keep output under 150 lines.", "context": "fresh" },
+    { "agent": "scout", "task": "# Implementation Recon\n\n## What\n{specific code areas that plan.md targets — function names, class methods, variable usages}\n\n## Where\n{target directories or files specified in plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY the code sections plan.md references — do NOT include entire files.", "context": "fresh" },
     { "agent": "worker", "task": "Execute the implementation plan in plan.md. Start by reading plan.md (especially the Worker Briefing section), then the scout recon below, then the target files. Follow the plan's Key Decisions and Pitfalls sections strictly.\n\n{previous}", "context": "fresh" }
   ],
   "context": "fresh" }
