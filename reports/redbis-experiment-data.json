@@ -1,0 +1,327 @@
+{
+  "experiment": "redbis-coding-test",
+  "task": "Redis proxy 10 modules, 113 tests",
+  "timestamp": "2026-05-20T18:39:10.042180",
+  "approaches": {
+    "monolithic": {
+      "chains": {
+        "71521e3d": {
+          "agents": {
+            "worker#0": {
+              "input_tokens": 857363,
+              "output_tokens": 6409,
+              "turns": 41,
+              "success": true,
+              "context": "FORK",
+              "rating": "🔴"
+            }
+          },
+          "total_input": 857363,
+          "total_output": 6409,
+          "ideal_count": 0,
+          "ideal_total": 1
+        }
+      },
+      "total_input": 857363,
+      "total_output": 6409
+    },
+    "giver-v2.2": {
+      "chains": {
+        "1e7b6908": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 152658,
+              "output_tokens": 5848,
+              "turns": 29,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟡"
+            },
+            "scout#1": {
+              "input_tokens": 51268,
+              "output_tokens": 2341,
+              "turns": 9,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 169638,
+              "output_tokens": 2774,
+              "turns": 22,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟡"
+            }
+          },
+          "total_input": 373564,
+          "total_output": 10963,
+          "ideal_count": 1,
+          "ideal_total": 3
+        },
+        "7cc68247": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 11161,
+              "output_tokens": 2454,
+              "turns": 4,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "scout#1": {
+              "input_tokens": 34483,
+              "output_tokens": 1406,
+              "turns": 9,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 83204,
+              "output_tokens": 4781,
+              "turns": 14,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟡"
+            }
+          },
+          "total_input": 128848,
+          "total_output": 8641,
+          "ideal_count": 2,
+          "ideal_total": 3
+        },
+        "b081a2d1": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 48772,
+              "output_tokens": 4398,
+              "turns": 18,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "scout#1": {
+              "input_tokens": 34178,
+              "output_tokens": 1790,
+              "turns": 8,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 488599,
+              "output_tokens": 4608,
+              "turns": 43,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟠"
+            }
+          },
+          "total_input": 571549,
+          "total_output": 10796,
+          "ideal_count": 2,
+          "ideal_total": 3
+        },
+        "fde94195": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 3296901,
+              "output_tokens": 47766,
+              "turns": 117,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🔴"
+            },
+            "scout#1": {
+              "input_tokens": 25444,
+              "output_tokens": 2286,
+              "turns": 7,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 213470,
+              "output_tokens": 7244,
+              "turns": 32,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟠"
+            }
+          },
+          "total_input": 3535815,
+          "total_output": 57296,
+          "ideal_count": 1,
+          "ideal_total": 3
+        }
+      },
+      "total_input": 4609776,
+      "total_output": 87696
+    },
+    "giver-v2.3": {
+      "chains": {
+        "88b50634": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 85373,
+              "output_tokens": 5862,
+              "turns": 31,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟡"
+            },
+            "scout#1": {
+              "input_tokens": 19255,
+              "output_tokens": 988,
+              "turns": 7,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 55438,
+              "output_tokens": 1736,
+              "turns": 14,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            }
+          },
+          "total_input": 160066,
+          "total_output": 8586,
+          "ideal_count": 2,
+          "ideal_total": 3
+        },
+        "dfb0ca9a": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 283348,
+              "output_tokens": 13401,
+              "turns": 35,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟠"
+            },
+            "scout#1": {
+              "input_tokens": 9832,
+              "output_tokens": 1418,
+              "turns": 6,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 368895,
+              "output_tokens": 8381,
+              "turns": 36,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟠"
+            }
+          },
+          "total_input": 662075,
+          "total_output": 23200,
+          "ideal_count": 1,
+          "ideal_total": 3
+        },
+        "f882c75b": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 300594,
+              "output_tokens": 14017,
+              "turns": 39,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟠"
+            },
+            "scout#1": {
+              "input_tokens": 21409,
+              "output_tokens": 1232,
+              "turns": 11,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 81590,
+              "output_tokens": 2391,
+              "turns": 17,
+              "success": false,
+              "context": "clean/empty",
+              "rating": "🟡"
+            }
+          },
+          "total_input": 403593,
+          "total_output": 17640,
+          "ideal_count": 1,
+          "ideal_total": 3
+        }
+      },
+      "total_input": 1225734,
+      "total_output": 49426
+    },
+    "giver-v2.4": {
+      "chains": {
+        "f272a284": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 30630,
+              "output_tokens": 3731,
+              "turns": 11,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "scout#1": {
+              "input_tokens": 13689,
+              "output_tokens": 745,
+              "turns": 4,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "worker#2": {
+              "input_tokens": 170412,
+              "output_tokens": 2537,
+              "turns": 24,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟡"
+            }
+          },
+          "total_input": 214731,
+          "total_output": 7013,
+          "ideal_count": 2,
+          "ideal_total": 3
+        },
+        "f460e455": {
+          "agents": {
+            "planner#0": {
+              "input_tokens": 46003,
+              "output_tokens": 3003,
+              "turns": 13,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            },
+            "scout#1": {
+              "input_tokens": 14265,
+              "output_tokens": 908,
+              "turns": 6,
+              "success": true,
+              "context": "clean/empty",
+              "rating": "🟢"
+            }
+          },
+          "total_input": 60268,
+          "total_output": 3911,
+          "ideal_count": 2,
+          "ideal_total": 2
+        }
+      },
+      "total_input": 274999,
+      "total_output": 10924
+    }
+  }
+}

@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""Extract raw experiment data from redbis-coding-test session logs and subagent artifacts.
+
+Outputs JSON with per-agent token counts, context types, and task previews
+for monolithic, giver-v2.2, and giver-v2.3 approaches.
+
+Excludes giver-v2.4 (in progress) unless --include-v24 flag is given.
+
+Usage:
+    python3 scripts/redbis-extract-data
+    python3 scripts/redbis-extract-data --include-v24
+    python3 scripts/redbis-extract-data --json
+"""
+
+import json
+import os
+import sys
+from pathlib import Path
+from collections import defaultdict
+from datetime import datetime
+
+SESSIONS_DIR = Path.home() / ".pi" / "agent" / "sessions"
+PROJECT = "redbis-coding-test"
+
+# Known chain IDs by approach
+V22_CHAINS = ['b081a2d1', 'fde94195', '1e7b6908', '7cc68247']
+V23_CHAINS = ['88b50634', 'dfb0ca9a', 'f882c75b']
+V24_CHAINS = ['f272a284', 'f460e455']  # in progress
+MONO_WORKER = '71521e3d'
+
+
+def extract_artifact_data(art_dir, run_ids, approach_name):
+    """Extract subagent artifact data for given chain IDs."""
+    chains = {}
+
+    for run_id in run_ids:
+        chain_agents = []
+        for agent in ['planner', 'scout', 'worker']:
+            idx = '0' if agent == 'planner' else '1' if agent == 'scout' else '2'
+            meta_file = os.path.join(art_dir, f'{run_id}_{agent}_{idx}_meta.json')
+
+            if not os.path.exists(meta_file):
+                continue
+
+            data = json.load(open(meta_file))
+            inp_file = os.path.join(art_dir, f'{run_id}_{agent}_{idx}_input.md')
+
+            context = 'unknown'
+            task = ''
+            if os.path.exists(inp_file):
+                content = open(inp_file).read(3000)
+                if 'running from a fork' in content.lower():
+                    context = 'FORK'
+                elif 'running from a fresh' in content.lower():
+                    context = 'FRESH'
+                else:
+                    context = 'clean/empty'
+                # Extract task preview (first non-header line)
+                lines = content.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line and not line.startswith('#') and not line.startswith('['):
+                        task = line[:120]
+                        break
+
+            rating = ("🟢" if data['usage']['input'] <= 80_000
+                      else "🟡" if data['usage']['input'] <= 200_000
+                      else "🟠" if data['usage']['input'] <= 500_000
+                      else "🔴")
+
+            agent_data = {
+                'agent': agent,
+                'index': int(idx),
+                'input_tokens': data['usage']['input'],
+                'output_tokens': data['usage']['output'],
+                'turns': data.get('toolCount', 0),
+                'success': data.get('exitCode', 0) == 0,
+                'context_type': context,
+                'rating': rating,
+                'timestamp': datetime.fromtimestamp(
+                    os.path.getmtime(meta_file)
+                ).isoformat(),
+                'task_preview': task
+            }
+            chain_agents.append(agent_data)
+
+        if chain_agents:
+            chains[run_id] = {
+                'agents': chain_agents,
+                'total_input': sum(a['input_tokens'] for a in chain_agents),
+                'total_output': sum(a['output_tokens'] for a in chain_agents),
+                'ideal_count': sum(1 for a in chain_agents if a['input_tokens'] <= 80_000),
+                'agent_count': len(chain_agents)
+            }
+
+    if not chains:
+        return None
+
+    return {
+        'approach': approach_name,
+        'chain_count': len(chains),
+        'chains': chains,
+        'total_input': sum(c['total_input'] for c in chains.values()),
+        'total_output': sum(c['total_output'] for c in chains.values()),
+        'ideal_total': sum(c['ideal_count'] for c in chains.values()),
+        'agent_total': sum(c['agent_count'] for c in chains.values())
+    }
+
+
+def extract_monolithic_data(art_dir, run_id):
+    """Extract standalone worker data (monolithic approach)."""
+    meta_file = os.path.join(art_dir, f'{run_id}_worker_0_meta.json')
+
+    if not os.path.exists(meta_file):
+        return None
+
+    data = json.load(open(meta_file))
+    inp_file = os.path.join(art_dir, f'{run_id}_worker_0_input.md')
+
+    context = 'unknown'
+    task = ''
+    if os.path.exists(inp_file):
+        content = open(inp_file).read(3000)
+        if 'running from a fork' in content.lower():
+            context = 'FORK'
+        elif 'running from a fresh' in content.lower():
+            context = 'FRESH'
+        else:
+            context = 'clean/empty'
+        lines = content.split('\n')
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('#') and not line.startswith('['):
+                task = line[:120]
+                break
+
+    rating = ("🟢" if data['usage']['input'] <= 80_000
+              else "🟡" if data['usage']['input'] <= 200_000
+              else "🟠" if data['usage']['input'] <= 500_000
+              else "🔴")
+
+    return {
+        'approach': 'monolithic',
+        'chain_count': 1,
+        'chains': {
+            run_id: {
+                'agents': [{
+                    'agent': 'worker',
+                    'index': 0,
+                    'input_tokens': data['usage']['input'],
+                    'output_tokens': data['usage']['output'],
+                    'turns': data.get('toolCount', 0),
+                    'success': data.get('exitCode', 0) == 0,
+                    'context_type': context,
+                    'rating': rating,
+                    'timestamp': datetime.fromtimestamp(
+                        os.path.getmtime(meta_file)
+                    ).isoformat(),
+                    'task_preview': task
+                }],
+                'total_input': data['usage']['input'],
+                'total_output': data['usage']['output'],
+                'ideal_count': 1 if data['usage']['input'] <= 80_000 else 0,
+                'agent_count': 1
+            }
+        },
+        'total_input': data['usage']['input'],
+        'total_output': data['usage']['output'],
+        'ideal_total': 1 if data['usage']['input'] <= 80_000 else 0,
+        'agent_total': 1
+    }
+
+
+def main():
+    include_v24 = '--include-v24' in sys.argv
+    json_output = '--json' in sys.argv
+
+    art_dir = os.path.join(SESSIONS_DIR, f'--root-{PROJECT}--', 'subagent-artifacts')
+
+    if not os.path.exists(art_dir):
+        print(f"Error: Artifact directory not found: {art_dir}")
+        sys.exit(1)
+
+    result = {
+        'experiment': PROJECT,
+        'task': 'Redis proxy 10 modules, 113 tests passing',
+        'result_monolithic': '540 lines, 113/113 tests passing',
+        'result_giver': '498 lines, 113/113 tests passing',
+        'extraction_timestamp': datetime.now().isoformat(),
+        'approaches': {}
+    }
+
+    # Monolithic
+    mono = extract_monolithic_data(art_dir, MONO_WORKER)
+    if mono:
+        result['approaches']['monolithic'] = mono
+
+    # Giver v2.2
+    v22 = extract_artifact_data(art_dir, V22_CHAINS, 'giver-v2.2')
+    if v22:
+        # Add context leak info for fde94195
+        if 'fde94195' in v22['chains']:
+            v22['chains']['fde94195']['context_leak'] = True
+            v22['chains']['fde94195']['leak_note'] = 'Planner 3.3M from Previous Failures containing full previous chain output'
+        v22_normal_total = sum(
+            c['total_input'] for rid, c in v22['chains'].items()
+            if rid != 'fde94195'
+        )
+        v22['normal_input_excluding_leak'] = v22_normal_total
+        result['approaches']['giver-v2.2'] = v22
+
+    # Giver v2.3
+    v23 = extract_artifact_data(art_dir, V23_CHAINS, 'giver-v2.3')
+    if v23:
+        result['approaches']['giver-v2.3'] = v23
+
+    # Giver v2.4 (only if requested)
+    if include_v24:
+        v24 = extract_artifact_data(art_dir, V24_CHAINS, 'giver-v2.4')
+        if v24:
+            result['approaches']['giver-v2.4'] = v24
+
+    # Compute comparisons
+    mono_input = result['approaches'].get('monolithic', {}).get('total_input', 0)
+    comparisons = {}
+
+    for approach_name, approach_data in result['approaches'].items():
+        if approach_name == 'monolithic' or mono_input == 0:
+            continue
+
+        comp = {
+            'approach': approach_name,
+            'monolithic_input': mono_input,
+            'approach_input': approach_data['total_input'],
+            'ratio': approach_data['total_input'] / mono_input if mono_input > 0 else 0,
+            'savings_pct': (1 - approach_data['total_input'] / mono_input) * 100 if mono_input > 0 else 0
+        }
+
+        # Best chain vs monolithic
+        best_chain = min(approach_data['chains'].values(), key=lambda c: c['total_input'])
+        comp['best_chain_input'] = best_chain['total_input']
+        comp['best_chain_vs_monolithic'] = (1 - best_chain['total_input'] / mono_input) * 100 if mono_input > 0 else 0
+
+        comparisons[approach_name] = comp
+
+    result['comparisons'] = comparisons
+
+    # Output
+    if json_output:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print("=" * 78)
+        print("  redbis 코딩 테스트 실험 데이터")
+        print("=" * 78)
+        print(f"  과제: {result['task']}")
+        print(f"  결과 (모놀리식): {result['result_monolithic']}")
+        print(f"  결과 (Giver): {result['result_giver']}")
+        print(f"  추출 시각: {result['extraction_timestamp']}")
+
+        for approach_name, approach_data in result['approaches'].items():
+            print(f"\n  📊 {approach_name}")
+            print(f"     체인 수: {approach_data['chain_count']}")
+            print(f"     총 input: {approach_data['total_input']:,}")
+            print(f"     이상적: {approach_data['ideal_total']}/{approach_data['agent_total']}")
+
+            for rid, chain in approach_data['chains'].items():
+                agents_str = ' + '.join(
+                    f"{a['agent'][:1]}={a['input_tokens']:,}{a['rating']}"
+                    for a in chain['agents']
+                )
+                leak = ' (context leak!)' if chain.get('context_leak') else ''
+                print(f"     {rid}: {agents_str} = {chain['total_input']:,}{leak}")
+
+        if comparisons:
+            print(f"\n  📊 비교 (모놀리식 기준)")
+            print(f"  {'방식':>15}  {'총 input':>12}  {'비율':>6}  {'절감':>6}  {'최적 체인':>12}  {'최적 절감':>10}")
+            print(f"  {'-'*70}")
+            print(f"  {'모놀리식':>15}  {mono_input:>12,}  {'1.00':>6}  {'기준':>6}  {'—':>12}  {'—':>10}")
+            for approach_name, comp in comparisons.items():
+                print(f"  {approach_name:>15}  {comp['approach_input']:>12,}  {comp['ratio']:>.2f}x  {comp['savings_pct']:>+5.0f}%  {comp['best_chain_input']:>12,}  {comp['best_chain_vs_monolithic']:>+9.1f}%")
+
+            # v2.3 normal (excluding leak)
+            v23_normal = result['approaches'].get('giver-v2.3', {}).get('total_input', 0)
+            v23_best = min(result['approaches'].get('giver-v2.3', {}).get('chains', {}).values(), key=lambda c: c['total_input'])['total_input'] if result['approaches'].get('giver-v2.3') else 0
+            if mono_input > 0 and v23_normal > 0:
+                print(f"\n  Giver v2.3 정상(1번체인): {v23_best:,}  vs 모놀리식: {(1-v23_best/mono_input)*100:+.0f}%")
+                print(f"  Giver v2.3 전체(3체인): {v23_normal:,}  vs 모놀리식: {(1-v23_normal/mono_input)*100:+.0f}%")
+
+        print(f"\n  데이터 저장: reports/redbis-experiment-data.json")
+        print(f"  재실행: python3 scripts/redbis-extract-data")
+
+
+if __name__ == '__main__':
+    main()
