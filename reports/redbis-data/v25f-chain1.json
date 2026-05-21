@@ -1,0 +1,57 @@
+{
+  "label": "v25f-chain1",
+  "run_id": "16d6a845",
+  "agents": [
+    {
+      "role": "scout",
+      "index": 0,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 23415,
+      "output_tokens": 1535,
+      "turns": 4,
+      "tool_count": 9,
+      "duration_ms": 18317,
+      "exit_code": 0,
+      "success": true
+    },
+    {
+      "role": "planner",
+      "index": 1,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 16761,
+      "output_tokens": 4741,
+      "turns": 3,
+      "tool_count": 2,
+      "duration_ms": 39900,
+      "exit_code": 0,
+      "success": true
+    },
+    {
+      "role": "scout",
+      "index": 2,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 18129,
+      "output_tokens": 789,
+      "turns": 4,
+      "tool_count": 6,
+      "duration_ms": 43700,
+      "exit_code": 0,
+      "success": true
+    },
+    {
+      "role": "worker",
+      "index": 3,
+      "model": "glm-5.1:cloud",
+      "input_tokens": 179857,
+      "output_tokens": 8677,
+      "turns": 12,
+      "tool_count": 18,
+      "duration_ms": 108500,
+      "exit_code": 0,
+      "success": true
+    }
+  ],
+  "total_input": 238162,
+  "total_output": 15742,
+  "total_duration_ms": 210417
+}
