@@ -1,4 +1,4 @@
-# Giver Architecture — Flow Diagram
+# Giver Architecture - Flow Diagram
 
 ```
 요청
@@ -78,11 +78,11 @@
 
 | Version | Lines | Key change | Experiment result |
 |---------|-------|------------|-------------------|
-| v1 | — | 기본 구조 | 규칙 준수율 0-4% (판단 규칙) |
-| v2 | — | fork 금지, fresh 필수 | 준수율 개선 (auto-repeat 100%) |
-| v2.1 | — | Phase 0.5 협력 진단 | — |
-| v2.2 | — | Scout 3요소, Phase 1.5 file count | — |
-| v2.3 | — | Previous Failures 2-4줄, Worker 파일 생성 | — |
+| v1 | - | 기본 구조 | 규칙 준수율 0-4% (판단 규칙) |
+| v2 | - | fork 금지, fresh 필수 | 준수율 개선 (auto-repeat 100%) |
+| v2.1 | - | Phase 0.5 협력 진단 | - |
+| v2.2 | - | Scout 3요소, Phase 1.5 file count | - |
+| v2.3 | - | Previous Failures 2-4줄, Worker 파일 생성 | - |
 | v2.4 | ~1000 | 연속 체인, 재시도 사용자 결정 | 640K (-25% vs 857K 모놀리식) |
 | v2.5 | ~1090 | DI 제공, 의존성 깊이 분할, Scout 의존성 분석 | 290K (Worker-only, 규칙 미준수) |
 | **v2.5b** | **843** | **do-when 패턴, failover 명시** | **재실험 필요** |
