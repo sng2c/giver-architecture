@@ -73,7 +73,7 @@ Before writing T_0, Giver MUST call Scout standalone to collect dependency signa
 ```json
 {
   "agent": "scout",
-  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, and dependency signatures for {project}.\n\n### Where\n{target directories} ONLY\n\n### Output limit\nKeep output under 150 lines. List: file tree, import relationships, and type signatures of exported functions/classes/interfaces.",
+  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, and dependency signatures for {project}.\n\n### Where\n{target directories} within project root ONLY\n\n### Output limit\nKeep output under 150 lines. List: file tree, import relationships, and type signatures of exported functions/classes/interfaces.",
   "context": "fresh",
   "cwd": "{project_root}"
 }
@@ -224,7 +224,7 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nYou are the Planner. Write plan.md in H document format.\n\nCurate Task #0 into T_k for each Worker. plan.md MUST use this format:\n\n----\n## PLAN (by Planner)\n{overall plan — file grouping, dependency layer order, integration points}\n\n----\n# Task #1 (for Worker 1)\n\n### Goal\n(curate Task #0's Goal for this Worker)\n\n### Background\n(curate Task #0's Background for this Worker)\n\n### Past failures\n(curate Task #0's Past failures for this Worker)\n\n### Constraints\n(curate Task #0's Constraints for this Worker)\n\n### Target Files\n- path/to/file1.ts\n- path/to/file2.ts\n\n### Imports needed\n(curate Task #0's Imports needed for this Worker)\n----\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within cwd.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nYou are the Planner. Write plan.md in H document format.\n\nCurate Task #0 into T_k for each Worker. plan.md MUST use this format:\n\n----\n## PLAN (by Planner)\n{overall plan — file grouping, dependency layer order, integration points}\n\n----\n# Task #1 (for Worker 1)\n\n### Goal\n(curate Task #0's Goal for this Worker)\n\n### Background\n(curate Task #0's Background for this Worker)\n\n### Past failures\n(curate Task #0's Past failures for this Worker)\n\n### Constraints\n(curate Task #0's Constraints for this Worker)\n\n### Target Files\n- path/to/file1.ts\n- path/to/file2.ts\n\n### Imports needed\n(curate Task #0's Imports needed for this Worker)\n----\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within project root.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
@@ -245,7 +245,7 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite plan.md in H document format. Curate Task #0 into T_k for each Worker batch.\n\nplan.md MUST contain:\n\n----\n## PLAN (by Planner)\n{overall plan}\n\n----\n# Task #1 (for Worker 1)\n{curated sections}\n\n----\n# Task #2 (for Worker 2)\n{curated sections}\n----\n\nEach Task section uses the same format as Task #0 plus Target Files and curated Imports needed.\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within cwd.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite plan.md in H document format. Curate Task #0 into T_k for each Worker batch.\n\nplan.md MUST contain:\n\n----\n## PLAN (by Planner)\n{overall plan}\n\n----\n# Task #1 (for Worker 1)\n{curated sections}\n\n----\n# Task #2 (for Worker 2)\n{curated sections}\n----\n\nEach Task section uses the same format as Task #0 plus Target Files and curated Imports needed.\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within project root.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
@@ -350,7 +350,7 @@ Return to user after every chain. Do re-chain only when user explicitly requests
 ```json
 {
   "agent": "scout",
-  "task": "## Bug Diagnosis\n\n### What\nInvestigate the reported symptom: {describe symptom}. Find the likely root cause.\n\n### Where\n{directories} ONLY\n\n### Output limit\nKeep output under 150 lines. Include: relevant code sections, error traces, suspicious patterns.",
+  "task": "## Bug Diagnosis\n\n### What\nInvestigate the reported symptom: {describe symptom}. Find the likely root cause.\n\n### Where\n{directories} within project root ONLY\n\n### Output limit\nKeep output under 150 lines. Include: relevant code sections, error traces, suspicious patterns.",
   "context": "fresh",
   "cwd": "{project_root}"
 }
