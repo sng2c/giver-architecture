@@ -1,0 +1,69 @@
+{
+  "approach": "giver-v2.5c",
+  "label": "v25c-chain1",
+  "run_id": "fc4b2d3b",
+  "agents": [
+    {
+      "role": "scout",
+      "index": 0,
+      "input_tokens": 5884,
+      "output_tokens": 514,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 4,
+      "duration_ms": 14681,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for scout\n\n[Write to: /tmp/pi-subagents-uid-0/chain-runs/fc4b2d3b/context.md]\n\n# Recon\n\n## What\nTypeScript project configuration: tsconfig.json settings, module resolution, import conventions\n\n",
+      "has_di": false,
+      "has_scope": false
+    },
+    {
+      "role": "planner",
+      "index": 1,
+      "input_tokens": 141061,
+      "output_tokens": 9210,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 21,
+      "duration_ms": 172829,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for planner\n\n[Read from: /tmp/pi-subagents-uid-0/chain-runs/fc4b2d3b/context.md]\n[Write to: /tmp/pi-subagents-uid-0/chain-runs/fc4b2d3b/plan.md]\n\n## Objective\nRedbis 코딩테스트 — RESP 프로토콜 미들웨어 프록시의",
+      "has_di": true,
+      "has_scope": true
+    },
+    {
+      "role": "scout",
+      "index": 2,
+      "input_tokens": 17739,
+      "output_tokens": 375,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 3,
+      "duration_ms": 15042,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for scout\n\n[Write to: /tmp/pi-subagents-uid-0/chain-runs/fc4b2d3b/context.md]\n\n# Implementation Recon\n\n## What\nsrc/storage/interface.ts exports and type definitions\n\n## Where\nsrc/storage/interf",
+      "has_di": true,
+      "has_scope": false
+    },
+    {
+      "role": "worker",
+      "index": 3,
+      "input_tokens": 48659,
+      "output_tokens": 2454,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 7,
+      "duration_ms": 37403,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for worker\n\n[Read from: /tmp/pi-subagents-uid-0/chain-runs/fc4b2d3b/context.md, /tmp/pi-subagents-uid-0/chain-runs/fc4b2d3b/plan.md]\n\nExecute the implementation plan in plan.md. Start by readin",
+      "has_di": true,
+      "has_scope": true
+    }
+  ],
+  "total_input": 213343,
+  "total_output": 12553
+}

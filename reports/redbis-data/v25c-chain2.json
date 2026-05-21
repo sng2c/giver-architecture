@@ -1,0 +1,54 @@
+{
+  "approach": "giver-v2.5c",
+  "label": "v25c-chain2",
+  "run_id": "57ed39fa",
+  "agents": [
+    {
+      "role": "planner",
+      "index": 0,
+      "input_tokens": 365860,
+      "output_tokens": 8315,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 41,
+      "duration_ms": 125453,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for planner\n\n[Read from: /tmp/pi-subagents-uid-0/chain-runs/57ed39fa/context.md]\n[Write to: /tmp/pi-subagents-uid-0/chain-runs/57ed39fa/plan.md]\n\n## Objective\nRedbis 코딩테스트 — RESP 프로토콜 미들웨어 프록시의",
+      "has_di": true,
+      "has_scope": true
+    },
+    {
+      "role": "scout",
+      "index": 1,
+      "input_tokens": 62438,
+      "output_tokens": 2290,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 6,
+      "duration_ms": 84800,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for scout\n\n[Write to: /tmp/pi-subagents-uid-0/chain-runs/57ed39fa/context.md]\n\n# Implementation Recon\n\n## What\nTest expectations for logger, command handler, server/connection, and server modul",
+      "has_di": true,
+      "has_scope": false
+    },
+    {
+      "role": "worker",
+      "index": 2,
+      "input_tokens": 243569,
+      "output_tokens": 2935,
+      "cache_read": 0,
+      "cache_write": 0,
+      "turns": 18,
+      "duration_ms": 59759,
+      "exit_code": 0,
+      "success": true,
+      "input_preview": "# Task for worker\n\n[Read from: /tmp/pi-subagents-uid-0/chain-runs/57ed39fa/context.md, /tmp/pi-subagents-uid-0/chain-runs/57ed39fa/plan.md]\n\nExecute the implementation plan in plan.md. Start by readin",
+      "has_di": true,
+      "has_scope": true
+    }
+  ],
+  "total_input": 671867,
+  "total_output": 13540
+}
