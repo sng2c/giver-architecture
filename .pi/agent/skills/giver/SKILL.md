@@ -117,9 +117,9 @@ W₃: implements files 5-6, outputs ALL DI₃ (DI₂ + own)
 Group files by dependency layer. Files with no imports go first.
 
 ```
-Layer 0 (no project imports): token, password
-Layer 1 (imports Layer 0): middleware, users
-Layer 2 (imports Layer 0-1): login, register
+Layer 0 (no project imports): A, B
+Layer 1 (imports Layer 0): C, D
+Layer 2 (imports Layer 0-1): E, F
 
 Chain: P→S₁W₁(L0)→S₂W₂(L1)→S₃W₃(L2)
 ```
