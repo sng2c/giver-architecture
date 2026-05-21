@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.2"
-description: "The Giver v3.2. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
+version: "3.3"
+description: "The Giver v3.3. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -14,7 +14,7 @@ You selectively **give** only what they need via T_0 and History accumulation.
 
 ```
 T_0 = Goal + Background + Past failures + Constraints + Imports needed  (G가 작성)
-T_k = Goal + Background + Past failures + Constraints + TargetFiles + Imports needed  (P가 Worker별 큐레이팅 — plan.md에 저장)
+T_k = Goal + Background + Past failures + Constraints + TargetFiles + Imports needed  (P가 Worker별 큐레이팅 — task{k}.md에 저장)
 Dependency = (시그니처, 파일경로)  (튜플)
 Imports needed (curated) = T_0의 Imports needed에서 P가 Worker별로 큐레이팅  (Worker가 임포트하는 것만)
 TargetFiles = 타겟 파일목록  (Worker당 최대 3개)
@@ -31,18 +31,18 @@ S: History → History
 W: History → History
 ```
 
-All subagents take {previous} (previous step only) and return their output. Files (plan.md, context.md) persist across the chain.
+All subagents take {previous} (previous step only) and return their output. Files (task files, context.md) persist across the chain.
 
 ## Pipeline
 
-Planner writes all Worker Tasks in plan.md and curates Imports needed per Worker from T_0. No Scout in chain — Planner includes everything Workers need. Workers receive {previous} which accumulates all prior outputs.
+Planner writes separate task files (task1.md, task2.md, ...) for each Worker batch. Each Worker reads only its own task file. No Scout in chain. Workers receive {previous} with brief plan summary + accumulated RESULTs.
 
 ```
 Giver → Task #0 (for Planner) — 유일하게 Giver가 작성
-Planner → {previous} = PLAN + Task #1..#N (curated per Worker)
-Worker 1 → {previous} = PLAN + Tasks + RESULT #0
-Worker 2 → {previous} = above + RESULT #1
-Worker N → {previous} = above + RESULT #N-1
+Planner → writes task1.md, task2.md, ... + brief plan.md
+Worker 1 → reads task1.md, {previous} = plan summary
+Worker 2 → reads task2.md, {previous} = plan summary + RESULT #0
+Worker N → reads task{N}.md, {previous} = plan summary + RESULTS
 ```
 
 ---
@@ -141,9 +141,9 @@ Call chains (P→W or P→W→W→...).
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
 3. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
-4. **Planner writes all Worker Tasks in plan.md** — P writes plan.md containing PLAN + Task #1 (for Worker 1), Task #2 (for Worker 2), etc. Each Task uses the same H document format as T_0 plus Target Files.
+4. **Planner writes separate task files** — P writes task1.md, task2.md, etc. (one per Worker batch). Each uses the same H document format as T_0 plus Target Files. P also writes plan.md as a brief overview.
 5. **Planner curates Imports needed per Worker** — P includes all dependency signatures from T_0 in each Worker Task. No chain Scout needed. Workers receive {previous} which accumulates all prior outputs (PLAN, Tasks, previous Results).
-6. **Worker reads its Task #k from plan.md** — W finds its assigned Task in plan.md and implements it. Giver does not pre-write Worker task content.
+6. **Worker reads only its own task file** — W reads task{k}.md (not plan.md) and implements. This keeps Worker input small — no need to see other Workers' tasks.
 7. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 8. **Worker must report files created/modified** — each Worker lists what files it created or modified in RESULT, so subsequent Workers know what changed via {previous}.
 9. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
@@ -217,18 +217,18 @@ Layer 2 (imports Layer 0-1):    E, F  → Worker 3
 
 ## Template: 1-3 files (1 batch)
 
-Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. Planner writes all Worker Tasks in plan.md. No Scout in chain — Planner curates Imports needed per Worker from T_0.
+Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. Planner writes separate task files (task1.md, task2.md, ...) per Worker batch. Each Worker reads only its own task file.
 
 ```json
 {
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nYou are the Planner. Write plan.md in H document format.\n\nCurate Task #0 into T_k for each Worker. plan.md MUST use this format:\n\n----\n## PLAN (by Planner)\n{overall plan — file grouping, dependency layer order, integration points}\n\n----\n# Task #1 (for Worker 1)\n\n### Goal\n(curate Task #0's Goal for this Worker)\n\n### Background\n(curate Task #0's Background for this Worker)\n\n### Past failures\n(curate Task #0's Past failures for this Worker)\n\n### Constraints\n(curate Task #0's Constraints for this Worker)\n\n### Target Files\n- path/to/file1.ts\n- path/to/file2.ts\n\n### Imports needed\n(curate Task #0's Imports needed for this Worker)\n----\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within project root.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nYou are the Planner. Write task1.md, task2.md, etc. (one per Worker batch) in H document format. Also write plan.md as a brief overview.\n\nCurate Task #0 into T_k for each Worker file. task1.md MUST use this format:\n\n----\n## PLAN (by Planner)\n{overall plan — file grouping, dependency layer order, integration points}\n\n----\n# Task #1 (for Worker 1)\n\n### Goal\n(curate Task #0's Goal for this Worker)\n\n### Background\n(curate Task #0's Background for this Worker)\n\n### Past failures\n(curate Task #0's Past failures for this Worker)\n\n### Constraints\n(curate Task #0's Constraints for this Worker)\n\n### Target Files\n- path/to/file1.ts\n- path/to/file2.ts\n\n### Imports needed\n(curate Task #0's Imports needed for this Worker)\n----\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within project root.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
-      "task": "Read Task #1 from {previous}. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Files created\n- src/foo.ts\n\n## Files modified\n- (none)\n\n## Imports needed (new signatures)\nexport function fName(params): RetType — path/to/file.ts\n\n{previous}"
+      "task": "Read task1.md from the chain directory. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Files created\n- src/foo.ts\n\n## Files modified\n- (none)\n\n## Imports needed (new signatures)\nexport function fName(params): RetType — path/to/file.ts\n\n{previous}"
     }
   ],
   "context": "fresh",
@@ -245,15 +245,15 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite plan.md in H document format. Curate Task #0 into T_k for each Worker batch.\n\nplan.md MUST contain:\n\n----\n## PLAN (by Planner)\n{overall plan}\n\n----\n# Task #1 (for Worker 1)\n{curated sections}\n\n----\n# Task #2 (for Worker 2)\n{curated sections}\n----\n\nEach Task section uses the same format as Task #0 plus Target Files and curated Imports needed.\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within project root.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md, task2.md, etc. (one per Worker batch) in H document format. Also write plan.md as a brief overview.\n\nEach task file MUST contain:\n\n----\n## PLAN (by Planner)\n{brief overview}\n\n----\n# Task #1 (for Worker 1)\n{curated sections}\n\n----\n# Task #2 (for Worker 2)\n{curated sections}\n----\n\nEach Task section uses the same format as Task #0 plus Target Files and curated Imports needed.\n\n## Working Rules\n\n- Curate from Task #0 only — read files only within project root.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
-      "task": "Read Task #1 from {previous}. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Files created\n- src/foo.ts\n\n## Files modified\n- (none)\n\n## Imports needed (new signatures)\nexport function fName(params): RetType — path/to/file.ts\n\n{previous}",
+      "task": "Read task1.md from the chain directory. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Files created\n- src/foo.ts\n\n## Files modified\n- (none)\n\n## Imports needed (new signatures)\nexport function fName(params): RetType — path/to/file.ts\n\n{previous}",
     },
     {
       "agent": "worker",
-      "task": "Read Task #2 from {previous}. Implement the Target Files listed there.\n\n{previous} contains the full pipeline: PLAN, all Tasks, and RESULT #0 from Worker 1. Use RESULT #0's Files created/modified and new signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #1 (by Worker 2)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed (accumulated)\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
+      "task": "Read task2.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains plan summary + RESULT #0 from Worker 1. Use RESULT #0's Files created/modified and new signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #1 (by Worker 2)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed (accumulated)\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
     }
   ],
   "context": "fresh",
@@ -270,7 +270,7 @@ Add Worker steps for each additional batch. Each Worker receives {previous} cont
 ```json
 {
   "agent": "worker",
-  "task": "Read Task #N from {previous}. Implement the Target Files listed there.\n\n{previous} contains the full pipeline: PLAN, all Tasks, and all previous Worker Results. Use previous Workers' Files created/modified and signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #N (by Worker N)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
+  "task": "Read task{N}.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains plan summary + all previous Worker Results. Use previous Workers' Files created/modified and signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #N (by Worker N)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
 }
 ```
 
@@ -280,18 +280,18 @@ The **last Worker** does not need the Imports needed / Files sections (no subseq
 
 ## Template: Parallel workers (independent slices only)
 
-Only after P→W has produced plan.md. Only when files have NO overlap and NO imports between them.
+Only after P→W has produced task files. Only when files have NO overlap and NO imports between them.
 
 ```json
 {
   "tasks": [
     {
       "agent": "worker",
-      "task": "Read your Task from plan.md ({layer}-layer). Target files: {files}.\n\nImplement the Target Files. Run tests to verify.\n\nWrite RESULT:\n\n----\n# RESULT (by Worker)\n\nAll tests pass.\n\n{previous}",
+      "task": "Read your task file ({layer}-layer). Target files: {files}.\n\nImplement the Target Files. Run tests to verify.\n\nWrite RESULT:\n\n----\n# RESULT (by Worker)\n\nAll tests pass.\n\n{previous})",
     },
     {
       "agent": "worker",
-      "task": "Read your Task from plan.md ({layer}-layer). Target files: {files}.\n\nImplement the Target Files. Run tests to verify.\n\nWrite RESULT:\n\n----\n# RESULT (by Worker)\n\nAll tests pass.\n\n{previous}",
+      "task": "Read your task file ({layer}-layer). Target files: {files}.\n\nImplement the Target Files. Run tests to verify.\n\nWrite RESULT:\n\n----\n# RESULT (by Worker)\n\nAll tests pass.\n\n{previous})",
     }
   ],
   "concurrency": 2,
