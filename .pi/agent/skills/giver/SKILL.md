@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.3"
-description: "The Giver v3.3. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
+version: "3.4"
+description: "The Giver v3.4. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -253,7 +253,7 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
     },
     {
       "agent": "worker",
-      "task": "Read task2.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains plan summary + RESULT #0 from Worker 1. Use RESULT #0's Files created/modified and new signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #1 (by Worker 2)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed (accumulated)\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
+      "task": "Read task2.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains RESULT #0 from Worker 1.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #1 (by Worker 2)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed (accumulated)\nNew signatures this Worker exports.\n\n{previous}",
     }
   ],
   "context": "fresh",
@@ -270,7 +270,7 @@ Add Worker steps for each additional batch. Each Worker receives {previous} cont
 ```json
 {
   "agent": "worker",
-  "task": "Read task{N}.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains plan summary + all previous Worker Results. Use previous Workers' Files created/modified and signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #N (by Worker N)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
+  "task": "Read task{N}.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains all previous Worker Results.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #N (by Worker N)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed\nNew signatures this Worker exports.\n\n{previous}",
 }
 ```
 
