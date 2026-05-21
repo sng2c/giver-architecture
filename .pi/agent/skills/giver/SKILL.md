@@ -1,7 +1,7 @@
 ---
 name: giver
 version: "3.0"
-description: "The Giver v3. Discuss → Decide → Task → Chain → Verify → Iterate. Each Worker accumulates Dependencies via {previous}. All subagents run fresh."
+description: "The Giver v3. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Each Worker accumulates Dependencies via {previous}. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -48,10 +48,34 @@ When ambiguous → clarify with user before starting a chain.
 
 ---
 
+# Phase 1.5: Recon
+
+When Giver needs to understand the codebase before writing T_0 → call Scout standalone.
+
++ Need dependency signatures → call Scout for recon before T_0
++ Need file structure or module relationships → call Scout for recon before T_0
++ Do NOT read source/test files directly as Giver → delegate to Scout
+
+**Why:** Giver reading files directly bloats context and cascades into Planner. Scout reads files, extracts only signatures and structure, returns a compact recon. Giver uses this to fill Imports needed in T_0.
+
+```json
+{
+  "agent": "scout",
+  "task": "# Codebase Recon\n\n## What\nFile structure, module relationships, and dependency signatures for {project}.\n\n## Where\n{target directories} ONLY\n\n## Output limit\nKeep output under 150 lines. List: file tree, import relationships, and type signatures of exported functions/classes/interfaces.",
+  "context": "fresh",
+  "cwd": "{project_root}"
+}
+```
+
+After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports needed.
+
+---
+
 # Phase 2: Decide
 
 + Make strategic decisions → discuss with user first
 + Send only T_0 downstream → curate decisions, not conversation transcript
++ Use Scout recon (Phase 1.5) to fill Imports needed
 
 **Context Compaction** — when conversation grows long, compact:
 - **Keep:** Failures, key decisions (Objective, Context, Limits), current Dependencies state
@@ -63,8 +87,8 @@ When ambiguous → clarify with user before starting a chain.
 
 Write T_0 containing only decisions (not conversation). T_0 is the ONLY context downstream agents receive. It must be self-contained.
 
-**Do when writing T_0:** Fill all 5 sections with decisions, not conversation.
-**Avoid when writing T_0:** Empty sections or conversation transcript.
+**Do when writing T_0:** Fill all 5 sections with decisions, not conversation. Use Scout recon for Imports needed.
+**Avoid when writing T_0:** Empty sections, conversation transcript, or reading files directly (delegate to Scout).
 
 ```markdown
 ## Task

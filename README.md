@@ -3,10 +3,10 @@
 > [!IMPORTANT]
 > **시스템 요구사항:** pi-agent ≥ 0.74.0 및 pi-subagents ≥ 0.24.3
 
-## 6 Phase 워크플로우
+## 7 Phase 워크플로우
 
 ```
-Discuss → Decide → Task → Chain → Verify → Iterate
+Discuss → Recon → Decide → Task → Chain → Verify → Iterate
   ↑                                           │
   └───────────── 실패 시 돌아감 ───────────────┘
 ```
@@ -14,6 +14,7 @@ Discuss → Decide → Task → Chain → Verify → Iterate
 | Phase | 역할 | 행동 |
 |-------|------|------|
 | **Discuss** | 불명확 → 질문, 버그 → Scout 진단 | 사용자와 대화, 모호함 해소 |
+| **Recon** | 코드 구조/시그니처 수집 | Giver가 파일을 직접 읽지 않고 Scout에게 위임 |
 | **Decide** | 전략 결정, 대화 압축 | T_0에 넣을 결정사항만 추출 |
 | **Task** | T_0 작성 | 5섹션 자연어 헤더로 문서화 |
 | **Chain** | P→S→W 호출 | 파일 그룹핑, 배치 분할 |
