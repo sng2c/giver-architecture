@@ -8,9 +8,9 @@
 | 《기억 전달자》(소설) | The Giver v3 (아키텍처) |
 |---|---|
 | 기억 전달자가 모든 기억을 통제 | **Giver**가 대화의 모든 컨텍스트를 독점 보유 |
-| 수령자는 제한된 정보만 수신 | **P/S/W**는 Giver가 큐레이팅한 T₀만 수신 |
+| 수령자는 제한된 정보만 수신 | **P/S/W**는 Giver가 큐레이팅한 Task(초기)만 수신 |
 | 공동체는 Sameness에 거주 | **P/S/W**는 이전 이력이 없는 Fresh 상태로 실행 |
-| 선택적이고 의도적인 전달 | T₀ → Tₖ 형태로만 정보 전달 (**giving**) |
+| 선택적이고 의도적인 전달 | Task(초기) → Task(Worker) 형태로만 정보 전달 (**giving**) |
 | 고통의 전달 (giving of pain) | 실패 이력을 F[]에 담아 전달 → 다음 시도에서 회피 |
 | Stirrings 감시 및 억제 | 실행 전후 Fresh 상태 보장, `"context": "fresh"` 필수 |
 
@@ -30,42 +30,42 @@ W:  H → H
 ### 데이터 구조
 
 ```
-T₀  = O + C + F[] + L[] + D[]       (G가 작성 — 초기 태스크 + 의존성)
-Tₖ  = O + C + F[] + L[] + TF + D₀  (P가 Wₖ용으로 큐레이팅)
+Task(초기) = Objective + Context + Failures + Limits + Dependencies  (G가 작성)
+Task(Worker) = Objective + Context + Failures + Limits + TargetFiles + CuratedDeps  (P가 큐레이팅)
 D   = (sig, path)                     (시그니처 + 파일경로 튜플)
-D₀  = 초기 D[]의 큐레이팅              (Wₖ가 임포트하는 것만)
-TF  = Target Files                    (W당 최대 3개)
-R   = ok + msg + D[]                  (1/0, 자유텍스트, 새 시그니처)
-H   = T₀ + D[] + TR₀ + TR₁ + ...    (평면 누적 히스토리)
+CuratedDeps = 초기 Dependencies 큐레이팅  (Worker가 임포트하는 것만)
+TargetFiles = 타겟 파일목록  (Worker당 최대 3개)
+Result = 상태 + 메시지 + 새의존성  (성공/실패, 자유텍스트, 새시그니처)
+History = Task(초기) + Dependencies + 누적결과들  (평면 마크다운)
 ```
 
-### T₀ — 초기 태스크 (G가 작성)
+### Task — 초기 태스크 (G가 작성)
 
 ```
-### O     — Objective (단일, 한 문장)
-### C     — Context (결정사항만, 대화 금지)
-### F[]   — Failures (이전 실패 로그, 첫 시도면 "None")
-### L[]   — Limits (기술적 제약)
-### D[]   — Dependencies (타겟 외 임포트 시그니처 + 파일경로)
+### Objective — 단일, 한 문장 (단일, 한 문장)
+### Context — 결정사항만, 대화 금지 (결정사항만, 대화 금지)
+### Failures — 이전 실패 로그 (이전 실패 로그, 첫 시도면 "None")
+### Limits — 기술적 제약 (기술적 제약)
+### Dependencies — 타겟 외 임포트 시그니처 + 파일경로 (타겟 외 임포트 시그니처 + 파일경로)
 ```
 
-T₀의 모든 하위섹션은 P가 W에게 전달할 때 **큐레이팅**됨. 전체를 던지지 않고 W가 필요한 것만 추려서 Tₖ로 변환.
+Task(초기)의 모든 하위섹션은 P가 Worker에게 전달할 때 **큐레이팅**됨. 전체를 던지지 않고 Worker가 필요한 것만 추려서 Task(Worker)로 변환.
 
-### Tₖ — Worker 태스크 (P가 큐레이팅)
+### Task(Worker) — Worker 태스크 (P가 큐레이팅)
 
 ```
-### O     — 이 W에 맞게 큐레이팅된 목표
-### C     — 이 W에 관련된 결정사항만
-### F[]   — 이 W 범위의 실패만
-### L[]   — 이 W에 해당하는 제약만
-### TF    — 타겟 파일 (최대 3개)
-### D₀    — 초기 D[]에서 이 W가 임포트하는 것만
+### Objective — 이 W에 맞게 큐레이팅된 목표
+### Context — 이 W에 관련된 결정사항만
+### Failures — 이 W 범위의 실패만
+### Limits — 이 W에 해당하는 제약만
+### TargetFiles — 타겟 파일 (최대 3개)
+### CuratedDeps — 초기 Dependencies에서 이 Worker가 임포트하는 것만
 ```
 
 ### D의 두 출처
 
-- **D₀** — T₀의 D[]에서 P가 큐레이팅 (계획 시점에 알던 것)
-- **R.D[]** — W가 새로 만든 의존성 (실행 중에 생긴 것, 큐레이팅 없이 전부 누적)
+- **CuratedDeps** — Task(초기)의 Dependencies에서 P가 큐레이팅 (계획 시점에 알던 것)
+- **New Dependencies** — Worker가 새로 만든 의존성 (실행 중에 생긴 것, 큐레이팅 없이 전부 누적)
 
 ## 체인 흐름
 
@@ -73,24 +73,24 @@ T₀의 모든 하위섹션은 P가 W에게 전달할 때 **큐레이팅**됨. �
 사용자 ↔ G (대화, 결정)
          │
          ▼
-    G → T₀ 작성 (O + C + F[] + L[] + D[])
+    G → Task(초기) 작성
          │
          ▼
     ┌─── P (fresh, H 입력) ───────────────────────────┐
     │   │                                                │
     │   ├── S (fresh, H) ──→ R(S) ──→ H에 append       │
     │   │                                    │           │
-    │   ├── T₀ 작성 ──→ H에 append          │           │
-    │   │                                    │           │
-    │   ├── W₀ (fresh, T₀+H) ──→ R₀ ──→ H에 append     │
-    │   │                                    │           │
-    │   ├── T₁ 작성 ──→ H에 append          │           │
-    │   │                                    │           │
-    │   ├── W₁ (fresh, T₁+H) ──→ R₁ ──→ H에 append     │
+    │   ├── Task 작성 ──→ H에 append
+    │   │
+    │   ├── Worker₀ (fresh, Task₀+H) ──→ Result₀ ──→ H에 append
+    │   │
+    │   ├── Task 작성 ──→ H에 append
+    │   │
+    │   ├── Worker₁ (fresh, Task₁+H) ──→ Result₁ ──→ H에 append
     │   │                                    │           │
     │   ├── ...                              │           │
     │   │                                    │           │
-    │   ├── R.ok=0 → 중단, H를 G에 리턴     │           │
+    │   ├── Result.status=실패 → 중단, H를 G에 리턴     │           │
     │   └── 전부 성공 → H를 G에 리턴 ────────┘          │
          │
          ▼
@@ -102,37 +102,37 @@ T₀의 모든 하위섹션은 P가 W에게 전달할 때 **큐레이팅**됨. �
 H는 평면 마크다운 문서. 각 에이전트가 자기 출력을 append. `{previous}`가 H 누적 메커니즘.
 
 ```markdown
-## T₀
-### O
+## Task
+### Objective
 Add LRU caching to UserService
 
-### C
+### Context
 User reported 800ms p99. Approved: in-memory LRU, 5-min TTL.
 
-### F[]
+### Failures
 None — first attempt
 
-### L[]
+### Limits
 Use lru-cache package. Max 1000 entries. Invalidate on CUD.
 
-### D[]
+### Dependencies
 getById(id: string): Promise<User | null> — src/services/user-service.ts
 IStorage.get(key: string): Promise<string | null> — src/storage/interface.ts
 
 ---
 ## 0
-### T₀
+### Task
 (add, update, delete caching in UserService)
 
-### R₀
+### Result
 (Scout recon — dependency signatures)
 
 ---
 ## 1
-### T₁
+### Task
 (implement cache layer in user-service.ts)
 
-### R₁
+### Result
 ok: 1
 D[]: (new signatures from implementation)
 
@@ -142,14 +142,14 @@ D[]: (new signatures from implementation)
 
 ## 대원칙
 
-1. **G는 대화 주체** — 사용자와 대화하고 결정, T₀를 작성
-2. **T₀만 하류로 전달** — 대화 전체가 아닌 결정사항만
+1. **G는 대화 주체** — 사용자와 대화하고 결정, Task(초기)를 작성
+2. **Task(초기)만 하류로 전달** — 대화 전체가 아닌 결정사항만
 3. **모든 서브에이전트는 fresh** — `"context": "fresh"` 필수, 예외 없음
-4. **P는 T₀를 Tₖ로 큐레이팅** — 전체를 던지지 않고 W에 맞게 추려서 전달
-5. **TF는 최대 3개** — W당 타겟 파일 제한
-6. **D₀는 큐레이팅, R.D[]는 누적 전달** — 초기 의존성만 추려서, 실행 중 새 의존성은 전부 전달
+4. **P는 Task(초기)를 Task(Worker)로 큐레이팅** — 전체를 던지지 않고 W에 맞게 추려서 전달
+5. **TargetFiles는 최대 3개** — Worker당 타겟 파일 제한
+6. **CuratedDeps는 큐레이팅, 새의존성은 누적 전달** — 초기 의존성만 추려서, 실행 중 새 의존성은 전부 전달
 7. **D = (sig, path)** — "see xxx.ts" 금지, 실제 시그니처 + 파일경로 필수
-8. **R.ok=0이면 즉시 중단** — 실패 시 G에게 H 리턴
+8. **Result.status=실패이면 즉시 중단** — 실패 시 G에게 H 리턴
 9. **F[]에 실패 이력 누적** — 재시도 시 이전 실패 포함, 같은 실수 방지
 10. **G는 파일 수정 금지** — 소스 코드 변경은 항상 체인(W)을 통해
 
@@ -176,10 +176,10 @@ L₂ (L₀-L₁ 임포트):         E, F       → W₃
 
 ```
 - What happened: (구체적: 에러 메시지, 잘못된 동작)
-- Root cause: (WHY — T₀가 불충분했는지, P/W가 오해했는지)
+- Root cause: (WHY — Task(초기)가 불충분했는지, P/W가 오해했는지)
 - What to avoid: ("DO NOT modify X", "DO NOT use approach Y")
 - Correct direction: (알려진 경우)
-- Giver correction: (T₀가 불충분했으면 인정)
+- Giver correction: (Task(초기)가 불충분했으면 인정)
 ```
 
 **모든 실패 후 필수 자기반성:**
@@ -191,7 +191,7 @@ L₂ (L₀-L₁ 임포트):         E, F       → W₃
 
 | 원인 | 패턴 | 해결 |
 |------|------|------|
-| 전략적 (G) | T₀ 불충분, 방향 오류 | Giver가 T₀ 수정 후 재시도 |
+| 전략적 (G) | Task(초기) 불충분, 방향 오류 | Giver가 Task(초기) 수정 후 재시도 |
 | 전술적 (P) | plan.md 잘못됨 | Giver가 P에 corrected context 제공 |
 | 운영적 (W) | plan은 맞지만 구현 오류 | Pitfalls 업데이트 후 W 재시도 |
 
@@ -208,13 +208,13 @@ G → S (스카우트) → G → 사용자 ("원인: X, 옵션: A/B")
 
 | v2.5b | v3 |
 |-------|-----|
-| 6섹션 Brief (Objective, Context, Prev Failures, DI, Target Files, Constraints) | T₀ = O + C + F[] + L[] + D[] |
+| 6섹션 Brief | Task(초기) = Objective + Context + Failures + Limits + Dependencies |
 | {previous}로 DI 수동 복사 | H 자동 누적 ({previous}) |
-| JB → TB 별도 정의 | T₀ → Tₖ (같은 T家族) |
-| J = JB + D[] 별도 | T₀에 D[] 포함 |
-| 시그니처별 (G→J, P→R[], S→brief→R, W→T→R) | 통일 시그니처 (모두 H→H) |
-| DI = 시그니처만 | D = (sig, path) 튜플 |
-| R에 T 포함 | R = ok + msg + D[] (T 제외, 평면 나열) |
+| JB → TB 별도 정의 | Task(초기) → Task(Worker) (같은 Task家族) |
+| J = JB + D[] 별도 | Task(초기)에 Dependencies 포함 |
+| 시그니처별 (G→J, P→R[], S→brief→R, W→T→R) | 통일 시그니처 (모두 History→History) |
+| DI = 시그니처만 | Dependency = (시그니처, 파일경로) 튜플 |
+| R에 T 포함 | Result = 상태 + 메시지 + 새의존성 (평면 나열) |
 
 ## 파일
 

@@ -51,22 +51,22 @@
 ### H 문서 형식
 
 ```markdown
-## T₀
-### O
-### C
-### F[]
-### L[]
-### D[]
+## Task
+### Objective
+### Context
+### Failures
+### Limits
+### Dependencies
 
 ---
 ## 0
-### T₀
-### R₀
+### Task
+### Result
 
 ---
 ## 1
-### T₁
-### R₁
+### Task
+### Result
 
 ---
 ...
@@ -79,35 +79,35 @@
            ↓
       G → T₀ 작성 + D[] 수집
            ↓
-      H = T₀ + D[]
+      H 시작
            ↓
       P (fresh, H 입력)
        │
-       ├→ S (fresh, H) → H에 R append (D[] 수집)
+       ├→ S (fresh, H) → H에 Result append
        │
-       ├→ T₀ 작성 → H에 append
-       ├→ W₀ (fresh, T₀ + H) → H에 R₀ append
+       ├→ Task 작성 → H에 append
+       ├→ W₀ (fresh, Task₀ + H) → H에 Result₀ append
        │
-       ├→ T₂ 작성 → H에 append
-       ├→ W₂ (fresh, T₂ + H) → H에 R₂ append
+       ├→ Task 작성 → H에 append
+       ├→ W₁ (fresh, Task₁ + H) → H에 Result₁ append
        │
        ├→ ... 순차 실행
        │
-       ├→ R.ok=0 → 중단, H를 G에 리턴
+       ├→ Result.ok=0 → 중단, H를 G에 리턴
        └→ 전부 성공 → H를 G에 리턴
 
-      G → 사용자 보고
+      G → H 해석 → 사용자 보고
 ```
 
 ### P의 H 처리
 
-1. R.ok 확인 → 성공(1)/실패(0) 판단
-2. 성공 시: R의 D[]를 H에 누적 (큐레이팅 X)
-3. 성공 시: 다음 Tₖ를 작성하여 H에 append
+1. Result.ok 확인 → 성공(1)/실패(0) 판단
+2. 성공 시: Result의 Dependencies를 H에 누적 (큐레이팅 X)
+3. 성공 시: 다음 Task를 작성하여 H에 append
 4. 실패 시: H를 그대로 G에게 리턴, 실행 중단
 5. 전부 성공 시: 최종 H를 G에게 리턴
 
 ### D의 두 출처
 
-- **D₀** — 초기 D[]에서 P가 큐레이팅 (계획 시점에 알던 것)
-- **R.D[]** — W가 새로 만든 의존성 (실행 중에 생긴 것, 큐레이팅 없이 전부 누적)
+- **Curated Dependencies** — 초기 Dependencies에서 P가 큐레이팅 (계획 시점에 알던 것)
+- **New Dependencies** — W가 새로 만든 의존성 (실행 중에 생긴 것, 큐레이팅 없이 전부 누적)
