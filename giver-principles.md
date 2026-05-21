@@ -60,12 +60,12 @@
 
 ---
 ## 0
-### T₁
+### T₀
 ### R₀
 
 ---
 ## 1
-### T₂
+### T₁
 ### R₁
 
 ---
@@ -85,8 +85,8 @@
        │
        ├→ S (fresh, H) → H에 R append (D[] 수집)
        │
-       ├→ T₁ 작성 → H에 append
-       ├→ W₁ (fresh, T₁ + H) → H에 R₁ append
+       ├→ T₀ 작성 → H에 append
+       ├→ W₀ (fresh, T₀ + H) → H에 R₀ append
        │
        ├→ T₂ 작성 → H에 append
        ├→ W₂ (fresh, T₂ + H) → H에 R₂ append

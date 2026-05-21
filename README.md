@@ -80,13 +80,13 @@ T₀의 모든 하위섹션은 P가 W에게 전달할 때 **큐레이팅**됨. �
     │   │                                                │
     │   ├── S (fresh, H) ──→ R(S) ──→ H에 append       │
     │   │                                    │           │
+    │   ├── T₀ 작성 ──→ H에 append          │           │
+    │   │                                    │           │
+    │   ├── W₀ (fresh, T₀+H) ──→ R₀ ──→ H에 append     │
+    │   │                                    │           │
     │   ├── T₁ 작성 ──→ H에 append          │           │
     │   │                                    │           │
     │   ├── W₁ (fresh, T₁+H) ──→ R₁ ──→ H에 append     │
-    │   │                                    │           │
-    │   ├── T₂ 작성 ──→ H에 append          │           │
-    │   │                                    │           │
-    │   ├── W₂ (fresh, T₂+H) ──→ R₂ ──→ H에 append     │
     │   │                                    │           │
     │   ├── ...                              │           │
     │   │                                    │           │
@@ -121,7 +121,7 @@ IStorage.get(key: string): Promise<string | null> — src/storage/interface.ts
 
 ---
 ## 0
-### T₁
+### T₀
 (add, update, delete caching in UserService)
 
 ### R₀
@@ -129,7 +129,7 @@ IStorage.get(key: string): Promise<string | null> — src/storage/interface.ts
 
 ---
 ## 1
-### T₂
+### T₁
 (implement cache layer in user-service.ts)
 
 ### R₁
