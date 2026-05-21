@@ -2,10 +2,7 @@
 name: giver
 version: "2.5e"
 description: "Activate The Giver v2.5e. Chain 1: S→P→S→W, Chain N: P→S→W. Giver CANNOT write/edit — must delegate to Worker via chain. Token budgets: P≤50K, W≤80K."
-tools:
-  - subagent
-  - read
-  - bash
+tools: subagent,read,bash,web_search,web_fetch
 disable-model-invocation: true
 ---
 
