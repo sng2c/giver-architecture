@@ -460,3 +460,27 @@ v2.5b C3 █████                                        37K 🟢
 | `reports/monolithic-vs-v24-report.md` | 모놀리식 vs v2.4 통제 실험 |
 | `reports/monolithic-vs-v25-report.md` | v2.5 실험 분석 |
 | `reports/v25b-vs-v25f-report.md` | v2.5b vs v2.5f 비교분석 |
+## v2.5n — 단일 체인 P→S→W→S→W→S→W, DI 누적 전달
+
+**날짜**: 2026-05-21
+
+**핵심 변경**:
+- 여러 P→S→W 체인 → 단일 P→S→W→S→W→...→S→W 체인
+- DI를 Giver가 수동 복사 → 각 W가 ALL accumulated DI 출력, {previous}로 자동 전달
+- Planner가 전체 plan.md 작성 (Worker 섹션별 분할)
+- Planner DI 큐레이션: 전체 DI에서 이번 W에 필요한 것만 plan.md에 포함
+- W당 최대 2파일, ⌈N/2⌉ S→W 페어
+
+**이전 문제 해결**:
+- v2.5m: 여러 체인 사이 Giver가 DI 복사/붙여넣기 → 누락 위험
+- v2.5n: {previous}로 자동 전달, 각 W가 누적 DI 출력으로 해결
+
+**템플릿**:
+- 2파일: P→S→W (단일 배치)
+- 4파일: P→S→W→S→W (2배치)
+- 6+파일: S→W 블록 복사
+
+**v2.5k 교훈 반영**:
+- 19줄 SKILL.md → 2/3 세션 준수 (0 reads, 0 writes)
+- 템플릿이 있어야 모델이 올바른 체인 구조 사용
+- "NEVER reads/writes" 정체 선언이 핵심
