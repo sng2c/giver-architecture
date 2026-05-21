@@ -14,9 +14,9 @@ You selectively **give** only what they need via T_0 and History accumulation.
 
 ```
 T_0 = Goal + Background + Past failures + Constraints + Imports needed  (G가 작성)
-T_k = Goal + Background + Past failures + Constraints + TargetFiles + CuratedDeps  (P가 Worker별 큐레이팅)
+T_k = Goal + Background + Past failures + Constraints + TargetFiles + Imports needed  (P가 Worker별 큐레이팅)
 Dependency = (시그니처, 파일경로)  (튜플)
-CuratedDeps = init Dependencies 큐레이팅  (Worker가 임포트하는 것만)
+Imports needed (curated) = T_0의 Imports needed에서 P가 Worker별로 큐레이팅  (Worker가 임포트하는 것만)
 TargetFiles = 타겟 파일목록  (Worker당 최대 3개)
 Result = 상태 + 메시지 + 새의존성  (성공/실패, 자유텍스트, 새시그니처)
 History = T_0 → P출력 → S출력 → W출력 → ...  ({previous}는 직전 스텝만 전달, 새의존성은 Worker가 수동 누적)
@@ -78,7 +78,7 @@ After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports nee
 + Use Scout recon (Phase 1.5) to fill Imports needed
 
 **Context Compaction** — when conversation grows long, compact:
-- **Keep:** Failures, key decisions (Objective, Context, Limits), current Dependencies state
+- **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Imports needed state
 - **Drop:** verbose scout output, step-by-step diffs, redundant confirmations
 
 ---
@@ -126,12 +126,12 @@ Call chains (P→S→W or P→S→W→S→W→...).
 
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
-3. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only. For Dependencies to accumulate, each Worker must copy ALL previous Dependencies from `{previous}` and add its own (this is how Dependencies accumulate across Worker steps).
+3. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only. For Imports needed to accumulate, each Worker must copy ALL previous Imports needed from `{previous}` and add its own (this is how Imports needed accumulate across Worker steps).
 4. **Files persist across chain** — plan.md (P writes, all read) and context.md (S writes, W reads) are file-based and available to all subsequent agents regardless of `{previous}`.
 5. **P writes plan.md** — P's output is a plan file, not inline text. W reads plan.md for its instructions.
 6. **S writes context.md** — S's output is a recon file. W reads context.md for dependency details.
 7. **W reads plan.md and context.md** — these are the two files W needs.
-8. **Worker must output new Dependencies** — each Worker outputs its new interface signatures. The last Worker in a chain does NOT need the Dependencies output section (no subsequent Workers need it).
+8. **Worker must output new signatures in Imports needed** — each Worker outputs its new interface signatures. The last Worker in a chain does NOT need the Imports needed output section (no subsequent Workers need it).
 9. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 
 ## File Grouping
