@@ -3,8 +3,8 @@
 ## 버전진화
 
 ```
-v1  → v2  → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → v2.5b → v2.5c
-격리  준수   진단    구조화   요약   연속    DI    구조강제  do-when  판단배제
+v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → v2.5b → v2.5c → v2.5d → v2.5e → v2.5f → v2.5g → v2.5h → v2.5i
+격리  준수   진단    구조화   요약   연속    DI    구조강제  do-when  판단배제  예산강제  도구제한  file-job  Scout완화  단일금지  병렬분할
 ```
 
 ---
@@ -224,29 +224,156 @@ Chain 3의 P→W 위반이 "when DI 출처가 확실" 같은 판단 기반 조�
 - SKILL.md 전체를 템플릿+do-when 테이블로 재구조화 (839→408줄, -52%)
 - prose 설명을 테이블/템플릿으로 교체
 
-### 구조 변화
+### 실험 결과 (885K, 모놀리식 대비 -3%)
+
+| 체인 | 구조 | Worker | 문제 |
+|------|------|--------|------|
+| 1 | S→P→S→W ✅ | 244K 🔴 | 4파일 1체인 과부하 |
+| 2 | P→S→W ✅ | - | Planner 366K 🔴 |
+
+- 총 885K, 체인 구조 100% 준수 하지만 분할 전략 실패
+- Layer 1+2 4파일을 1체인에 배분 → Planner 366K + Worker 244K
+- 같은 4파일을 v2.5b는 2체인으로 분할 → 227K
+
+### 기하급수 모델 검증
+
+v2.5c Chain 2 실제 91.5K vs 예측 97.5K (7% 오차). DI 없으면 r≈2.5(기하급수), DI 있으면 r≈0.5(선형).
+
+---
+
+## v2.5d: 토큰 예산 강제 (tag v2.5d)
+
+### 근거
+"DI 충분한가?" 판단이 무한 후퇴. 예산 초과 = 자동 failover로 구조적 강제.
+
+### 변경
+- Worker 예산: 200K → 80K (1체인당)
+- Planner 예산: 없음 → 50K (1체인당)
+- Scout 예산: 없음 → 50K (1체인당)
+- Failover 테이블: 예산 초과 시 자동 분할/DI 강화
+- Giver가 "DI 충분한가?" 판단할 필요 없음. 초과하면 failover.
+
+### 실험 결과: **chain 0건, 모놀리식 직접 구현**
+
+Giver가 스킬을 로드하고 규칙을 인식했지만, write/edit을 직접 호출해서 9개 파일을 한 번에 작성. 체인 호출 없음.
+
+**핵심 발견:** SKILL.md 규칙은 모델이 인식하지만, write 도구가 열려 있으면 "더 빠른 길"을 선택. 규칙 ≠ 행동.
+
+---
+
+## v2.5e: 도구 제한 시도 (tag v2.5e)
+
+### 근거
+v2.5d에서 Giver가 write/edit을 직접 호출 → 도구 자체를 차단하려 함.
+
+### 변경
+- SKILL.md frontmatter에 `tools: [subagent, read, bash, web_search, web_fetch]`
+- write/edit 미포함 → Giver가 파일 작성 불가
+
+### 문제 발견
+1. `tools` 필드는 **자식 에이전트**에만 적용. 부모(메인 챗)의 도구를 제한하지 않음.
+2. v2.5e 세션에서 Giver가 여전히 write/edit 사용 (chain 0건 + 1건 직접 edit)
+3. bash로 `echo > file` 시 우회 가능 → 도구 제한은 leaky
+
+**결론:** 도구 제한은 구조적 해결이 아님. 프롬프트 제약이 더 낫다.
+
+---
+
+## v2.5f: "When File Job → Chain" 프롬프트 제약 (tag v2.5f)
+
+### 근거
+도구 제한은 leaky (bash 우회). 대신 조건-행동 패턴으로 명시.
+
+### 변경
+- `tools` 필드 제거 (모든 도구 허용)
+- 최상단에 "When File Job → Chain" 규칙 추가
+- 파일 작업 테이블: 생성/수정/삭제 = chain, 읽기/빌드/git = 직접
+
+### 실험 결과 (738K, 모놀리식 대비 +94%)
+
+| 체인 | 구조 | Scout | Planner | Worker | 합계 |
+|------|------|-------|---------|--------|------|
+| 1 | S→P→S→W ✅ | 23K | 17K | 180K 🔴 | 238K |
+| 2 | P→S→W ✅ | 78K | 328K 🔴 | 94K | 500K |
+
+**긍정:** chain 0건(v2.5d) → chain 2건. "When File Job → Chain" 작동.
+
+**문제:**
+1. C1 Worker 180K — DI 불충분 → Worker가 파일 직접 읽음
+2. C2 Planner 328K (예산 50K의 6.55배) — 21턴/25툴콜
+3. Giver 1건 직접 edit (tsc 에러 수정)
+
+### v2.5b vs v2.5f 비교
+
+| 지표 | v2.5b | v2.5f | 차이 |
+|------|------:|------:|------:|
+| 총 토큰 | 381K | 738K | +94% |
+| 체인 수 | 3 | 2 | -1 |
+| Worker 최대 | 103K | 180K | +77K |
+| Planner 최대 | 46K | 328K | +281K |
+
+**핵심 차이:**
+- 분할: v2.5b 6→1→3파일 vs v2.5f 6→4파일
+- DI 품질: Scout 63K(v2.5b) → Worker 42K vs Scout 23K(v2.5f) → Worker 180K
+- Planner 읽기: v2.5b 8턴/14툴콜 vs v2.5f 21턴/25툴콜
+
+---
+
+## v2.5g: Scout 예산 완화 (tag v2.5g)
+
+### 근거
+v2.5f에서 Scout 23K→Worker 180K (4.3배). v2.5b에서 Scout 63K→Worker 42K. Scout가 싸면 충분히 읽어야 Worker가 경량.
+
+### 변경
+- Scout 예산: 50K → 무제한 ("Scout 절약 = Worker 폭발" 명시)
+- Scout 템플릿: OUTPUT LIMIT 150줄 제거, DI 수집 목적 명시
+- Failover: Scout 예산 초과 시 수용 ("DI 수집이 Worker 경량화의 열쇠")
+
+---
+
+## v2.5h: 단일 Worker/직접 편집 금지 (tag v2.5h)
+
+### 근거
+v2.5f에서 2가지 "When File Job → Chain" 위반 발견:
+1. 체인 완료 후 tsc 에러 → Giver가 직접 edit
+2. 이전 세션에서 Worker-only 단독 호출 (Planner/Scout 없이)
+
+### 변경
+금지 패턴 테이블 추가:
+
+| 패턴 | 위반 | 올바른 방법 |
+|------|------|-------------|
+| 빌드 에러 후 직접 edit | Giver가 파일 수정 | chain(P→S→W)으로 수정 |
+| Worker-only 단독 호출 | Planner/Scout 없이 | 항상 chain |
+| 작은 수정 직접 처리 | "1줄이니까" | 1줄이어도 chain |
+| 버그패치 직접 작성 | Giver가 write/edit | Scout → chain |
+
+예외 없음. 파일 작업은 항상 chain.
+
+---
+
+## v2.5i: 독립 파일 병렬 Worker (tag v2.5i)
+
+### 근거
+v2.5f에서 6파일/1체인 = Worker 180K 폭발. v2.5b는 6→1→3으로 분할해서 381K. 독립 파일은 병렬로 처리하면 시간/토큰 절약.
+
+### 변경
+Task Splitting 전면 개편:
+- 의존성 기반: 의존 → 직렬 chain, 독립 → 병렬 worker
+- Layer 0(독립): 병렬 Worker 3개 동시 실행
+- Layer 1(의존): 직렬 Chain, DI 포함
+- 병렬 Worker 조건: 파일 간 import 없음, Target Files 겹침 없음, 외부 DI는 plan.md 포함
 
 ```
-v2.5b (839줄, prose 중심):
-  Rules — Do-When Patterns     (prose)
-  Role                         (prose)
-  Core Patterns                 (prose)
-  Execution Workflow            (prose)
-  Giving of Pain                (prose)
-  Context Packing Example      (prose)
+Layer 0 (독립): config, logger, resp
+  → 병렬 Worker 3개 동시 실행
 
-v2.5c (408줄, 템플릿 중심):
-  Do-When Rules                (1 테이블, 13행)
-  Chain Templates              (5 JSON 템플릿 + failover 테이블)
-  6-Section Brief Template      (1 템플릿 + DI 예시)
-  Task Splitting                (2 테이블)
-  Execution Phases              (5 Phase, 각 when 테이블)
-  Giving of Pain               (2 테이블 + 포맷)
-  Retry Protocol               (1 테이블)
-  Context Compaction            (2 테이블)
+Layer 1 (의존): parser, memory, sqlite  
+  → Layer 0 완료 후 chain 실행, DI 포함
+
+Layer 2+ (deep): handler, connection, server
+  → Layer 1 완료 후 chain 실행
 ```
-
-**실험:** 재실험 필요 (v2.5c로 통제 실험 재실행)
 
 ---
 
@@ -276,6 +403,8 @@ v2.5c (408줄, 템플릿 중심):
 ```
 모놀리식  ████████████████████████████████████████████ 857K 🔴
 v2.4      ███████████████████████████               640K 🟠
+v2.5f     ████████████████████████████████████      738K 🔴
+v2.5c     ██████████████████████████████████████████ 885K 🔴
 v2.5b     ████████████████                           381K 🟡
 v2.5a*    ████████████                               290K    ← 규칙 위반
 이상적     ████                                      ~80K 🟢
@@ -284,30 +413,39 @@ v2.5a*    ████████████                               290
 ### Worker 토큰 감소 추이
 
 ```
-v2.4 C3   ██████████████████████████████  208K 🟠
-v2.4 C1   ████████████████████             170K 🟡
-v2.5a     ████████████████                 144K 🟡
-v2.5b C2  ████████████                    103K 🟡
-v2.5b C1  █████                            42K 🟢
-v2.5b C3  █████                            37K 🟢
-이상적    █████                             80K 🟢
+v2.5c C1 ██████████████████████████████████████████████ 244K 🔴
+v2.5f C1 ████████████████████████████               180K 🔴
+v2.4 C3 ██████████████████████████████               208K 🟠
+v2.4 C1 ████████████████████                        170K 🟡
+v2.5f C2 ██████████████████████████                 103K 🟡
+v2.5b C2 ████████████████                            103K 🟡
+v2.5a   ████████████████                            144K 🟡
+v2.5b C1 █████                                        42K 🟢
+v2.5b C3 █████                                        37K 🟢
+이상적    █████                                        80K 🟢
 ```
 
 ---
 
 ## Git 태그
 
-| 태그 | 커밋 | 설명 |
-|------|------|------|
-| v1 | ad06190 | 베이스라인 |
-| v2 | f49744e | 격리 복원 |
-| v2.1 | 14f411d | 협업 진단 |
-| v2.2 | - | 구조화 |
-| v2.3 | 019931c | 요약 강화 |
-| v2.4 | 698cf29 | 연속 체인 |
-| v2.5 | 2e25b21 | 의존성 인터페이스 |
-| v2.5b | - | do-when 전환 |
-| v2.5c | - | 판단 배제 + 템플릿화 |
+| 태그 | 설명 |
+|------|------|
+| v1 | 베이스라인 |
+| v2 | 격리 복원 |
+| v2.1 | 협업 진단 |
+| v2.2 | 구조화 |
+| v2.3 | 요약 강화 |
+| v2.4 | 연속 체인 |
+| v2.5 | 의존성 인터페이스 |
+| v2.5b | do-when 전환 |
+| v2.5c | 판단 배제 + 템플릿화 |
+| v2.5d | 토큰 예산 강제 |
+| v2.5e | 도구 제한 시도 (leaky 실패) |
+| v2.5f | file-job 프롬프트 제약 |
+| v2.5g | Scout 예산 원화 |
+| v2.5h | 단일 Worker/직접 편집 금지 |
+| v2.5i | 독립 파일 병렬 Worker |
 
 ## 리포트
 
@@ -321,3 +459,4 @@ v2.5b C3  █████                            37K 🟢
 | `reports/redbis-comparison-report.md` | 모놀리식 vs Giver v2.2/v2.3 |
 | `reports/monolithic-vs-v24-report.md` | 모놀리식 vs v2.4 통제 실험 |
 | `reports/monolithic-vs-v25-report.md` | v2.5 실험 분석 |
+| `reports/v25b-vs-v25f-report.md` | v2.5b vs v2.5f 비교분석 |

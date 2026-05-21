@@ -70,7 +70,9 @@ Analysis → [planner]                         코드 변경 없음
 | 모놀리식 | 857K 🔴 | - | 0% | 91% | 857K 🔴 | - |
 | v2.4 | 640K 🟠 | +25% | 78% | 34% | 208K 🟠 | ✅ |
 | **v2.5b** | **381K 🟡** | **+56%** | **88%** | **6%** | **103K 🟡** | ⚠️ 2/3 |
+| v2.5f | 738K 🟠 | -14% | - | - | 180K 🔴 | ✅ 2체인 |
 | v2.5a* | 290K | +66% | 33% | 25% | 144K 🟡 | ❌ Worker-only |
+| v2.5d* | - | - | - | - | 모놀리식 | ❌ chain 0건 |
 
 *v2.5a는 규칙 위반(Worker-only)으로 얻은 결과. 준수율 낮지만 토큰 절감 큼 → DI/SCOPE의 효과 증명.
 
@@ -94,6 +96,11 @@ Chain 3: P→W 위반이나 Worker 37K 🟢 → DI+SCOPE가 Scout를 대체한 �
 | DI가 Worker 과다 읽기를 방지 | v2.5b: DI 포함 모든 체인 ≤103K |
 | 판단 조건은 무한 후퇴 | "DI 충분?"→"DI 출처 확실?"→"확실 여부?"→모름 |
 | 구조적 조건만 검증 가능 | 체인 번호, DI 섹션 존재 여부 등 |
+| Scout가 심다 | Scout 63K→Worker 42K vs Scout 23K→Worker 180K |
+| When File Job → Chain 작동 | v2.5d(0 chain)→v2.5f(2 chain) |
+| 독립 파일은 병렬로 | 의존성 없으면 Worker 병렬 실행 |
+| 예산 강제만으로 불충분 | v2.5d: 0 chain, 직접 구현. 프롬프트 제약 필요 |
+| 도구 제한은 leaky | bash echo>file 우회 가능. 프롬프트 제약 > 도구 차단 |
 
 ## 종속성
 
@@ -111,7 +118,7 @@ Chain 3: P→W 위반이나 Worker 37K 🟢 → DI+SCOPE가 Scout를 대체한 �
 
 | 파일 | 경로 | 설명 |
 |------|------|------|
-| SKILL.md | `.pi/agent/skills/giver/SKILL.md` | Giver 프로토콜 정의 (408줄) |
+| SKILL.md | `.pi/agent/skills/giver/SKILL.md` | Giver 프로토콜 정의 (531줄) |
 | pi-install | `scripts/pi-install` | 설치 스크립트 |
 | pi-analyze | `scripts/pi-analyze` | 세션 로그 분석 툴 |
 | analysis-logic.md | `docs/analysis-logic.md` | 분석 패턴 및 메트릭 로직 |
