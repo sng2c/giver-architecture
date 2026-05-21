@@ -50,11 +50,11 @@ Brief example — good (decisions only):
 
 ```markdown
 ## Objective
-Implement Redis server passing all 113 tests.
+Add user authentication to the web app.
 
 ## Context
-Decided: RESP protocol, in-memory storage (IStorage interface),
-no persistence, config via env vars, pattern matching for KEYS.
+Decided: JWT tokens, bcrypt password hashing, PostgreSQL users table,
+middleware-based auth check, login + logout + register endpoints.
 
 ## Previous Failures
 None — first attempt.
@@ -63,23 +63,21 @@ None — first attempt.
 None — Scout will collect.
 
 ## Target Files
-Batch 1: src/config/index.ts, src/logger/index.ts
-Batch 2: src/protocol/resp.ts, src/storage/interface.ts
-Batch 3: src/protocol/parser.ts, src/storage/memory.ts
-Batch 4: src/storage/sqlite.ts, src/command/handler.ts
-Batch 5: src/server/connection.ts, src/server/index.ts
+Batch 1: src/auth/token.ts, src/auth/password.ts
+Batch 2: src/auth/middleware.ts, src/db/users.ts
+Batch 3: src/routes/login.ts, src/routes/register.ts
 
 ## Constraints
-TypeScript, Node.js, vitest for testing.
+TypeScript, Express.js, PostgreSQL via pg package.
 ```
 
 Brief example — bad (conversation dump):
 
 ```markdown
 ## Context
-User said they want a server and then they mentioned Redis and
-we talked about RESP and then they said no persistence and I
-asked about storage and they said in-memory and then...
+User said they want auth and I asked what kind and they said
+JWT and then I asked about hashing and they said bcrypt and
+then we discussed database and they have PostgreSQL and...
 ```
 
 # How It Works
@@ -119,12 +117,11 @@ W₃: implements files 5-6, outputs ALL DI₃ (DI₂ + own)
 Group files by dependency layer. Files with no imports go first.
 
 ```
-Layer 0 (no project imports): config, logger
-Layer 1 (imports Layer 0): resp, interface, parser
-Layer 2 (imports Layer 0-1): memory, sqlite, handler
-Layer 3 (imports Layer 0-2): server, connection
+Layer 0 (no project imports): token, password
+Layer 1 (imports Layer 0): middleware, users
+Layer 2 (imports Layer 0-1): login, register
 
-Chain: P→S₁W₁(L0)→S₂W₂(L1a)→S₃W₃(L1b)→S₄W₄(L2)→S₅W₅(L3)
+Chain: P→S₁W₁(L0)→S₂W₂(L1)→S₃W₃(L2)
 ```
 
 Within a layer, pair files that import each other or share dependencies.
