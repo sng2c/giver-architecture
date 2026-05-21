@@ -7,10 +7,10 @@
 | T | Task |
 | T_0 | Task #0 (G가 작성) |
 | T_k | Task #k (P가 Worker별로 큐레이팅) |
-| O | Goal |
-| C | Background |
-| F[] | Past failures |
-| L[] | Constraints |
+| O | Objective |
+| C | Context |
+| F[] | Failures |
+| L[] | Limits |
 | D | Dependency (시그니처, 파일경로) |
 | D₀ | CuratedDeps |
 | TF | TargetFiles |
@@ -30,8 +30,8 @@
 
 | 요소 | 정의 | 비고 |
 |------|------|------|
-| T_0 | Goal + Background + Past failures + Constraints + Imports needed | G가 작성 |
-| T_k | Goal + Background + Past failures + Constraints + TargetFiles + CuratedDeps | P가 Worker별로 큐레이팅 |
+| T_0 | Objective + Context + Failures + Limits + Dependencies | G가 작성 |
+| T_k | Objective + Context + Failures + Limits + TargetFiles + CuratedDeps | P가 Worker별로 큐레이팅 |
 | Dependency | (시그니처, 파일경로) | 튜플 |
 | CuratedDeps | init Dependencies 큐레이팅 | Worker가 임포트하는 것만 |
 | TargetFiles | 타겟 파일목록 | Worker당 최대 3개 |
@@ -41,10 +41,10 @@
 
 1. G는 전체 컨텍스트 레벨에서 사용자와 대화하는 역할을 가진다.
 2. G는 작업을 지시받으면 수행에 필요한 정보만 모아서 Task를 작성한다. G는 대화 중에 Dependencies를 만들 수도 있다.
-3. T_0 = Goal + Background + Past failures + Constraints + Imports needed (G가 작성)
-4. T_k = Goal + Background + Past failures + Constraints + TargetFiles + CuratedDeps (P가 Worker별로 큐레이팅)
+3. T_0 = Objective + Context + Failures + Limits + Dependencies (G가 작성)
+4. T_k = Objective + Context + Failures + Limits + TargetFiles + CuratedDeps (P가 Worker별로 큐레이팅)
 5. subagent P, S, W는 모두 **context fresh 모드**로 실행된다.
-6. P는 History를 관리한다. T_0를 큐레이팅하여 각 Worker에 맞게 Goal, Background, Past failures, Constraints를 추린다.
+6. P는 History를 관리한다. T_0를 큐레이팅하여 각 Worker에 맞게 Objective, Context, Failures, Limits를 추린다.
 7. S는 History를 입력으로 받아 의존성을 수집한다.
 8. TargetFiles는 Worker당 최대 3개 파일까지.
 9. CuratedDeps는 init Dependencies에서 이 Worker에 맞게 큐레이팅한 것. Worker에서 나온 새 의존성은 {previous}를 통해 자연스럽게 전달됨.
@@ -68,31 +68,31 @@ P는 plan.md 안에 T_k(Worker용 큐레이팅)를 만들고, W는 그 T_k를 �
 ----
 Task #0 (Planner)
 
-### Goal
+### Objective
 ...
 
-### Background
+### Context
 ...
 
-### Past failures
+### Failures
 ...
 
-### Constraints
+### Limits
 ...
 
-### Imports needed
+### Dependencies
 ...
 
 ----
-PLAN
+P출력
 (plan.md: T_k 포함 — Worker Briefing)
 
 ----
-RECON
+S출력
 (context.md: 리콘 — 의존성 시그니처)
 
 ----
-RESULT #0 (Worker 1)
+Result #0 (Worker 1)
 
 All tests pass.
 ## Dependencies (new signatures)
@@ -100,11 +100,11 @@ export class Logger { ... }
 export function createLogger(module: string): Logger;
 
 ----
-RECON
+S출력
 (2배치 리콘)
 
 ----
-RESULT #1 (Worker 2)
+Result #1 (Worker 2)
 
 All tests pass.
 ## Dependencies (accumulated)
@@ -125,11 +125,11 @@ All tests pass.
            ↓
       P (fresh)
        │
-       ├→ PLAN: plan.md에 T_k 포함
-       ├→ S (fresh, {previous}=PLAN)
-       │   └→ RECON: context.md 리콘
-       ├→ W (fresh, {previous}=RECON)
-       │   └→ RESULT #0: T_k 구현 + 새의존성
+       ├→ P출력: plan.md에 T_k 포함
+       ├→ S (fresh, {previous}=P출력)
+       │   └→ S출력: context.md 리콘
+       ├→ W (fresh, {previous}=S출력)
+       │   └→ Result #0: T_k 구현 + 새의존성
        │
        ├→ ... S→W 반복 ...
        │

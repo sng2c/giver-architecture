@@ -11,7 +11,7 @@
 | 수령자는 제한된 정보만 수신 | **P/S/W**는 Giver가 큐레이팅한 T_0만 수신 |
 | 공동체는 Sameness에 거주 | **P/S/W**는 이전 이력이 없는 Fresh 상태로 실행 |
 | 선택적이고 의도적인 전달 | T_0 → T_k 형태로만 정보 전달 (**giving**) |
-| 고통의 전달 (giving of pain) | 실패 이력을 Past failures에 담아 전달 → 다음 시도에서 회피 |
+| 고통의 전달 (giving of pain) | 실패 이력을 Failures에 담아 전달 → 다음 시도에서 회피 |
 | Stirrings 감시 및 억제 | 실행 전후 Fresh 상태 보장, `"context": "fresh"` 필수 |
 
 ## 수학적 정의
@@ -30,8 +30,8 @@ W:  H → H
 ### 데이터 구조
 
 ```
-T_0 = Goal + Background + Past failures + Constraints + Imports needed  (G가 작성)
-T_k = Goal + Background + Past failures + Constraints + TargetFiles + CuratedDeps  (P가 큐레이팅)
+T_0 = Objective + Context + Failures + Limits + Dependencies  (G가 작성)
+T_k = Objective + Context + Failures + Limits + TargetFiles + CuratedDeps  (P가 큐레이팅)
 D   = (sig, path)                     (시그니처 + 파일경로 튜플)
 CuratedDeps = init Dependencies 큐레이팅  (Worker가 임포트하는 것만)
 TargetFiles = 타겟 파일목록  (Worker당 최대 3개)
@@ -42,11 +42,11 @@ History = T_0 + Dependencies + 누적결과들  (평면 마크다운)
 ### T_0 — G가 작성
 
 ```
-### Goal — 단일, 한 문장
-### Background — 결정사항만, 대화 내용은 제외
-### Past failures — 이전 실패 로그, 첫 시도면 "None"
-### Constraints — 기술적 제약
-### Imports needed — 타겟 외 임포트 시그니처 + 파일경로
+### Objective — 단일, 한 문장 (단일, 한 문장)
+### Context — 결정사항만, 대화 금지 (결정사항만, 대화 금지)
+### Failures — 이전 실패 로그 (이전 실패 로그, 첫 시도면 "None")
+### Limits — 기술적 제약 (기술적 제약)
+### Dependencies — 타겟 외 임포트 시그니처 + 파일경로 (타겟 외 임포트 시그니처 + 파일경로)
 ```
 
 T_0의 모든 하위섹션은 P가 Worker에게 전달할 때 **큐레이팅**됨. 전체를 던지지 않고 Worker가 필요한 것만 추려서 T_k로 변환.
@@ -54,10 +54,10 @@ T_0의 모든 하위섹션은 P가 Worker에게 전달할 때 **큐레이팅**�
 ### T_k — Worker 태스크 (P가 큐레이팅)
 
 ```
-### Goal — 이 Worker에 맞게 큐레이팅된 목표
-### Background — 이 Worker에 관련된 결정사항만
-### Past failures — 이 Worker 범위의 실패만
-### Constraints — 이 Worker에 해당하는 제약만
+### Objective — 이 W에 맞게 큐레이팅된 목표
+### Context — 이 W에 관련된 결정사항만
+### Failures — 이 W 범위의 실패만
+### Limits — 이 W에 해당하는 제약만
 ### TargetFiles — 타겟 파일 (최대 3개)
 ### CuratedDeps — init Dependencies에서 이 Worker가 임포트하는 것만
 ```
@@ -98,47 +98,47 @@ T_0의 모든 하위섹션은 P가 Worker에게 전달할 때 **큐레이팅**�
 
 ## H — 히스토리 (평면 누적)
 
-H는 평면 마크다운. P는 계획, S는 리콘, W만 Result를 냄.
+H는 평면 마크다운. P는 계획, S는 리콘, W만 Result를 냄. {previous}로 누적.
 
 ```markdown
 ----
 Task #0 (Planner)
 
-### Goal
+### Objective
 Add LRU caching to UserService
 
-### Background
+### Context
 User reported 800ms p99. Approved: in-memory LRU, 5-min TTL.
 
-### Past failures
+### Failures
 None — first attempt
 
-### Constraints
+### Limits
 Use lru-cache package. Max 1000 entries. Invalidate on CUD.
 
-### Imports needed
+### Dependencies
 getById(id: string): Promise<User | null> — src/services/user-service.ts
 IStorage.get(key: string): Promise<string | null> — src/storage/interface.ts
 
-====
-PLAN
+----
+P출력
 # Plan: Add LRU caching to UserService
 (target files, Worker Briefing)
 
-====
-RECON
+----
+S출력
 # Implementation Recon
 (dependency signatures)
 
-====
-RESULT #0 (Worker 1)
+----
+Result #0 (Worker 1)
 
 All 10 tests pass.
 ## Dependencies (new signatures)
 export class Logger { ... }
 export function createLogger(module: string): Logger;
 
-====
+----
 ...
 ```
 
@@ -150,10 +150,10 @@ export function createLogger(module: string): Logger;
 4. **P는 T_0를 T_k로 큐레이팅** — 전체를 던지지 않고 W에 맞게 추려서 전달
 5. **TargetFiles는 최대 3개** — Worker당 타겟 파일 제한
 6. **CuratedDeps는 큐레이팅, 새의존성은 누적 전달** — init 의존성만 추려서, 실행 중 새 의존성은 전부 전달
-7. **D = (sig, path)** — 실제 시그니처 + 파일경로 필수, "see xxx.ts" 제외
+7. **D = (sig, path)** — "see xxx.ts" 금지, 실제 시그니처 + 파일경로 필수
 8. **Result.status=실패이면 즉시 중단** — 실패 시 G에게 H 리턴
-9. **Past failures에 실패 이력 누적** — 재시도 시 이전 실패 포함, 같은 실수 방지
-10. **G는 소스 코드 변경 시 항상 체인(W)을 통해** — G 자체는 파일 수정 안 함
+9. **Failures에 실패 이력 누적** — 재시도 시 이전 실패 포함, 같은 실수 방지
+10. **G는 파일 수정 금지** — 소스 코드 변경은 항상 체인(W)을 통해
 
 ## 파일 그룹핑
 
@@ -174,12 +174,12 @@ Layer 2 (Layer 0-1 임포트):    E, F       → Worker 3
 
 ## 실패 프로토콜
 
-체인 실패 시 Past failures에 추가:
+체인 실패 시 Failures에 추가:
 
 ```
 - What happened: (구체적: 에러 메시지, 잘못된 동작)
 - Root cause: (WHY — T_0가 불충분했는지, P/W가 오해했는지)
-- What to avoid: ("Do modify X only when fixing this specific bug", "Do use approach Y only when condition Z")
+- What to avoid: ("DO NOT modify X", "DO NOT use approach Y")
 - Correct direction: (알려진 경우)
 - Giver correction: (T_0가 불충분했으면 인정)
 ```
