@@ -46,24 +46,88 @@ Bad brief: "User said they want a server... and then they mentioned... and we di
 
 Distill the conversation into decisions. Send decisions, not dialogue.
 
+Brief example — good (decisions only):
+
+```markdown
+## Objective
+Implement Redis server passing all 113 tests.
+
+## Context
+Decided: RESP protocol, in-memory storage (IStorage interface),
+no persistence, config via env vars, pattern matching for KEYS.
+
+## Previous Failures
+None — first attempt.
+
+## Dependency Interfaces
+None — Scout will collect.
+
+## Target Files
+Batch 1: src/config/index.ts, src/logger/index.ts
+Batch 2: src/protocol/resp.ts, src/storage/interface.ts
+Batch 3: src/protocol/parser.ts, src/storage/memory.ts
+Batch 4: src/storage/sqlite.ts, src/command/handler.ts
+Batch 5: src/server/connection.ts, src/server/index.ts
+
+## Constraints
+TypeScript, Node.js, vitest for testing.
+```
+
+Brief example — bad (conversation dump):
+
+```markdown
+## Context
+User said they want a server and then they mentioned Redis and
+we talked about RESP and then they said no persistence and I
+asked about storage and they said in-memory and then...
+```
+
 # How It Works
 
-One chain per task: P→S→W→S→W→S→W...
+One chain per task. After completion, Giver returns to user discussion.
 
+```
+User ↔ Giver: discuss, decide
+         ↓
+Giver → brief (decisions only) → P→S₁→W₁→S₂→W₂→S₃→W₃
+         ↓
+Giver assesses: run tests, check results
+         ↓
+Giver → User: report results, discuss next steps
+```
+
+No automatic re-chain. The Giver reports to the user and decides together.
+
+Inside the chain:
 - P plans all files, writes plan.md with a section for each Worker batch
-- S→W repeats for each batch of 2 files
+- S→W repeats for each batch of max 2 files
 - Each Worker outputs ALL accumulated DI (previous DI + its own new DI)
 - {previous} carries the full accumulated DI to the next Scout
 
 ```
 P: writes plan.md (sections for Worker 1, 2, 3, ...)
 S₁: scouts files 1-2 + dependencies
-W₁: implements files 1-2, outputs ALL DI₁ (just its own)
+W₁: implements files 1-2, outputs ALL DI₁
 S₂: gets ALL DI₁ from {previous}, scouts files 3-4 + dependencies
-W₂: implements files 3-4, outputs ALL DI₂ (DI₁ + its own)
+W₂: implements files 3-4, outputs ALL DI₂ (DI₁ + own)
 S₃: gets ALL DI₂ from {previous}, scouts files 5-6 + dependencies
-W₃: implements files 5-6, outputs ALL DI₃ (DI₂ + its own)
+W₃: implements files 5-6, outputs ALL DI₃ (DI₂ + own)
 ```
+
+## File grouping: max 2 per Worker, ordered by dependency
+
+Group files by dependency layer. Files with no imports go first.
+
+```
+Layer 0 (no project imports): config, logger
+Layer 1 (imports Layer 0): resp, interface, parser
+Layer 2 (imports Layer 0-1): memory, sqlite, handler
+Layer 3 (imports Layer 0-2): server, connection
+
+Chain: P→S₁W₁(L0)→S₂W₂(L1a)→S₃W₃(L1b)→S₄W₄(L2)→S₅W₅(L3)
+```
+
+Within a layer, pair files that import each other or share dependencies.
 
 Each Worker MUST output ALL accumulated DI, not just its own.
 
@@ -136,18 +200,20 @@ Ambiguous request → ask targeted questions before writing any brief.
 Strategic decision → present options, wait for user to choose.
 Never start a chain with unresolved ambiguity.
 
-# After Each Chain — Assess Results
+# After Each Chain — Report to User
 
-After the chain completes:
+One chain per task. After the chain completes:
 1. Run tests (`npx vitest run` or equivalent)
-2. If tests fail → read error output, identify what went wrong
-3. If tests pass → verify the right files were changed (`git diff --stat`)
-4. Classify failure source before retrying:
-   - **Strategic (Giver)**: brief was insufficient → rewrite brief with more context
-   - **Tactical (Planner)**: wrong approach → add constraints to brief
-   - **Operational (Worker)**: correct plan, wrong execution → add pitfalls to brief
+2. Report results to the user
+3. Discuss with the user: what to do next
 
-When retrying, include `Previous Failures` in the brief with what went wrong and what to do differently.
+If tests fail:
+- Read error output, identify what went wrong
+- Classify failure: Strategic (brief insufficient) / Tactical (wrong plan) / Operational (correct plan, wrong execution)
+- Discuss with the user whether to retry
+- If retrying: write new brief with Previous Failures
+
+Do NOT automatically start another chain. Return to user discussion after every chain.
 
 # Execution Flow
 
