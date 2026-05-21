@@ -146,7 +146,7 @@ Never merge — report branch status, user decides.
 
 ## Critical Rules
 
-1. **Every subagent call MUST include `"context": "fresh"`** — no exceptions. Default is fork which leaks parent context.
+1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **{previous} carries H** — it automatically contains all previous agent outputs in the chain. This IS the history accumulation mechanism.
 3. **P writes plan.md** — P's output is a plan file, not inline text. W reads plan.md for its instructions.
 4. **S writes context.md** — S's output is a recon file. W reads context.md for dependency details.
@@ -181,17 +181,14 @@ Giver fills in {placeholders} and invokes the chain.
     {
       "agent": "planner",
       "task": "## Task\n\n### Objective\n{one sentence objective}\n\n### Context\n{decisions, context, business requirements}\n\n### Failures\n{failure log or 'None — first attempt'}\n\n### Limits\n{technical constraints, framework, patterns}\n\n### Dependencies\n{dependency signatures with file paths, or 'None — Scout will collect'}\n\n---\n\n## Your Role\n\nYou are the Planner. Write plan.md covering the target files.\n\nCurate Task(초기) into Task(Worker) for each Worker. plan.md MUST include a Worker Briefing section with:\n\n### Key Decisions\n(curate Task(초기) Context for this Worker — only what it needs to know)\n\n### Pitfalls & What to Avoid\n(curate Task(초기) Failures for this Worker — only relevant failures and what to avoid)\n\n### Constraints\n(curate Task(초기) Limits for this Worker — only relevant constraints)\n\n### Dependency Interfaces\n(CuratedDeps — curate Task(초기) Dependencies for this Worker. ONLY the interfaces the target files import. Do NOT dump all Dependencies)\n\n### Scope Boundary\n(what is IN and OUT of scope)\n\n## Working Rules\n\n- Read the context and scout recon before planning.\n- Read ONLY files listed in Target Files and referenced in Dependencies.\n- CuratedDeps: curate per Worker — include ONLY what that Worker's files import.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
-      "context": "fresh"
     },
     {
       "agent": "scout",
       "task": "# Implementation Recon\n\n## What\nDependencies and interfaces that plan.md Worker Briefing references but doesn't fully specify.\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures.",
-      "context": "fresh"
     },
     {
       "agent": "worker",
       "task": "Execute the plan in plan.md. Start by reading plan.md (especially the Worker Briefing section). Follow Key Decisions and Pitfalls strictly.\n\nSCOPE: Read ONLY the files listed in Target Files and the Dependency Interfaces section in plan.md. Do NOT read other source files.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports or TODO comments.\n\nAfter implementing, output new Dependency Interfaces:\n\n## Dependencies (new signatures)\n```typescript\nexport function fName(params): RetType\nexport class CName { method(params): RetType }\nexport interface IName { prop: Type }\n```\n\n{previous}",
-      "context": "fresh"
     }
   ],
   "context": "fresh"
@@ -208,27 +205,22 @@ Giver fills in {placeholders} and invokes the chain.
     {
       "agent": "planner",
       "task": "## Task\n\n### Objective\n{one sentence objective}\n\n### Context\n{decisions, context, business requirements}\n\n### Failures\n{failure log or 'None — first attempt'}\n\n### Limits\n{technical constraints}\n\n### Dependencies\n{dependency signatures or 'None — Scout will collect'}\n\n---\n\n## Your Role\n\nWrite plan.md covering ALL target files, organized into Worker sections.\n\nEach Worker section specifies:\n- Which 2-3 Target Files this Worker implements\n- CuratedDeps: ONLY the dependency interfaces this Worker's files import (curated from Task(초기) Dependencies)\n- Integration points with previous implementations\n\nplan.md MUST include Worker Briefing per batch:\n\n### Key Decisions (curate Task(초기) Context for this Worker)\n### Pitfalls & What to Avoid (curate Task(초기) Failures for this Worker)\n### Constraints (curate Task(초기) Limits for this Worker)\n### Dependency Interfaces (curated CuratedDeps for this Worker)\n### Scope Boundary\n\n## Working Rules\n\n- Read context and scout recon before planning.\n- Read ONLY files listed in Target Files and referenced in Dependencies.\n- CuratedDeps: curate per Worker — only what that Worker's files import.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
-      "context": "fresh"
     },
     {
       "agent": "scout",
       "task": "# Implementation Recon — Batch 1\n\n## What\nDependencies for W₁'s files ({list files}) that plan.md references but doesn't fully specify.\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures.",
-      "context": "fresh"
     },
     {
       "agent": "worker",
       "task": "Execute YOUR section of plan.md (W₁). Read plan.md for your Worker Briefing section.\n\n## Task (curated for Worker 1)\n\n### Target Files\n{2-3 target files for batch 1}\n\n### Curated Dependencies\n{curated dependencies for batch 1 — from plan.md Dependency Interfaces}\n\n---\n\nSCOPE: Read ONLY the files listed in Target Files and Curated Dependencies. Do NOT read other source files.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports or TODO comments.\n\nAfter implementing, output ALL accumulated Dependency Interfaces:\n\n## Dependencies (accumulated)\n```typescript\nexport function fName(params): RetType\nexport class CName { method(params): RetType }\nexport interface IName { prop: Type }\n```\nThis accumulated Dependencies will be used by the next Scout and Worker via {previous}. Include EVERYTHING.\n\n{previous}",
-      "context": "fresh"
     },
     {
       "agent": "scout",
       "task": "# Implementation Recon — Batch 2\n\nReview the accumulated D[] in {previous}.\n\n## What\nDependencies for W₂'s files ({list files}) not fully specified by the accumulated D[].\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures.",
-      "context": "fresh"
     },
     {
       "agent": "worker",
       "task": "Execute YOUR section of plan.md (W₂). Read plan.md for your Worker Briefing section. Review the accumulated Deps from W₁ in {previous}.\n\n## Task (curated for Worker 2)\n\n### Target Files\n{2-3 target files for batch 2}\n\n### Curated Dependencies\n{curated dependencies for batch 2 — from plan.md Dependency Interfaces}\n\n---\n\nSCOPE: Read ONLY the files listed in Target Files and Curated Dependencies. Do NOT read other source files.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports or TODO comments.\n\nAfter implementing, output ALL accumulated Dependency Interfaces:\n\n## Dependencies (accumulated)\nCopy ALL Dependencies from {previous}, then ADD your new interfaces:\n```typescript\nexport function fName(params): RetType\nexport class CName { method(params): RetType }\nexport interface IName { prop: Type }\n```\nThis is the complete accumulated Dependencies. Include EVERYTHING from all previous Workers plus your own.\n\n{previous}",
-      "context": "fresh"
     }
   ],
   "context": "fresh"
@@ -245,12 +237,10 @@ Add S→W pairs for each additional batch. Pattern:
 {
   "agent": "scout",
   "task": "# Implementation Recon — Batch N\n\nReview the accumulated D[] in {previous}.\n\n## What\nDependencies for Wₙ's files ({list files}) not fully specified by the accumulated D[].\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures.",
-  "context": "fresh"
 },
 {
   "agent": "worker",
   "task": "Execute YOUR section of plan.md (Wₙ). Read plan.md for your Worker Briefing section. Review the accumulated Deps from previous Workers in {previous}.\n\n## Task (curated for Worker N)\n\n### Target Files\n{2-3 target files for batch N}\n\n### Curated Dependencies\n{curated dependencies for batch N — from plan.md Dependency Interfaces}\n\n---\n\nSCOPE: Read ONLY the files listed in Target Files and Curated Dependencies. Do NOT read other source files.\n\nIMPORTANT: Write actual source files to disk. Do NOT write progress reports or TODO comments.\n\nAfter implementing, output ALL accumulated Dependency Interfaces:\n\n## Dependencies (accumulated)\nCopy ALL Deps from {previous}, then ADD your new interfaces.\nThis is the complete accumulated Dependencies. Include EVERYTHING from all previous Workers plus your own.\n\n{previous}",
-  "context": "fresh"
 }
 ```
 
@@ -268,15 +258,14 @@ Only after P→S→W has produced plan.md. Only when files have NO overlap and N
     {
       "agent": "worker",
       "task": "Execute the {layer}-layer portion of plan.md. Target files: {files}.\n\n## Task (curated)\n\n### Objective\n{curated objective for this slice}\n\n### Target Files\n{target files for this slice}\n\n### Curated Dependencies\n{curated dependencies for this slice}\n\n---\n\nSCOPE: Read ONLY the files listed in Target Files and Curated Dependencies.\n\n{previous}",
-      "context": "fresh"
     },
     {
       "agent": "worker",
       "task": "Execute the {layer}-layer portion of plan.md. Target files: {files}.\n\n## Task (curated)\n\n### Objective\n{curated objective for this slice}\n\n### Target Files\n{target files for this slice}\n\n### Curated Dependencies\n{curated dependencies for this slice}\n\n---\n\nSCOPE: Read ONLY the files listed in Target Files and Curated Dependencies.\n\n{previous}",
-      "context": "fresh"
     }
   ],
-  "concurrency": 2
+  "concurrency": 2,
+  "context": "fresh"
 }
 ```
 
