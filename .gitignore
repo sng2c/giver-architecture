@@ -1,2 +1,3 @@
 # Raw analysis data (baseline snapshots)
 reports/baseline-v1-*.jsonnode_modules/
+node_modules/
