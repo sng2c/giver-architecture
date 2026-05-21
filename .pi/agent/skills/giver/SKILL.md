@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.0"
-description: "The Giver v3. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: Planner writes all Worker Tasks, Scout resolves Imports, Worker executes. All subagents run fresh."
+version: "3.2"
+description: "The Giver v3.2. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -35,13 +35,14 @@ All subagents take {previous} (previous step only) and return their output. File
 
 ## Pipeline
 
-Planner writes all Worker Tasks in plan.md. Scout reads Worker Task and resolves Imports needed. Worker reads its Task and executes.
+Planner writes all Worker Tasks in plan.md and curates Imports needed per Worker from T_0. No Scout in chain — Planner includes everything Workers need. Workers receive {previous} which accumulates all prior outputs.
 
 ```
 Giver → Task #0 (for Planner) — 유일하게 Giver가 작성
-Planner → PLAN + Task #1 (for Worker 1), Task #2 (for Worker 2), ... — plan.md에 저장
-Scout → Reads Worker Task, resolves Imports needed
-Worker → Reads its Task #k from plan.md, implements, writes RESULT
+Planner → {previous} = PLAN + Task #1..#N (curated per Worker)
+Worker 1 → {previous} = PLAN + Tasks + RESULT #0
+Worker 2 → {previous} = above + RESULT #1
+Worker N → {previous} = above + RESULT #N-1
 ```
 
 ---
@@ -59,15 +60,15 @@ When ambiguous → clarify with user before starting a chain.
 
 ---
 
-# Phase 1.5: Recon
+# Phase 1.5: Recon (MANDATORY)
 
-When Giver needs to understand the codebase before writing T_0 → call Scout standalone.
+Before writing T_0, Giver MUST call Scout standalone to collect dependency signatures and file structure. This is mandatory — not optional.
 
-+ Need dependency signatures → call Scout for recon before T_0
-+ Need file structure or module relationships → call Scout for recon before T_0
-+ Do NOT read source/test files directly as Giver → delegate to Scout
++ Always call Scout for recon before T_0 → fill Imports needed with as much as you know
++ Delegate file reading to Scout → Giver never reads source/test files directly
++ Fill in every Imports needed signature the recon provides → leave only truly unknown ones for Scout
 
-**Why:** Giver reading files directly bloats context and cascades into Planner. Scout reads files, extracts only signatures and structure, returns a compact recon. Giver uses this to fill Imports needed in T_0.
+**Why:** Giver reading files directly bloats context and cascades into Planner. Fresh agents need maximum context in T_0. Scout reads files, extracts only signatures and structure, returns a compact recon. Giver uses this to fill T_0 Imports needed as completely as possible. Only truly unknown signatures should be left for the chain's Scout to resolve.
 
 ```json
 {
@@ -86,7 +87,7 @@ After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports nee
 
 + Make strategic decisions → discuss with user first
 + Send only T_0 downstream → curate decisions, not conversation transcript
-+ Use Scout recon (Phase 1.5) to fill Imports needed
++ Fill T_0 Imports needed as completely as possible from Scout recon (Phase 1.5) — minimize unknowns left for the chain's Scout
 
 **Context Compaction** — when conversation grows long, compact:
 - **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Imports needed state
@@ -117,11 +118,12 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 
 ### Constraints
 [Technical constraints: language, framework, patterns to follow, things to avoid]
+[Include exact test expectations: error messages, expected behavior, edge cases]
 
 ### Imports needed
 [Type signatures for every imported module outside Target Files]
 [Format: `functionName(params): ReturnType — path/to/file.ts`]
-[If unknown → run Scout FIRST, then include here]
+[MUST fill from Scout recon (Phase 1.5) — Giver includes all known signatures in T_0]
 [Write the actual signatures — do not write "see xxx.ts"]
 ```
 
@@ -129,7 +131,7 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 
 # Phase 4: Chain
 
-Call chains (P→S→W or P→S→W→S→W→...).
+Call chains (P→W or P→W→W→...).
 
 + Write source files → delegate to Worker chains
 + Implement code → delegate to chains
@@ -140,9 +142,11 @@ Call chains (P→S→W or P→S→W→S→W→...).
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
 3. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
 4. **Planner writes all Worker Tasks in plan.md** — P writes plan.md containing PLAN + Task #1 (for Worker 1), Task #2 (for Worker 2), etc. Each Task uses the same H document format as T_0 plus Target Files.
-5. **Scout reads Worker Task from plan.md and resolves Imports needed** — S does not get its own Task. It reads the next Worker's Task to find what dependencies need resolving.
+5. **Planner curates Imports needed per Worker** — P includes all dependency signatures from T_0 in each Worker Task. No chain Scout needed. Workers receive {previous} which accumulates all prior outputs (PLAN, Tasks, previous Results).
 6. **Worker reads its Task #k from plan.md** — W finds its assigned Task in plan.md and implements it. Giver does not pre-write Worker task content.
 7. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
+8. **Worker must report files created/modified** — each Worker lists what files it created or modified in RESULT, so subsequent Workers know what changed via {previous}.
+9. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
 
 ## H Document Format
 
@@ -176,14 +180,22 @@ Plan.md uses H document format. `----` separates Tasks and Results. `##` separat
 {Scout이 채울 빈칸 또는 Planner가 아는 것}
 
 ## Imports needed (by Scout)
-{resolved dependency signatures}
+{resolved dependency signatures for all Worker Tasks}
 
 ----
 # RESULT #0 (by Worker 1)
 
 All tests pass.
+## Files created
+- src/foo.ts
+- src/bar.ts
+
+## Files modified
+- src/utils.ts
+
 ## Imports needed (new signatures)
 export function fName(params): RetType — src/foo.ts
+export class CName { method(params): RetType } — src/bar.ts
 ```
 
 ## File Grouping
@@ -198,29 +210,25 @@ Layer 2 (imports Layer 0-1):    E, F  → Worker 3
 
 | Files | Chain                    | Batches |
 |-------|--------------------------|---------|
-| 1-3   | P→S→W                    | 1       |
-| 4-6   | P→S→W→S→W               | 2       |
-| 7-9   | P→S→W→S→W→S→W           | 3       |
-| 3N    | P→(S→W)×N                | N       |
+| 1-3   | P→W                      | 1       |
+| 4-6   | P→W→W                    | 2       |
+| 7-9   | P→W→W→W                  | 3       |
+| 3+N   | P→W×N                    | N       |
 
 ## Template: 1-3 files (1 batch)
 
-Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. Planner writes all Worker Tasks in plan.md.
+Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. Planner writes all Worker Tasks in plan.md. No Scout in chain — Planner curates Imports needed per Worker from T_0.
 
 ```json
 {
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths, or 'Scout will resolve'}\n\n---\n\n## Your Role\n\nYou are the Planner. Write plan.md in H document format.\n\nCurate Task #0 into T_k for each Worker. plan.md MUST use this format:\n\n----\n## PLAN (by Planner)\n{overall plan — file grouping, dependency layer order, integration points}\n\n----\n# Task #1 (for Worker 1)\n\n### Goal\n(curate Task #0's Goal for this Worker)\n\n### Background\n(curate Task #0's Background for this Worker)\n\n### Past failures\n(curate Task #0's Past failures for this Worker)\n\n### Constraints\n(curate Task #0's Constraints for this Worker)\n\n### Target Files\n- path/to/file1.ts\n- path/to/file2.ts\n\n### Imports needed\n(curate Task #0's Imports needed for this Worker — leave unknowns for Scout to resolve)\n----\n\n## Working Rules\n\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
-    },
-    {
-      "agent": "scout",
-      "task": "Read plan.md. Find Task #1 (for Worker 1). Resolve its Imports needed — find the dependency signatures that the Target Files import but plan.md doesn't fully specify.\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines. Excerpt ONLY relevant functions and signatures.",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nYou are the Planner. Write plan.md in H document format.\n\nCurate Task #0 into T_k for each Worker. plan.md MUST use this format:\n\n----\n## PLAN (by Planner)\n{overall plan — file grouping, dependency layer order, integration points}\n\n----\n# Task #1 (for Worker 1)\n\n### Goal\n(curate Task #0's Goal for this Worker)\n\n### Background\n(curate Task #0's Background for this Worker)\n\n### Past failures\n(curate Task #0's Past failures for this Worker)\n\n### Constraints\n(curate Task #0's Constraints for this Worker)\n\n### Target Files\n- path/to/file1.ts\n- path/to/file2.ts\n\n### Imports needed\n(curate Task #0's Imports needed for this Worker)\n----\n\n## Working Rules\n\n- Curate from Task #0 only — this file contains everything you need. Read only files referenced in Imports needed.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
-      "task": "Read Task #1 from plan.md. Implement the Target Files listed there.\n\nSCOPE: Read ONLY the files listed in Target Files, Imports needed, and their corresponding TEST FILES.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Imports needed (new signatures)\n```typescript\nexport function fName(params): RetType — path/to/file.ts\n```\n\n{previous}"
+      "task": "Read Task #1 from {previous}. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Files created\n- src/foo.ts\n\n## Files modified\n- (none)\n\n## Imports needed (new signatures)\nexport function fName(params): RetType — path/to/file.ts\n\n{previous}"
     }
   ],
   "context": "fresh",
@@ -237,23 +245,15 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints}\n\n### Imports needed\n{dependency signatures or 'Scout will resolve'}\n\n---\n\n## Your Role\n\nWrite plan.md in H document format. Curate Task #0 into T_k for each Worker batch.\n\nplan.md MUST contain:\n\n----\n## PLAN (by Planner)\n{overall plan}\n\n----\n# Task #1 (for Worker 1)\n{curated sections}\n\n----\n# Task #2 (for Worker 2)\n{curated sections}\n----\n\nEach Task section uses the same format as Task #0 plus Target Files and curated Imports needed.\n\n## Working Rules\n\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
-    },
-    {
-      "agent": "scout",
-      "task": "Read plan.md. Find Task #1 (for Worker 1). Resolve its Imports needed — find the dependency signatures that the Target Files import but plan.md doesn't fully specify.\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines.",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite plan.md in H document format. Curate Task #0 into T_k for each Worker batch.\n\nplan.md MUST contain:\n\n----\n## PLAN (by Planner)\n{overall plan}\n\n----\n# Task #1 (for Worker 1)\n{curated sections}\n\n----\n# Task #2 (for Worker 2)\n{curated sections}\n----\n\nEach Task section uses the same format as Task #0 plus Target Files and curated Imports needed.\n\n## Working Rules\n\n- Curate from Task #0 only — this file contains everything you need. Read only files referenced in Imports needed.\n- Curate per Worker — include ONLY what that Worker needs.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n- Curate for efficiency — include enough context in Constraints so Workers don't need to read extra files.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
-      "task": "Read Task #1 from plan.md. Implement the Target Files listed there.\n\nSCOPE: Read ONLY the files listed in Target Files, Imports needed, and their corresponding TEST FILES.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Imports needed (new signatures)\n```typescript\nexport function fName(params): RetType — path/to/file.ts\n```\n\n{previous}",
-    },
-    {
-      "agent": "scout",
-      "task": "Read plan.md. Find Task #2 (for Worker 2). Resolve its Imports needed — including any new signatures from RESULT #0 in {previous}.\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines.\n\n{previous}",
+      "task": "Read Task #1 from {previous}. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #0 (by Worker 1)\n\nAll tests pass.\n## Files created\n- src/foo.ts\n\n## Files modified\n- (none)\n\n## Imports needed (new signatures)\nexport function fName(params): RetType — path/to/file.ts\n\n{previous}",
     },
     {
       "agent": "worker",
-      "task": "Read Task #2 from plan.md. Implement the Target Files listed there.\n\n{previous} includes resolved Imports needed from Scout and RESULT #0 from Worker 1 with new signatures.\n\nSCOPE: Read ONLY the files listed in Target Files, Imports needed, and their corresponding TEST FILES.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #1 (by Worker 2)\n\nAll tests pass.\n## Imports needed (accumulated)\n```typescript\nexport function fName(params): RetType — path/to/file.ts\n```\n\n{previous}",
+      "task": "Read Task #2 from {previous}. Implement the Target Files listed there.\n\n{previous} contains the full pipeline: PLAN, all Tasks, and RESULT #0 from Worker 1. Use RESULT #0's Files created/modified and new signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #1 (by Worker 2)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed (accumulated)\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
     }
   ],
   "context": "fresh",
@@ -265,26 +265,22 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
 
 ## Template: 7+ files (3+ batches)
 
-Add S→W pairs for each additional batch. Each Scout reads the next Worker's Task from plan.md and resolves its Imports needed. Each Worker reads its Task #k from plan.md.
+Add Worker steps for each additional batch. Each Worker receives {previous} containing the full pipeline (PLAN, all Tasks, all previous Worker Results). Workers read their Task #k from {previous}.
 
 ```json
 {
-  "agent": "scout",
-  "task": "Read plan.md. Find Task #N (for Worker N). Resolve its Imports needed — find the dependency signatures that the Target Files import but plan.md doesn't fully specify, including any new signatures from {previous}.\n\n## Where\n{target directories from plan.md} ONLY\n\n## Output limit\nKeep output under 150 lines.\n\n{previous}",
-},
-{
   "agent": "worker",
-  "task": "Read Task #N from plan.md. Implement the Target Files listed there.\n\n{previous} includes resolved Imports needed from Scout and accumulated signatures from previous Workers.\n\nSCOPE: Read ONLY the files listed in Target Files, Imports needed, and their corresponding TEST FILES.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #N (by Worker N)\n\nAll tests pass.\n## Imports needed\nInclude your new signatures plus any from {previous}.\n\n{previous}",
+  "task": "Read Task #N from {previous}. Implement the Target Files listed there.\n\n{previous} contains the full pipeline: PLAN, all Tasks, and all previous Worker Results. Use previous Workers' Files created/modified and signatures to resolve your Imports needed.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite RESULT:\n\n----\n# RESULT #N (by Worker N)\n\nAll tests pass.\n## Files created\n- (list files)\n\n## Files modified\n- (list files)\n\n## Imports needed\nInclude your new signatures plus any from {previous} that this batch imports.\n\n{previous}",
 }
 ```
 
-The **last Worker** does not need the Imports needed output section (no subsequent Workers need it).
+The **last Worker** does not need the Imports needed / Files sections (no subsequent Workers need them).
 
 ---
 
 ## Template: Parallel workers (independent slices only)
 
-Only after P→S→W has produced plan.md. Only when files have NO overlap and NO imports between them.
+Only after P→W has produced plan.md. Only when files have NO overlap and NO imports between them.
 
 ```json
 {
