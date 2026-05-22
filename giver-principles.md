@@ -124,10 +124,10 @@ $$
 R_k = \text{Files}_k \times \text{Signatures}_k \times \text{Summary}_k \quad (R_k \in \mathcal{S}, \text{code} \notin R_k)
 $$
 
-Planner는 $T_0$를 Worker별로 큐레이팅하여 독립 태스크를 생성한다:
+Planner는 $T_0$를 Worker별로 큐레이팅하여 태스크를 생성한다. 같은 파일을 여러 Worker가 순차 수정할 수 있으므로, 태스크는 파일 기준으로 서로소가 아니다. 대신 수정 내용이 독립적이다:
 
 $$
-P: T_0 \to \{T_1, T_2, \ldots, T_n\} \quad \text{where } T_j \cap T_k \approx \emptyset \quad (j \neq k)
+P: T_0 \to \{T_1, T_2, \ldots, T_n\} \quad \text{where } T_j \text{ and } T_k \text{ modify the same files OK (sequential)}
 $$
 
 ## 함수
