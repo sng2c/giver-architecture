@@ -375,8 +375,8 @@ def detect_subagent_invocations(tool_calls):
             continue
 
         if chain:
-            agents = [s.get("agent", "?") for s in chain]
-            tasks_desc = [s.get("task", "")[:60] for s in chain]
+            agents = [s.get("agent", "?") if isinstance(s, dict) else s for s in chain]
+            tasks_desc = [s.get("task", "")[:60] if isinstance(s, dict) else str(s)[:60] for s in chain]
             chains.append({
                 "agents": agents,
                 "context": context,
@@ -547,6 +547,25 @@ def analyze_session_log(filepath):
         session_info["subagent_calls_by_agent"][s["agent"]] += 1
         session_info["total_subagent_calls"] += 1
 
+    # Parse chain-runs directory for v3.3+
+    chain_dir = Path("/tmp") / "pi-subagents-uid-0" / "chain-runs"
+    if chain_dir.exists():
+        for chain_path in chain_dir.iterdir():
+            if chain_path.is_dir():
+                chain_id = chain_path.name
+                # Check for task files and progress
+                task_files = list(chain_path.glob("task*.md"))
+                plan_file = chain_path / "plan.md"
+                progress_file = chain_path / "progress.md"
+                
+                chain_info = {
+                    "chain_id": chain_id,
+                    "has_plan": plan_file.exists(),
+                    "num_tasks": len(task_files),
+                    "has_progress": progress_file.exists(),
+                }
+                session_info.setdefault("chain_runs", []).append(chain_info)
+    
     return session_info
 
 

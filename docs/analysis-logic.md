@@ -124,6 +124,90 @@
 
 **핵심**: `resolveSubagentContext()` 함수가 `""` → `fresh`로 처리하므로 기능적으로는 fresh이나, SKILL.md는 명시적 지정을 요구.
 
+
+---
+
+## 3.5. v3.5+ 파이프라인 분석
+
+### 체인 디렉토리 구조 (v3.3+)
+
+```
+chain-runs/{chain-id}/
+├── plan.md          ← Planner가 작성 (brief overview)
+├── task1.md         ← Worker 1용 태스크 (Planner가 큐레이팅)
+├── task2.md         ← Worker 2용 태스크
+├── task3.md         ← Worker 3용 태스크
+└── progress.md      ← Worker 결과 순차 업데이트 (Files/Signatures/Summary)
+```
+
+### 서브에이전트 아티팩트 (v3.5+)
+
+```
+subagent-artifacts/
+├── {chain-id}_planner_0_input.md    ← Planner 입력 (T_0)
+├── {chain-id}_planner_0_output.md   ← Planner 출력 (plan요약)
+├── {chain-id}_planner_0_meta.json   ← Planner 메타 (토큰, 턴, 모델)
+├── {chain-id}_worker_1_input.md     ← Worker 1 입력 (task1.md + {previous})
+├── {chain-id}_worker_1_output.md   ← Worker 1 출력 (RESULT)
+├── {chain-id}_worker_1_meta.json   ← Worker 1 메타 (토큰, 턴, 모델)
+├── ...
+```
+
+### 토큰 사용량 추출 (v3.5+)
+
+```python
+# _meta.json에서 직접 추출
+with open(f"{chain_id}_{agent}_{step}_meta.json") as f:
+    meta = json.load(f)
+    tokens_in = meta["usage"]["input"]
+    tokens_out = meta["usage"]["output"]
+    turns = meta["usage"]["turns"]
+    model = meta["model"]
+    exit_code = meta["exitCode"]
+```
+
+### RESULT 형식 분석 (v3.5.2+)
+
+v3.5.2부터 RESULT는 3개 섹션만 포함:
+
+```markdown
+# RESULT #0 (by Worker 1)
+
+## Files
+- created: src/foo.ts
+- modified: src/utils.ts
+
+## Signatures
+export function fName(params): RetType — src/foo.ts
+
+## Summary
+Replaced storageType with databaseUrl.
+```
+
+코드 본문, 테스트 출력, 구현 디테일은 포함하지 않음.
+
+### {previous} 전달 (v3.5.3+)
+
+`{previous}`는 이전 단계의 출력만 전달 (누적 아님):
+
+```
+Worker 1 수신: task1.md (only)
+Worker 2 수신: task2.md + RESULT #0 (from Worker 1 only)
+Worker 3 수신: task3.md + RESULT #1 (from Worker 2 only)
+```
+
+### Phase 감지 (v3.5+)
+
+| Phase | 감지 조건 |
+|-------|----------|
+| **Phase 1** (Discuss) | 사용자 질문, Scout 진단 논의 |
+| **Phase 1.5** (Recon) | Scout standalone 호출 (chain 밖) |
+| **Phase 2** (Decide) | T_0 작성, compact |
+| **Phase 3** (Task) | T_0 완성 |
+| **Phase 4** (Chain) | P→W→W→... 체인 호출 |
+| **Phase 5** (Verify) | 테스트 실행, 결과 보고 |
+| **Phase 6** (Iterate) | 재시도 논의, 사용자 피드백 |
+
 ---
 
 ## 4. Before/After 경계 정의
@@ -237,6 +321,7 @@ JSON 출력으로 raw 데이터 제공. 버전 비교 시 사용.
 |------|------|------|
 | v0.1.0 | 2025-05-19 | 초기 버전. 텍스트 매칭 기반 Phase 감지 (오탐지 다수) |
 | v0.2.0 | 2025-05-19 | 전면 개선. 정규식 헤더 매칭, 도구 호출 파싱, before/after 비교, HTML 리포트 |
+| v0.3.0 | 2025-05-22 | v3.5+ 파이프라인 분석 추가. 체인 디렉토리, _meta.json 토큰 추출, RESULT 3섹션 감지, {previous} 단일 전달 |
 
 ---
 
@@ -250,3 +335,139 @@ JSON 출력으로 raw 데이터 제공. 버전 비교 시 사용.
 4. **새 감지 패턴 추가 시**: 이 문서에 패턴 등록
 5. **HTML 리포트 재생성**: `reports/baseline-v<N>-report.html`
 6. **비교 리포트 작성**: 이전 베이스라인과 신규 데이터 대조
+---
+
+## 10. v3.5+ 체인 분석 도구
+
+### 추출: extract-chain.sh
+
+체인 런 디렉토리와 서브에이전트 아티팩트에서 JSON 데이터를 추출한다.
+
+```bash
+# 전체 체인 추출
+./scripts/extract-chain.sh > chains.json
+
+# 특정 체인만 추출
+./scripts/extract-chain.sh c2e86d3b > chain.json
+
+# 아티팩트 경로 지정 (기본: 자동 감지)
+ARTIFACTS_DIR=~/.pi/agent/sessions/--redbis--/subagent-artifacts \
+  ./scripts/extract-chain.sh > chains.json
+```
+
+출력 JSON 구조:
+
+```json
+{
+  "extracted_at": "2026-05-22T10:00:00+09:00",
+  "chain_dir": "/tmp/pi-subagents-uid-0/chain-runs",
+  "chains": [
+    {
+      "chain_id": "c2e86d3b",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "plan_size_bytes": 888,
+      "tasks": [
+        {"name": "task1.md", "size_bytes": 2677},
+        {"name": "task2.md", "size_bytes": 2032},
+        {"name": "task3.md", "size_bytes": 4791}
+      ],
+      "agents": [
+        {"agent": "planner", "model": "glm-5.1:cloud", "exit_code": 0, "tokens_in": 30556, "tokens_out": 8888, "turns": 8},
+        {"agent": "worker", "model": "glm-5.1:cloud", "exit_code": 0, "tokens_in": 68288, "tokens_out": 22100, "turns": 10}
+      ]
+    }
+  ]
+}
+```
+
+### 분석: analyze-chains.py
+
+추출된 데이터를 분석한다. 직접 디렉토리에서 분석하거나 JSON 파일에서 분석한다.
+
+```bash
+# 디렉토리에서 직접 분석 (아티팩트 경로 지정)
+python3 scripts/analyze-chains.py \
+  --dir /tmp/pi-subagents-uid-0/chain-runs \
+  --artifacts ~/.pi/agent/sessions/--redbis--/subagent-artifacts
+
+# JSON 파일에서 분석
+python3 scripts/analyze-chains.py chains.json
+
+# 두 버전 비교
+python3 scripts/analyze-chains.py v3.5.json v3.5.3.json --compare
+
+# 결과를 파일로 저장
+python3 scripts/analyze-chains.py --dir ... --output report.json
+```
+
+출력 예시:
+
+```
+======================================================================
+  Chain Analysis Report
+======================================================================
+
+📊 Overview
+   Chains:          4
+   Tokens in: 2,016,825
+   Tokens out:     93,758
+   Turns:            144
+
+📋 Per-Agent Breakdown
+   Agent              In      Out  Turns Calls Pass Fail
+   planner      211,827   20,691     37     4    4    0
+   worker      1,804,998   73,067    107     7    7    0
+
+📋 Per-Chain Breakdown
+   Chain      Tasks         In      Out  Turns   Plan   Agents
+   1c87533c       2    439,955   12,177     39   1.4K  P→W→W
+   3dd85357       3  1,271,875   49,854     64   1.2K  P→W→W→W
+   57d29f0e       3    240,475   11,237     30   1.4K  P→W
+   c2e86d3b       3              0      0   0.9K        
+
+🔒 Isolation Metrics (v3.5+)
+   1c87533c: Planner 19,224 → W1 141,290 → W2 279,441
+   3dd85357: Planner 61,080 → W1 236,142 → W2 297,219 → W3 677,434
+   57d29f0e: Planner 101,472 → W1 139,003
+```
+
+### 핵심 메트릭
+
+| 메트릭 | 설명 | 계산 |
+|--------|------|------|
+|총 토큰| 체인 전체 토큰 | Σ (모든 에이전트 tokens_in + tokens_out) |
+|에이전트별 토큰| Planner/Worker 분리 | by_agent[ag]["in"] |
+|격리율| Planner 입력 대비 Worker 입력 | Worker_in / Planner_in |
+|체인 성공률| exit_code=0 비율 | pass / (pass + fail) |
+|태스크 크기| task{k}.md 바이트 | tasks[].size_bytes |
+|RESULT 크기| progress.md 바이트 | progress_size_bytes |
+
+### 버전 비교
+
+```bash
+# v3.5 vs v3.5.3 비교
+python3 scripts/analyze-chains.py v35.json v353.json --compare
+```
+
+출력:
+
+```
+  Metric                v35          v353     Delta
+  Chains                   4            4      +0%
+  Tokens in       2,016,825    1,842,103     -9%
+  Tokens out         93,758      88,421     -6%
+  Turns                   144          131     -9%
+
+  Per-Agent           v35 In      v353 In     Delta
+  planner            211,827     175,593    -17%
+  worker           1,804,998   1,666,510     -8%
+```
+
+### 재현 체크리스트
+
+1. **데이터 추출**: `./scripts/extract-chain.sh > chains-v3.5.3.json`
+2. **분석**: `python3 scripts/analyze-chains.py chains-v3.5.3.json`
+3. **비교**: `python3 scripts/analyze-chains.py v35.json v353.json --compare`
+4. **보관**: `reports/` 디렉토리에 JSON 저장
