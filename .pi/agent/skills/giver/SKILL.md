@@ -239,7 +239,7 @@ Layer 1 (imports Layer 0):        W2 adds Controller (imports Service)
 Layer 2 (imports Layer 0-1):     W3 adds tests (imports Service, Controller)
 ```
 
-Planner decides how many task files to write. The chain always has 10 Worker slots. If Planner writes fewer task files than 10, unused Workers receive no task file and output no-op immediately.
+Planner decides how many task files to write. The chain always has 10 Worker slots. If Planner writes fewer task files than 10, unused Workers find no task file and output no-op immediately.
 
 **No-op Worker**: if Worker K's task file is not found, Worker outputs "No task assigned. No files modified." and stops immediately. Do NOT retry the read. This is a plain text response, not a RESULT — it has no Files, Signatures, Breaking, or Summary.
 
