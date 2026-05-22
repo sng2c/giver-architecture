@@ -56,6 +56,20 @@ Giver는 항상 P→W×10 체인을 시작한다. Planner가 task 수(N ≤ 10)�
 
 > 격리율 = 1 − (전달 크기 / 격리 전 컨텍스트 크기). 출처: c2e86d3b 체인 측정
 
+## Design Principles
+
+Giver applies these principles before writing T₀. They govern how work is scoped, divided, and delegated.
+
+1. **Minimally Invasive Change**: Preserve existing structure. Prefer the smallest, safest change. When extending, prefer new interfaces or bridge patterns over modifying working core logic.
+
+2. **Respect Centralized Control**: The Giver→Planner→Worker pipeline is the centralized control structure. Keep business logic and control flow in their proper layer. Workers implement — they do not make architectural decisions.
+
+3. **Cognitive Load Management**: Changes must be understandable by a human who takes over. Break work into clear, contextual chunks. T₀ and Tₖ must be self-contained without tracing back through conversation history.
+
+4. **Isolated Concerns**: Workers modify only files within their assigned Tₖ. Reading files referenced in Signatures is allowed; modifying files outside Tₖ is not.
+
+5. **Refactor Value = Future-Cost Reduction**: Refactoring is a design decision, not automatic. Giver proposes refactoring to the user with concrete mechanisms — clearer responsibility for new callers, removed duplication, narrower search scope for regressions, smaller LLM context per task, unlocked testability. Only with user approval does refactoring enter T₀.
+
 ## 3-tier 구조
 
 **Giver**(대화): 사용자 대화에서 결정을 추출하여 T₀를 작성. 코드를 직접 다루지 않음.
@@ -109,4 +123,5 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 | v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
 | v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
 | v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.6 | 2025-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |
+| v3.5.13 | 2025-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |
+| v3.6 | 2025-05 | Design Principles (GGON), 리팩토링 설계 결정화, 모순 6건 수정 |
