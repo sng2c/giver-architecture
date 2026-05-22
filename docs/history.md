@@ -29,13 +29,20 @@ v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.
 - 리팩토링 시 Breaking에 import 변경 명시, 모든 import 사이트 업데이트
 - Rule 15: Worker Breaking section이 downstream 실패를 방지
 
-## v3.5.13 — Imports needed→Signatures 통합, Breaking forward, 모순 수정 (2026-05-22)
+## v3.5.13 — Signatures 통합, Breaking forward, 모순 수정 (2026-05-22)
 
 - Imports needed → Signatures로 통합 (같은 Dependency 튜플, 방향만 다름)
 - T₀에 Target Files 필드 추가 (모순 #6 해결: Planner가 "Target Files in T₀" 참조 가능)
+- T₀ 섹션 5→6개 (Target Files 추가)
 - Breaking forward: Worker가 이전 Worker의 Breaking을 전달 → Wₖ+1이 W₁~Wₖ의 모든 Breaking 확인
 - reads:false 설명 보강: defaultReads 프리로딩 방지, read 도구는 사용 가능
 - Planner Working Rules: "T₀ Signatures가 충분하지 않을 때" Target Files 읽도록 보충
+- Worker SCOPE: "files referenced in Signatures"로 정확화
+- T₀ Signatures: "outside Target Files" → "both inside and outside Target Files"
+- Constraints 중복 항목 제거, dependency signatures → Signatures 통일
+- JSON T₀ template Constraints/Signatures placeholder 보강
+- last Worker도 모든 RESULT 섹션 포함 (Giver가 progress.md에서 전체 확인)
+- Pipeline 설명에 Breaking forward 명시
 
 ## v3.5.12 — Planner Target Files 읽기 허용, 실제 패턴 인라인 제공 (2026-05-22)
 

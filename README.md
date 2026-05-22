@@ -59,7 +59,7 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 ```
 
 - **Scout**: Giver가 코드 구조를 직접 읽지 않고 Scout에게 위임. 체인 밖에서만 호출.
-- **RESULT = Files + Signatures + Summary**: 코드 본문은 포함하지 않아 {previous}를 통한 I/O 역류를 차단.
+- **RESULT = Files + Signatures + Breaking + Summary**: 코드 본문은 포함하지 않아 {previous}를 통한 I/O 역류를 차단.
 - **조합 전이**: Rₖ는 Rₖ₋₁의 결과를 반영하여 만들어지므로 정보가 조합적으로 하류에 전달됨. 하지만 각 RESULT는 스티어링만 포함하므로 |Rₖ|는 일정 범위에 바운드됨.
 
 > Phase 정의, SCOPE 규칙, 템플릿, 실패 프로토콜은 [SKILL.md](.pi/agent/skills/giver/SKILL.md) 참조
@@ -93,4 +93,4 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 | v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
 | v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
 | v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.13 | 2025-05 | 논리적 수정 그룹 기준, 같은 파일 순차 수정 허용, P→W×10 고정 체인, no-op 슬롯 처리 |
+| v3.5.13 | 2025-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |

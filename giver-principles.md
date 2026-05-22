@@ -94,6 +94,8 @@ $$
 
 코드 본문이 필요한 Worker는 SCOPE 내에서 파일을 직접 읽는다. RESULT를 통한 I/O 역류를 원천 차단한다.
 
+**Breaking forward**: 각 Worker는 자기 Breaking과 이전 Worker의 Breaking을 모두 RESULT에 포함시킨다. 이로써 $W_{k+1}$은 $W_1$부터 $W_k$까지의 모든 breaking change를 확인할 수 있다. Planner는 $T_0$ 작성 시점에서 아직 일어나지 않은 breaking change를 예측할 수 없으므로, Breaking은 RESULT를 통해서만 하류로 전달된다.
+
 ## 집합과 기호
 
 $$
@@ -113,15 +115,15 @@ $$
 ## 데이터 구조
 
 $$
-T_0 = \text{Goal} \times \text{Background} \times \text{PastFailures} \times \text{Constraints} \times \text{ImportsNeeded}
+T_0 = \text{Goal} \times \text{Background} \times \text{PastFailures} \times \text{Constraints} \times \text{TargetFiles} \times \text{Signatures}
 $$
 
 $$
-T_k = \text{curate}_k(T_0) \times \text{TargetFiles}_k \times \text{ImportsNeeded}_k \times \text{FileRel}_k \quad (T_k \in \mathcal{S})
+T_k = \text{curate}_k(T_0) \quad (T_k \in \mathcal{S})
 $$
 
 $$
-R_k = \text{Files}_k \times \text{Signatures}_k \times \text{Summary}_k \quad (R_k \in \mathcal{S}, \text{code} \notin R_k)
+R_k = \text{Files}_k \times \text{Signatures}_k \times \text{Breaking}_k \times \text{Summary}_k \quad (R_k \in \mathcal{S}, \text{code} \notin R_k)
 $$
 
 Planner는 $T_0$를 Worker별로 큐레이팅하여 태스크를 생성한다. 같은 파일을 여러 Worker가 순차 수정할 수 있으므로, 태스크는 파일 기준으로 서로소가 아니다. 대신 수정 내용이 독립적이다:
@@ -135,7 +137,7 @@ $$
 $$
 \begin{aligned}
 G &: \mathcal{C} \to T_0 && G(\mathcal{C}) \in \mathcal{S} \quad \text{대화에서 결정만 추출} \\
-P &: T_0 \to \{T_k\} && P(T_0) \subseteq \mathcal{S} \quad \text{큐레이팅만, 파일 읽기 없음} \\
+P &: T_0 \to \{T_k\} && P(T_0) \subseteq \mathcal{S} \quad \text{큐레이팅 + Target Files에서 패턴 추출 가능} \\
 S &: \mathcal{D}_{\text{dirs}} \to \mathcal{D}_{\text{recon}} && \text{디렉토리 → 시그니처 + 구조} \\
 W &: T_k \times R_{k-1} \to R_k && W_k\text{의 치역 } R_k \in \mathcal{S} \quad \text{코드 본문 제외}
 \end{aligned}
