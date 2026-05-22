@@ -30,7 +30,7 @@ graph LR
     W2 -->|R₂| W3["Worker 3"]
     W3 -->|R₃| W4["..."]
 ```
-최대 10 Workers. Planner가 task 수를 결정. 같은 파일 순차 수정 가능.
+Giver는 항상 P→W×10 체인을 시작한다. Planner가 task 수(N ≤ 10)를 결정하면, task 파일이 없는 Worker 슬롯은 no-op로 즉시 종료된다. 같은 파일을 여러 Worker가 순차 수정 가능.
 
 | 경계 | 전달 (스티어링) | 격리 (코딩 I/O) | 격리율 |
 |------|--------------|---------------|--------|
@@ -93,4 +93,4 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 | v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
 | v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
 | v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.5 | 2025-05 | 논리적 수정 그룹 기준, 같은 파일 순차 수정 허용, 최대 10 Workers, no-op 처리 |
+| v3.5.5 | 2025-05 | 논리적 수정 그룹 기준, 같은 파일 순차 수정 허용, P→W×10 고정 체인, no-op 슬롯 처리 |

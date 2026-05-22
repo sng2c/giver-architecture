@@ -460,6 +460,38 @@ v2.5b C3 █████                                        37K 🟢
 | `reports/monolithic-vs-v24-report.md` | 모놀리식 vs v2.4 통제 실험 |
 | `reports/monolithic-vs-v25-report.md` | v2.5 실험 분석 |
 | `reports/v25b-vs-v25f-report.md` | v2.5b vs v2.5f 비교분석 |
+## v3.0 — 파이프라인 아키텍처 (2026-05-21)
+
+v2.5i 이후 전면 재설계. 핵심 변화:
+
+- P→S→W→S→W 체인 → P→W→W→W 단일 파이프라인 (체인 내 Scout 제거)
+- Planner가 task{k}.md 분리 작성 (Worker 입력 −74%)
+- Planner T₀에서만 큐레이팅 (Planner −94%)
+- RESULT = Files/Signatures/Summary (코드 본문 제외, {previous} 토큰 블로트 방지)
+- {previous}는 이전 단계 출력만 (누적 아님)
+- 같은 파일 여러 Worker 순차 수정 허용
+- Giver는 항상 P→W×10 체인 시작, Planner가 N(≤10) 결정
+- task 파일 없는 Worker 슬롯은 no-op (즉시 종료)
+
+### v3.5 성능 (c2e86d3b 체인, 44 tests)
+
+| 구조 | Planner | Worker 1 | Worker 2 | Worker 3 | **Total** |
+|------|---------|----------|----------|----------|----------|
+| Monolithic | — | — | — | — | **864K** |
+| v3.5 | 30K | 68K | 86K | 184K | **368K** |
+
+Total −58%.
+
+### v3.5.5 변경
+
+- 논리적 수정 그룹(logical modification groups) 기준 배치
+- P→W×10 고정 체인 (Giver가 항상 10 Worker 슬롯으로 시작)
+- Planner가 N(≤10) 결정, 미사용 슬롯은 no-op
+- 같은 파일 순차 수정 허용
+- 최대 10 Workers 상한
+
+---
+
 ## v2.5n — 단일 체인 P→S→W→S→W→S→W, DI 누적 전달
 
 **날짜**: 2026-05-21
