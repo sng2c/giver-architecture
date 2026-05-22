@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.6.1"
-description: "The Giver v3.6.1. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
+version: "3.7.0"
+description: "The Giver v3.7.0. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -157,7 +157,7 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
-3. **Every chain step MUST include `"reads": false`** — this prevents agents from pre-loading context.md and plan.md via their defaultReads. Workers read only their own task file; Planner reads only T_0 from the task parameter.
+3. **Every chain step MUST include `"reads": false`** — this prevents agents from pre-loading context.md and plan.md via their defaultReads. Workers read only their own task file; Planner reads T_0 and may read Target Files to extract implementation patterns.
 4. **Planner step MUST include `"output": false`** — Planner's agent default output is plan.md. Without this override, Planner writes an unnecessary plan.md file.
 5. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
 6. **Planner is in the chain** — P writes task1.md through taskN.md in the chain directory. N depends on logical modification groups, not file count. Chain always has 10 Worker slots. Unused Workers (no taskK.md) return no-op RESULT immediately.
@@ -166,7 +166,7 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 9. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 10. **Worker RESULT has 4 sections** — Files (created/modified), Signatures (new/changed exports), Breaking (removed/changed exports — prevents downstream Workers from looking for things that no longer exist), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
 11. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
-12. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, include representative code patterns (3-10 lines) in Constraints showing how existing methods are structured. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
+12. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, Planner reads the Target File to extract key patterns (3-10 lines per file) and includes them inline in Constraints. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
 13. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, consider whether a refactoring Worker should be added first. Refactoring changes dependencies — the refactoring Worker must list all breaking changes (removed/renamed/changed exports) in the Breaking section of their RESULT and update all import sites.
 14. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
 15. **Worker Breaking section prevents downstream failures** — when a Worker removes or changes an export that another Worker might reference, it must list it in the Breaking section. Downstream Workers who see a Breaking item for something in their Imports needed should not attempt to use the old signature — this prevents the "edit → fail → re-read" loop.
@@ -234,7 +234,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
       "agent": "planner",
       "reads": false,
       "output": false,
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 only — read NO source or test files. T_0 contains all information you need.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Imports needed.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file). Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Imports needed.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
