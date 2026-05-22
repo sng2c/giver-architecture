@@ -13,7 +13,7 @@ v3.6
 > |---|---|
 > | 기억 전달자가 모든 기억을 보유 | Giver가 모든 대화 컨텍스트를 보유 |
 > | 수령자는 전달받은 것만 받음 | Planner는 Giver의 T₀만 수신 |
-> | 공동체는 Sameness 속에 삶 | Worker/Scout는 완전히 fresh — 역사 0 |
+> | 공동체는 Sameness 속에 산다 | Worker/Scout는 완전히 fresh — 역사 0 |
 > | 전달은 선택적이고 의도적 | Giver는 T₀에 명시적 6섹션만 전달 |
 > | 기억은 전달자에만 머물고 아래로 새지 않음 | 대화 컨텍스트는 Giver에만, 하류로 격리 |
 > | 고통의 전달 (giving of pain) | Giver가 실패 기억을 Past failures로 주입 |
@@ -74,7 +74,7 @@ Giver는 T₀를 쓰기 전에 이 원칙들을 적용한다. 작업의 범위, 
 
 **Giver**(대화): 사용자 대화에서 결정을 추출하여 T₀를 작성. 코드를 직접 다루지 않음.
 
-**Planner**(계획): T₀에서 Worker별 task{k}.md를 생성. 소스/테스트 파일은 읽지 않음 — T₀에 필요한 정보가 모두 들어 있음.
+**Planner**(계획): T₀에서 Worker별 task{k}.md를 생성. T₀ Signatures가 충분하지 않으면 Target Files에서 구현 패턴을 추출.
 
 **Worker**(실행): 자기 task{k}.md와 이전 Worker의 RESULT만 수신. 격리된 스코프에서 작업을 실행. 각 Worker는 fresh 컨텍스트로 실행되어 부모나 다른 Worker의 I/O에 영향을 받지 않음.
 
@@ -110,18 +110,18 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 
 | 파일 | 내용 |
 |------|------|
-| [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, H 문서, 실패 프로토콜) |
+| [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
 | [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
 | [analysis-logic.md](docs/analysis-logic.md) | 분석 로직 및 도구 사용법 |
-| [history.md](docs/history.md) | v1~v2.5i 개선 이력 |
+| [history.md](docs/history.md) | v1~v3.6 개선 이력 |
 
 ## 버전 히스토리
 
 | 버전 | 날짜 | 변경 |
 |------|------|------|
-| v3.0 | 2025-05 | 초기 파이프라인 아키텍처 |
-| v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
-| v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
-| v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.13 | 2025-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |
-| v3.6 | 2025-05 | Design Principles (GGON), 리팩토링 설계 결정화, 모순 6건 수정 |
+| v3.0 | 2026-05 | 초기 파이프라인 아키텍처 |
+| v3.2 | 2026-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
+| v3.3 | 2026-05 | Planner가 task{k}.md 분리 작성 |
+| v3.5 | 2026-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
+| v3.5.13 | 2026-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |
+| v3.6 | 2026-05 | 설계 원칙 (GGON), 리팩토링 설계 결정화, 모순 6건 수정 |
