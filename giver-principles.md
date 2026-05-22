@@ -1,4 +1,4 @@
-# Giver 원칙 v3.5.4
+# Giver 원칙 v3.5.5
 
 ## 제1원리: 컨텍스트는 스티어링과 코딩 I/O로 분해된다
 
@@ -149,12 +149,14 @@ $$
 
 $$
 \begin{aligned}
-W_1 &: (T_1) \to R_0 \\
-W_2 &: (T_2, R_0) \to R_1 \\
+W_1 &: (T_1) \to R_1 \\
+W_2 &: (T_2, R_1) \to R_2 \\
 &\vdots \\
-W_n &: (T_n, R_{n-2}) \to R_{n-1}
+W_n &: (T_n, R_{n-1}) \to R_n
 \end{aligned}
 $$
+
+Planner는 체인 안에서 T₀를 Worker별로 큐레이팅한다. 체인은 최대 10개 Worker 슬롯을 가지며, Planner가 작성한 task 수만큼만 실제 작동한다.
 
 각 경계에서 전달되는 것과 버려지는 것:
 

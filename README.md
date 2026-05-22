@@ -1,6 +1,6 @@
 # Giver
 
-v3.5.4
+v3.5.5
 
 ## Giver란
 
@@ -22,15 +22,15 @@ $$
 
 ```mermaid
 graph LR
-    G["Giver<br/>대화 → 결정 추출"] -->|Recon| S["Scout"]
+    G["Giver"] -->|Recon| S["Scout"]
     S -->|시그니처| G
-    G -->|"T₀ (Task #0)"| P["Planner"]
-    P -->|"task1.md"| W1["Worker 1"]
-    P -->|"task2.md"| W2["Worker 2"]
-    P -->|"task3.md"| W3["Worker 3"]
-    W1 -->|"RESULT 1"| W2
-    W2 -->|"RESULT 2"| W3
+    G -->|"T₀"| P["Planner"]
+    P -->|task| W1["Worker 1"]
+    W1 -->|R₁| W2["Worker 2"]
+    W2 -->|R₂| W3["Worker 3"]
+    W3 -->|R₃| W4["..."]
 ```
+최대 10 Workers. Planner가 task 수를 결정. 같은 파일 순차 수정 가능.
 
 | 경계 | 전달 (스티어링) | 격리 (코딩 I/O) | 격리율 |
 |------|--------------|---------------|--------|
@@ -93,4 +93,4 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 | v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
 | v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
 | v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.4 | 2025-05 | P→W×N 일반화 (⌈files/3⌉ Workers), 단일 체인 템플릿, RESULT 1-based 인덱스 |
+| v3.5.5 | 2025-05 | 논리적 수정 그룹 기준, 같은 파일 순차 수정 허용, 최대 10 Workers, no-op 처리 |

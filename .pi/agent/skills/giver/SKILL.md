@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.5.3"
-description: "The Giver v3.5.4. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W×⌈files/3⌉ Workers pass {previous}. No Scout in chain. All subagents run fresh."
+version: "3.5.5"
+description: "The Giver v3.5.5. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -79,7 +79,7 @@ Before writing T_0, Giver MUST call Scout standalone to collect dependency signa
 }
 ```
 
-**Scout fallback:** If you are unsure about the {target directories}, ask the user before calling Scout. Do guess directories — confirm with user first.
+**Scout fallback:** Ask the user before calling Scout with uncertain directories.
 
 **Scout task fallback:** If Scout cannot find relevant files in the provided directories, it lists top-level directories and suggests where to look next. When Scout returns empty or incomplete results, re-call with refined directories or ask the user for guidance.
 
@@ -146,8 +146,8 @@ Call chains (P→W or P→W→W→...). The chain returns the last Worker's RESU
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
 3. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
-4. **Planner writes separate task files** — P writes task1.md, task2.md, etc. (one per Worker batch). Each uses the same H document format as T_0 plus Target Files. P also writes plan.md as a brief overview.
-5. **Planner curates Imports needed per Worker** — P includes all dependency signatures from T_0 in each Worker Task. No chain Scout needed. Workers receive {previous} which accumulates all prior outputs (PLAN, Tasks, previous Results).
+4. **Planner is in the chain** — P writes task1.md through taskN.md in the chain directory. N depends on logical modification groups, not file count. Chain has up to 10 Worker slots; unused Workers (no taskK.md) return no-op RESULT immediately.
+5. **Workers receive {previous} from previous Worker only** — each Worker gets only the previous Worker's RESULT. Same file can be modified by multiple Workers in sequence (Wₖ reads files modified by Wₖ₋₁).
 6. **Worker reads only its own task file** — W reads task{k}.md (not plan.md) and implements. This keeps Worker input small — no need to see other Workers' tasks.
 7. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 8. **Worker RESULT has 3 sections only** — Files (created/modified), Signatures (new exports), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
@@ -207,52 +207,57 @@ Replaced storageType/storagePath with databaseUrl in Config. Added parseConnecti
 > **RESULT contains Files, Signatures, and Summary only — no code bodies.** Subsequent Workers read files directly via SCOPE if they need implementation details.
 ```
 
-## File Grouping
+## Batch Grouping
 
-Max 3 files per W. Order by dependency layer.
+Planner groups work by **logical modification groups**, not by file count. A logical modification group is a coherent unit of work: implement feature X, add tests for X, refactor Y. One file can be modified by multiple Workers in sequence. One modification group can span multiple files.
 
 ```
-Layer 0 (no project imports): A, B  → Worker 1
-Layer 1 (imports Layer 0):      C, D  → Worker 2
-Layer 2 (imports Layer 0-1):    E, F  → Worker 3
+user.ts:
+  W1: add UserService, UserRepository implementations
+  W2: add UserController (imports UserService)
+  W3: add UserService tests + integration
 ```
 
-$$ \text{Workers} = \lceil \text{files} / 3 \rceil \quad \text{Chain} = P \to W \times \text{Workers} $$
+All three Workers modify user.ts. W₂ reads user.ts after W₁ has added UserService. W₃ reads after both W₁ and W₂. This works because the chain is sequential.
 
-| Files | Workers | Chain |
-|-------|---------|-------|
-| 1–3 | 1 | P→W |
-| 4–6 | 2 | P→W→W |
-| 7–9 | 3 | P→W→W→W |
-| 10–12 | 4 | P→W→W→W→W |
-| 13–15 | 5 | P→W→W→W→W→W |
+Order by dependency:
 
-Giver constructs the chain with the correct number of Worker steps. Add one Worker step per batch beyond the first.
+```
+Layer 0 (creates new symbols):   W1 adds UserService, Repository
+Layer 1 (imports Layer 0):        W2 adds Controller (imports Service)
+Layer 2 (imports Layer 0-1):     W3 adds tests (imports Service, Controller)
+```
 
-## Chain Template (P→W×N)
+Planner decides how many task files to write. The chain has up to 10 Worker slots. If Planner writes fewer task files than 10, unused Workers check for their task file and exit immediately with a no-op RESULT.
 
-Giver fills in {placeholders}, sets N = ⌈files/3⌉ Worker steps, and invokes the chain. Giver writes ONLY Task #0. Planner writes separate task files (task1.md … taskN.md) in the chain directory. Each Worker reads only its own task file.
+**No-op Worker**: if Worker K finds no taskK.md in the chain directory, output RESULT: "No task assigned. No files modified." and stop.
+
+$$ \text{Chain} = P \to W_1 \to W_2 \to \cdots \to W_{10} \quad (\text{unused Workers return no-op}) $$
+
+## Chain Template (P→W×10)
+
+Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10) in the chain directory. Each Worker reads its own task file. Unused Workers (taskK.md doesn't exist) return no-op immediately.
 
 ```json
 {
   "chain": [
     {
       "agent": "planner",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through task{N}.md (one per Worker batch) in H document format. Also write plan.md as a brief overview.\n\n## Working Rules\n\n- Curate from Task #0 only — read NO source or test files. T_0 contains all information you need.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains one Task section with: Goal, Background, Past failures, Constraints, Target Files, Imports needed.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory. Also write plan.md as a brief overview.\n\n## Working Rules\n\n- Curate from Task #0 only — read NO source or test files. T_0 contains all information you need.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Imports needed.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
-      "task": "Read task1.md from the chain directory. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Summary only — no code bodies):\n\n----\n# RESULT #1 (by Worker 1)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew signatures this Worker exports.\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task1.md from the chain directory. If task1.md does not exist, output: "No task assigned. No files modified." and stop immediately.\n\nImplement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Summary only — no code bodies):\n\n----\n# RESULT #1 (by Worker 1)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew signatures this Worker exports.\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
-    {"agent": "worker", "task": "Read task2.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains RESULT #1 from Worker 1.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Summary only — no code bodies):\n\n----\n# RESULT #2 (by Worker 2)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew signatures this Worker exports.\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"},
-    {"agent": "worker", "task": "Read task3.md from the chain directory. Implement the Target Files listed there.\n\n{previous} contains RESULT #2 from Worker 2.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Summary only — no code bodies):\n\n----\n# RESULT #3 (by Worker 3)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew signatures this Worker exports.\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"}
+    {"agent": "worker", "task": "Read task2.md from the chain directory. If task2.md does not exist, output: "No task assigned. No files modified." and stop immediately.\n\n{previous} contains RESULT #1 from Worker 1.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Summary only — no code bodies):\n\n----\n# RESULT #2 (by Worker 2)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew signatures this Worker exports.\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"},
+    {"agent": "worker", "task": "Read task3.md from the chain directory. If task3.md does not exist, output: "No task assigned. No files modified." and stop immediately.\n\n{previous} contains RESULT #2 from Worker 2.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Summary only — no code bodies):\n\n----\n# RESULT #3 (by Worker 3)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew signatures this Worker exports.\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"}
   ],
   "context": "fresh",
   "cwd": "{project_root}"
 }
 ```
 
-**To add Workers:** copy the last Worker step, increment the task file number (task4.md, task5.md, …) and RESULT index. Each Worker receives {previous} containing only the previous Worker's RESULT. If a Worker needs implementation details from a previous Worker's file, it reads the source file directly via SCOPE.
+**To add Workers:** copy the last Worker step, increment the task file number (task4.md, task5.md, …) and RESULT index, up to a maximum of 10 Workers. Each Worker receives {previous} containing only the previous Worker's RESULT. If a Worker needs implementation details from a previous Worker's file, it reads the source file directly via SCOPE. If taskK.md does not exist for Worker K, that Worker outputs no-op RESULT immediately.
 
 The **last Worker** does not need the Imports needed / Files sections (no subsequent Workers need them).
 
