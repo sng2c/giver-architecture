@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.5.12"
-description: "The Giver v3.5.12. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
+version: "3.5.13"
+description: "The Giver v3.5.13. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -13,13 +13,13 @@ You selectively **give** only what they need via T_0. Each agent receives only t
 ## Data Structures
 
 ```
-Task #0 (T_0) = Goal + Background + Past failures + Constraints + Imports needed  (Written by Giver)
-Task #k (T_k) = Goal + Background + Past failures + Constraints + TargetFiles + Imports needed  (Curated by Planner per Worker — saved to task{k}.md)
+Task #0 (T_0) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Written by Giver)
+Task #k (T_k) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Curated by Planner per Worker — saved to task{k}.md)
 Dependency = (signature, filepath)  (tuple)
-Imports needed (curated) = Curated by Planner from T_0 Imports needed per Worker — only what that Worker imports
-TargetFiles = Target file list (assigned groups for this Worker)
+Signatures = List of Dependency tuples. Direction implied by context: in T₀/Tₖ = dependencies this task needs (input); in RESULT = dependencies this Worker provides (output). Breaking = dependencies removed or changed (negative output).
+Target Files = Target file list (assigned groups for this Worker)
 Result = Files + Signatures + Breaking + Summary
-History = T_0 → P output → W₁ output → W₂ output → ... → W₁₀ output  ({previous} carries previous step output only, no accumulation)
+History = T_0 → P output → W₁ output → W₂ output → ... → W₁₀ output  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
 ```
 
 ## Signatures
@@ -64,9 +64,9 @@ When ambiguous → clarify with user before starting a chain.
 
 Before writing T_0, Giver MUST call Scout standalone to collect dependency signatures, file structure, and **implementation patterns**. This is mandatory — not optional.
 
-+ Always call Scout for recon before T_0 → fill Imports needed with as much as you know
++ Always call Scout for recon before T_0 → fill Signatures with as much as you know
 + Delegate file reading to Scout → Giver never reads source/test files directly
-+ Fill in every Imports needed signature the recon provides → leave only truly unknown ones
++ Fill in every Signatures entry the recon provides → leave only truly unknown ones
 + **Include file sizes** → Scout must report line counts for every file it reconnoiters
 + **Include implementation patterns** → Scout must extract representative code patterns (3-10 lines) from large files that Workers will modify
 
@@ -89,7 +89,7 @@ Before writing T_0, Giver MUST call Scout standalone to collect dependency signa
 
 **File size awareness:** When Scout reports a file over 500 lines, Giver must note this in T_0 Constraints (e.g., "handler.ts is 5373 lines — implementation pattern provided below"). When a file is over 2000 lines, consider whether it should be refactored first (see Phase 2). **Refactoring changes dependencies** — modules that imported from the old file must update their imports. The refactoring Worker must list all breaking changes in the Breaking section of their RESULT.
 
-After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports needed.
+After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Signatures.
 
 ---
 
@@ -97,12 +97,12 @@ After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports nee
 
 + Make strategic decisions → discuss with user first
 + Send only T_0 downstream → curate decisions, not conversation transcript
-+ Fill T_0 Imports needed as completely as possible from Scout recon (Phase 1.5) — minimize unknowns left in T_0
++ Fill T_0 Signatures as completely as possible from Scout recon (Phase 1.5) — minimize unknowns left in T_0
 + **Large file awareness** → when a Target File is over 500 lines, include implementation patterns in Constraints. When over 2000 lines, consider refactoring first.
 + **Refactoring caution** → refactoring a large file into smaller modules changes which modules import what. The refactoring Worker must list all breaking changes in the Breaking section of their RESULT: removed signatures, renamed exports, changed parameter types. All import updates must be handled in the same Worker. Only refactor when the benefit (smaller Worker reads) outweighs the risk (import changes, test breakage).
 
 **Context Compaction** — when conversation grows long, compact:
-- **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Imports needed state
+- **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Signatures state
 - **Drop:** verbose scout output, step-by-step diffs, redundant confirmations
 
 ---
@@ -111,7 +111,7 @@ After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports nee
 
 Write T_0 containing only decisions (not conversation). T_0 is the ONLY context downstream agents receive. It must be self-contained.
 
-**Do when writing T_0:** Fill all 5 sections with decisions, not conversation. Use Scout recon for Imports needed.
+**Do when writing T_0:** Fill all 5 sections with decisions, not conversation. Use Scout recon for Signatures.
 **Avoid when writing T_0:** Empty sections, conversation transcript, or reading files directly (delegate to Scout).
 
 ```markdown
@@ -135,8 +135,11 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 [For files over 2000 lines: note file size and consider whether refactoring is needed first]
 [Include exact test expectations: error messages, expected behavior, edge cases]
 
-### Imports needed
-[Type signatures for every imported module outside Target Files]
+### Target Files
+[Files that will be modified or created — derived from Goal and Scout recon]
+
+### Signatures
+[Type signatures for every dependency outside Target Files]
 [Brief dependency map between files — e.g., "A depends on B", provided by Scout recon]
 [Format: `functionName(params): ReturnType — path/to/file.ts`]
 [MUST fill from Scout recon (Phase 1.5) — Giver includes all known signatures in T_0]
@@ -157,7 +160,7 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
-3. **Every chain step MUST include `"reads": false`** — this prevents agents from pre-loading context.md and plan.md via their defaultReads. Workers read only their own task file; Planner reads T_0 and may read Target Files to extract implementation patterns.
+3. **Every chain step MUST include `"reads": false`** — this prevents agents from pre-loading context.md and plan.md via their defaultReads. Agents can still use the `read` tool to read files on demand within SCOPE. Workers read only their own task file; Planner reads T_0 and may read Target Files (using `read` tool) to extract implementation patterns.
 4. **Planner step MUST include `"output": false`** — Planner's agent default output is plan.md. Without this override, Planner writes an unnecessary plan.md file.
 5. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
 6. **Planner is in the chain** — P writes task1.md through taskN.md in the chain directory. N depends on logical modification groups, not file count. Chain always has 10 Worker slots. Unused Workers (no taskK.md) return no-op RESULT immediately.
@@ -169,13 +172,15 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 12. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, Planner reads the Target File to extract key patterns (3-10 lines per file) and includes them inline in Constraints. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
 13. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, consider whether a refactoring Worker should be added first. Refactoring changes dependencies — the refactoring Worker must list all breaking changes (removed/renamed/changed exports) in the Breaking section of their RESULT and update all import sites.
 14. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
-15. **Worker Breaking section prevents downstream failures** — when a Worker removes or changes an export that another Worker might reference, it must list it in the Breaking section. Downstream Workers who see a Breaking item for something in their Imports needed should not attempt to use the old signature — this prevents the "edit → fail → re-read" loop.
+15. **Worker Breaking section prevents downstream failures** — when a Worker removes or changes an export that another Worker might reference, it must list it in the Breaking section. Each Worker forwards all Breaking items from {previous} and adds its own. This way, Worker K+1 sees all breaking changes from Workers 1 through K. Downstream Workers who see a Breaking item for something in their Signatures should not attempt to use the old signature — this prevents the "edit → fail → re-read" loop.
 
 ## RESULT Format
 
 Worker RESULT has 4 sections — Files (created/modified), Signatures (new/changed exports), Breaking (removed/changed exports that downstream Workers should not reference), Summary (1-2 sentences what was done). Subsequent Workers read files directly via SCOPE if they need implementation details.
 
-**Breaking** prevents the "edit → fail → re-read" loop. When a downstream Worker's Imports needed references an export that a previous Worker removed or changed, the downstream Worker reads the file expecting the old signature, doesn't find it, re-reads, and loops. Breaking tells downstream Workers upfront: "don't look for these — they're gone or changed."
+**Breaking** prevents the "edit → fail → re-read" loop. When a downstream Worker's Signatures references an export that a previous Worker removed or changed, the downstream Worker reads the file expecting the old signature, doesn't find it, re-reads, and loops. Breaking tells downstream Workers upfront: "don't look for these — they're gone or changed."
+
+**Breaking accumulates via forwarding.** Each Worker includes its own breaking changes AND forwards all breaking items from {previous}. This way, Worker K+1 sees all breaking changes from Workers 1 through K, not just Worker K's.
 
 ```markdown
 # RESULT #1 (by Worker 1)
@@ -189,8 +194,8 @@ export function fName(params): RetType — src/foo.ts
 export class CName { method(params): RetType } — src/bar.ts
 
 ## Breaking
-- Config.type → Config (renamed) — src/config.ts
-- removedFunction() — removed from src/utils.ts
+- Config.type → Config (renamed) — src/config.ts (W₁)
+- removedFunction() — removed from src/utils.ts (this Worker)
 
 ## Summary
 Replaced storageType/storagePath with databaseUrl in Config. Added parseConnectionString() to factory.ts.
@@ -234,57 +239,57 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
       "agent": "planner",
       "reads": false,
       "output": false,
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file). Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Imports needed.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Target Files\n{files that will be modified}\n\n### Signatures\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task1.md from the chain directory. If task1.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\nImplement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #1 (by Worker 1)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task1.md from the chain directory. If task1.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\nImplement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #1 (by Worker 1)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task2.md from the chain directory. If task2.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #1 from Worker 1.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #2 (by Worker 2)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task2.md from the chain directory. If task2.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #1 from Worker 1.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #2 (by Worker 2)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task3.md from the chain directory. If task3.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #2 from Worker 2.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #3 (by Worker 3)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task3.md from the chain directory. If task3.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #2 from Worker 2.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #3 (by Worker 3)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task4.md from the chain directory. If task4.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #3 from Worker 3.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #4 (by Worker 4)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task4.md from the chain directory. If task4.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #3 from Worker 3.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #4 (by Worker 4)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task5.md from the chain directory. If task5.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #4 from Worker 4.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #5 (by Worker 5)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task5.md from the chain directory. If task5.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #4 from Worker 4.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #5 (by Worker 5)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task6.md from the chain directory. If task6.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #5 from Worker 5.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #6 (by Worker 6)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task6.md from the chain directory. If task6.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #5 from Worker 5.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #6 (by Worker 6)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task7.md from the chain directory. If task7.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #6 from Worker 6.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #7 (by Worker 7)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task7.md from the chain directory. If task7.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #6 from Worker 6.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #7 (by Worker 7)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task8.md from the chain directory. If task8.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #7 from Worker 7.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #8 (by Worker 8)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task8.md from the chain directory. If task8.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #7 from Worker 7.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #8 (by Worker 8)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task9.md from the chain directory. If task9.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #8 from Worker 8.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #9 (by Worker 9)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task9.md from the chain directory. If task9.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #8 from Worker 8.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #9 (by Worker 9)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     },
     {
       "agent": "worker",
       "reads": false,
-      "task": "Read task10.md from the chain directory. If task10.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #9 from Worker 9.\n\nSCOPE: Read only files listed in Target Files and Imports needed.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #10 (by Worker 10)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports that downstream Workers should not reference; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
+      "task": "Read task10.md from the chain directory. If task10.md does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n{previous} contains RESULT #9 from Worker 9.\n\nSCOPE: Read only files listed in Target Files and Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nAfter implementing, run the relevant tests to verify. If tests fail, fix before outputting.\n\nWrite a brief RESULT (Files, Signatures, Breaking, Summary — no code bodies):\n\n----\n# RESULT #10 (by Worker 10)\n\nAll tests pass.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; forward Breaking items from {previous} and add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\n{previous}"
     }
   ],
   "context": "fresh",
@@ -294,7 +299,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
 
 Giver constructs the chain with all 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10) in the chain directory. Each Worker reads its own task file. Workers without a task file output no-op immediately.
 
-The **last Worker** does not need the Imports needed / Files sections (no subsequent Workers need them). Breaking section should still be included if the last Worker removed or changed any exports that earlier Workers referenced.
+The **last Worker** does not need the Signatures / Files sections (no subsequent Workers need them). Breaking section should still be included — forwarded items from previous Workers and this Worker's own breaking changes — so Giver can read the full change log from progress.md.
 
 ---
 
@@ -376,4 +381,4 @@ Bad:
 see src/services/user-service.ts
 ```
 
-If you don't know the signatures → run Scout FIRST, then include them in the Task's Imports needed.
+If you don't know the signatures → run Scout FIRST, then include them in the Task's Signatures.
