@@ -1,6 +1,6 @@
 # Giver
 
-v3.5.8
+v3.5.9
 
 ## Giver란
 
@@ -93,4 +93,4 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 | v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
 | v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
 | v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.8 | 2025-05 | 논리적 수정 그룹 기준, 같은 파일 순차 수정 허용, P→W×10 고정 체인, no-op 슬롯 처리 |
+| v3.5.9 | 2025-05 | 논리적 수정 그룹 기준, 같은 파일 순차 수정 허용, P→W×10 고정 체인, no-op 슬롯 처리 |

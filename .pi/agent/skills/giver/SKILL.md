@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.5.8"
-description: "The Giver v3.5.8. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
+version: "3.5.9"
+description: "The Giver v3.5.9. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -146,14 +146,15 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
 3. **Every chain step MUST include `"reads": false`** — this prevents agents from pre-loading context.md and plan.md via their defaultReads. Workers read only their own task file; Planner reads only T_0 from the task parameter.
-4. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
-5. **Planner is in the chain** — P writes task1.md through taskN.md in the chain directory. N depends on logical modification groups, not file count. Chain always has 10 Worker slots. Unused Workers (no taskK.md) return no-op RESULT immediately.
-6. **Workers receive {previous} from the previous step** — Worker 1 receives Planner output; Worker K (K≥2) receives Worker K-1's RESULT. Same file can be modified by multiple Workers in sequence (Wₖ reads files modified by Wₖ₋₁).
-7. **Worker reads only its own task file** — W reads task{k}.md and implements. This keeps Worker input small — no need to see other Workers' tasks.
-8. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
-9. **Worker RESULT has 3 sections only** — Files (created/modified), Signatures (new exports), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
-10. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
-11. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
+4. **Planner step MUST include `"output": false`** — Planner's agent default output is plan.md. Without this override, Planner writes an unnecessary plan.md file.
+5. **{previous} carries only the previous step's output** — NOT all accumulated history. Each chain step receives `{previous}` = the previous agent's text output only.
+6. **Planner is in the chain** — P writes task1.md through taskN.md in the chain directory. N depends on logical modification groups, not file count. Chain always has 10 Worker slots. Unused Workers (no taskK.md) return no-op RESULT immediately.
+7. **Workers receive {previous} from the previous step** — Worker 1 receives Planner output; Worker K (K≥2) receives Worker K-1's RESULT. Same file can be modified by multiple Workers in sequence (Wₖ reads files modified by Wₖ₋₁).
+8. **Worker reads only its own task file** — W reads task{k}.md and implements. This keeps Worker input small — no need to see other Workers' tasks.
+9. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
+10. **Worker RESULT has 3 sections only** — Files (created/modified), Signatures (new exports), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
+11. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
+12. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
 
 ## RESULT Format
 
@@ -211,6 +212,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
     {
       "agent": "planner",
       "reads": false,
+      "output": false,
       "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Imports needed\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 only — read NO source or test files. T_0 contains all information you need.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Imports needed.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
