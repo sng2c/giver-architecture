@@ -1,0 +1,934 @@
+{
+  "extracted_at": "2026-05-23T00:21:01.361645",
+  "chain_dir": "/tmp/pi-subagents-uid-0/chain-runs",
+  "chains": [
+    {
+      "chain_id": "1c87533c",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 4138
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 3859
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 19224,
+          "tokens_out": 3094,
+          "turns": 6
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 141290,
+          "tokens_out": 4959,
+          "turns": 15
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 279441,
+          "tokens_out": 4124,
+          "turns": 18
+        }
+      ],
+      "plan_size_bytes": 1423
+    },
+    {
+      "chain_id": "2c9960b2",
+      "has_plan": true,
+      "has_progress": false,
+      "num_tasks": 0,
+      "tasks": [],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 143,
+          "tokens_in": 7631,
+          "tokens_out": 2942,
+          "turns": 2
+        }
+      ],
+      "plan_size_bytes": 1898
+    },
+    {
+      "chain_id": "2d451efc",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 24389
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 28807
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1314473,
+          "tokens_out": 52519,
+          "turns": 24
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1086522,
+          "tokens_out": 19565,
+          "turns": 30
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 470004,
+          "tokens_out": 8613,
+          "turns": 18
+        }
+      ],
+      "plan_size_bytes": 1475
+    },
+    {
+      "chain_id": "34e3f185",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 24596
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 20184
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1328154,
+          "tokens_out": 25213,
+          "turns": 25
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1719894,
+          "tokens_out": 23420,
+          "turns": 32
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 2637084,
+          "tokens_out": 36557,
+          "turns": 42
+        }
+      ],
+      "plan_size_bytes": 4084
+    },
+    {
+      "chain_id": "392048db",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 10,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 4143
+        },
+        {
+          "name": "task10.md",
+          "size_bytes": 4866
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 4346
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 6275
+        },
+        {
+          "name": "task4.md",
+          "size_bytes": 5359
+        },
+        {
+          "name": "task5.md",
+          "size_bytes": 6286
+        },
+        {
+          "name": "task6.md",
+          "size_bytes": 3524
+        },
+        {
+          "name": "task7.md",
+          "size_bytes": 4675
+        },
+        {
+          "name": "task8.md",
+          "size_bytes": 7465
+        },
+        {
+          "name": "task9.md",
+          "size_bytes": 3829
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1543044,
+          "tokens_out": 19631,
+          "turns": 39
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 638620,
+          "tokens_out": 9661,
+          "turns": 21
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 191170,
+          "tokens_out": 3756,
+          "turns": 12
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 134019,
+          "tokens_out": 3611,
+          "turns": 11
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1799358,
+          "tokens_out": 11546,
+          "turns": 34
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3127342,
+          "tokens_out": 25456,
+          "turns": 53
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 2195369,
+          "tokens_out": 18335,
+          "turns": 36
+        }
+      ],
+      "plan_size_bytes": 8079
+    },
+    {
+      "chain_id": "3dd85357",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 7235
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 7607
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 10390
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 61080,
+          "tokens_out": 9062,
+          "turns": 9
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 236142,
+          "tokens_out": 6456,
+          "turns": 17
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 297219,
+          "tokens_out": 13867,
+          "turns": 16
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 677434,
+          "tokens_out": 20469,
+          "turns": 22
+        }
+      ],
+      "plan_size_bytes": 1265
+    },
+    {
+      "chain_id": "559fc35e",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 13039
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 15398
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 24547
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 68002,
+          "tokens_out": 16075,
+          "turns": 7
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 249304,
+          "tokens_out": 6463,
+          "turns": 15
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 394689,
+          "tokens_out": 7152,
+          "turns": 20
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 662297,
+          "tokens_out": 13195,
+          "turns": 24
+        }
+      ],
+      "plan_size_bytes": 1753
+    },
+    {
+      "chain_id": "57d29f0e",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 3743
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 4500
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 6341
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 101472,
+          "tokens_out": 7497,
+          "turns": 12
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 139003,
+          "tokens_out": 3740,
+          "turns": 18
+        }
+      ],
+      "plan_size_bytes": 1461
+    },
+    {
+      "chain_id": "64b71ad3",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 26875
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 29001
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 16231
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 992267,
+          "tokens_out": 21655,
+          "turns": 14
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3511677,
+          "tokens_out": 43681,
+          "turns": 37
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 598541,
+          "tokens_out": 10184,
+          "turns": 14
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 5091724,
+          "tokens_out": 36679,
+          "turns": 81
+        }
+      ],
+      "plan_size_bytes": 3925
+    },
+    {
+      "chain_id": "6ee6a580",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 10631
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 12864
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 25378
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 187919,
+          "tokens_out": 14245,
+          "turns": 20
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1313303,
+          "tokens_out": 7355,
+          "turns": 24
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 6007860,
+          "tokens_out": 22551,
+          "turns": 64
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 579819,
+          "tokens_out": 7320,
+          "turns": 20
+        }
+      ],
+      "plan_size_bytes": 1295
+    },
+    {
+      "chain_id": "a15cee3f",
+      "has_plan": false,
+      "has_progress": true,
+      "num_tasks": 0,
+      "tasks": [],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1791863,
+          "tokens_out": 19689,
+          "turns": 47
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 53305,
+          "tokens_out": 1581,
+          "turns": 11
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 181604,
+          "tokens_out": 3487,
+          "turns": 16
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 530774,
+          "tokens_out": 9482,
+          "turns": 20
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1073533,
+          "tokens_out": 9650,
+          "turns": 25
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 278628,
+          "tokens_out": 8502,
+          "turns": 19
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 862195,
+          "tokens_out": 11754,
+          "turns": 26
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 283871,
+          "tokens_out": 7582,
+          "turns": 23
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1677655,
+          "tokens_out": 22753,
+          "turns": 43
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 1,
+          "tokens_in": 8584,
+          "tokens_out": 86,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "chain_id": "a58bf658",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 5090
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 6356
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 131210,
+          "tokens_out": 3812,
+          "turns": 8
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 2156619,
+          "tokens_out": 11250,
+          "turns": 32
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 674387,
+          "tokens_out": 8379,
+          "turns": 24
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3532,
+          "tokens_out": 80,
+          "turns": 2
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 95684,
+          "tokens_out": 1336,
+          "turns": 13
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 11740,
+          "tokens_out": 615,
+          "turns": 5
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 8928,
+          "tokens_out": 431,
+          "turns": 4
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3749,
+          "tokens_out": 331,
+          "turns": 2
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3951,
+          "tokens_out": 424,
+          "turns": 2
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3991,
+          "tokens_out": 366,
+          "turns": 2
+        }
+      ],
+      "plan_size_bytes": 1053
+    },
+    {
+      "chain_id": "ae971ff0",
+      "has_plan": true,
+      "has_progress": false,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 3295
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 6804
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 75230,
+          "tokens_out": 8359,
+          "turns": 11
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 1,
+          "tokens_in": 6067,
+          "tokens_out": 91,
+          "turns": 3
+        }
+      ],
+      "plan_size_bytes": 1731
+    },
+    {
+      "chain_id": "c2e86d3b",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 3,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 2677
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 2032
+        },
+        {
+          "name": "task3.md",
+          "size_bytes": 4791
+        }
+      ],
+      "agents": [],
+      "plan_size_bytes": 888
+    },
+    {
+      "chain_id": "cd148908",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 13766
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 10327
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 25236,
+          "tokens_out": 7332,
+          "turns": 5
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1185891,
+          "tokens_out": 14232,
+          "turns": 25
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 402697,
+          "tokens_out": 18387,
+          "turns": 15
+        }
+      ],
+      "plan_size_bytes": 1626
+    },
+    {
+      "chain_id": "d8087849",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 7699
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 3867
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 19238,
+          "tokens_out": 3878,
+          "turns": 5
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3584827,
+          "tokens_out": 15169,
+          "turns": 81
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 1,
+          "tokens_in": 4878,
+          "tokens_out": 102,
+          "turns": 2
+        }
+      ],
+      "plan_size_bytes": 1049
+    },
+    {
+      "chain_id": "db552cac",
+      "has_plan": true,
+      "has_progress": true,
+      "num_tasks": 2,
+      "tasks": [
+        {
+          "name": "task1.md",
+          "size_bytes": 40609
+        },
+        {
+          "name": "task2.md",
+          "size_bytes": 20963
+        }
+      ],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1050065,
+          "tokens_out": 25687,
+          "turns": 25
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 1423842,
+          "tokens_out": 19948,
+          "turns": 29
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 268865,
+          "tokens_out": 5222,
+          "turns": 11
+        }
+      ],
+      "plan_size_bytes": 2785
+    },
+    {
+      "chain_id": "dc64d963",
+      "has_plan": false,
+      "has_progress": true,
+      "num_tasks": 0,
+      "tasks": [],
+      "agents": [
+        {
+          "agent": "planner",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 3641536,
+          "tokens_out": 25222,
+          "turns": 94
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 42912,
+          "tokens_out": 1835,
+          "turns": 9
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 0,
+          "tokens_in": 546581,
+          "tokens_out": 9530,
+          "turns": 27
+        },
+        {
+          "agent": "worker",
+          "model": "glm-5.1:cloud",
+          "exit_code": 1,
+          "tokens_in": 6192,
+          "tokens_out": 129,
+          "turns": 2
+        }
+      ]
+    }
+  ]
+}
