@@ -462,7 +462,7 @@ v2.5b C3 █████                                        37K 🟢
 | `reports/v25b-vs-v25f-report.md` | v2.5b vs v2.5f 비교분석 |
 ## v3.0 — 파이프라인 아키텍처 (2026-05-21)
 
-v2.5i 이후 전면 재설계. 핵심 변화:
+v2.5i 이후 전면 재설계.
 
 - P→S→W→S→W 체인 → P→W→W→W 단일 파이프라인 (체인 내 Scout 제거)
 - Planner가 task{k}.md 분리 작성 (Worker 입력 −74%)
@@ -472,6 +472,67 @@ v2.5i 이후 전면 재설계. 핵심 변화:
 - 같은 파일 여러 Worker 순차 수정 허용
 - Giver는 항상 P→W×10 체인 시작, Planner가 N(≤10) 결정
 - task 파일 없는 Worker 슬롯은 no-op (즉시 종료)
+
+### v3.1 — Phase 1.5 Recon (Mandatory Scout)
+
+- Giver가 T₀ 작성 전 Scout로 증상 영역 정찰 필수화
+- Scout 결과를 Task #0 Imports needed에 반영
+- 체인 밖에서 독립 호출 (Phase 1.5)
+
+### v3.2 — Scout 제거, Planner 큐레이션
+
+- 체인 내 Scout 제거: P→S→W→S→W → P→W→W→W
+- Planner가 T₀에서 Worker별 Imports needed 큐레이션
+- Planner/Worker SCOPE: "within project root only"
+- 부정 규칙 → 긍정 조건 패턴 (Do-When)
+
+### v3.3 — 분리 task 파일
+
+- Planner가 plan.md + task1.md, task2.md, task3.md 분리 작성
+- Worker가 자신의 task 파일만 읽음
+- Worker 1 입력: 301K→79K (−74%)
+
+### v3.4 — Worker 템플릿 수정
+
+- Worker template {previous} 중복 수정
+- RESULT format 간소화
+
+### v3.5 — Planner 파일 읽기 금지
+
+- Planner가 소스/테스트 파일 읽지 않음 (T₀에 모든 정보 포함)
+- Planner 492K/46턴 → 30K/8턴 (−94%)
+- 테스트: c2e86d3b 체인, 378K total, 44/44 tests pass
+
+### v3.5.1 — 한국어→영어 통일
+
+- SKILL.md 한국어/영어 혼용 → 영어 통일
+- File Relationships 섹션 추가
+- Task #0 용어 통일
+- 7+ 파일 템플릿 수정
+
+### v3.5.2 — RESULT 포맷 간소화
+
+- RESULT → Files/Signatures/Summary (코드 본문 금지)
+- {previous} 토큰 블로트 방지
+
+### v3.5.3 — {previous} 단계 출력만
+
+- {previous}는 이전 단계 출력만 전달 (누적 아님)
+- 실제 체인 데이터로 검증
+- Giver는 progress.md에서 전체 결과 확인
+
+### v3.5.4 — P→W×N 일반화
+
+- ⌈files/3⌉ 공식으로 Worker 수 결정
+- 단일 체인 템플릿
+- RESULT 1-based 인덱싱
+
+### v3.5.5 — 논리적 수정 그룹 기준
+
+- ⌈files/3⌉ → 논리적 수정 그룹(logical modification groups) 기준
+- 같은 파일 여러 Worker 순차 수정 허용
+- P→W×10 고정 체인 (Giver가 항상 10 Worker 슬롯)
+- 미사용 슬롯은 no-op (즉시 종료)
 
 ### v3.5 성능 (c2e86d3b 체인, 44 tests)
 
