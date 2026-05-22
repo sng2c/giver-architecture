@@ -3,7 +3,7 @@
 ## 버전 진화
 
 ```
-v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.5i → v3.0 → v3.5 → ... → v3.5.8
+v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.5i → v3.0 → v3.5 → ... → v3.6.0
 격리  준수   진단    구조화   요약   연속    DI    구조강제       병렬분할  파이프라인        reads:false
 ```
 
@@ -13,6 +13,21 @@ v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.
 
 - 모든 chain step에 `"reads": false` 추가 (Planner + Worker 10개)
 - Worker/Planner의 defaultReads(context.md, plan.md) 사전 로딩 방지
+
+## v3.5.9 — output:false (Planner plan.md 방지) (2026-05-22)
+
+- Planner step에 `"output": false` 추가
+- Rule 4: Planner step MUST include output:false
+- Rule 리넘버링: chain 설정 규칙 1-4, chain 로직 5-14
+
+## v3.6.0 — Scout recon 강화: 파일 크기, 구현 패턴, 대형 파일 인식 (2026-05-22)
+
+- Phase 1.5: Scout에 파일 크기(줄 수) + 구현 패턴(3-10줄) 요구 추가
+- Scout 출력 제한: 150→200줄
+- Giver T₀: 500줄 초과 → Constraints에 패턴 인라인, 2000줄 초과 → 리팩토링 고려
+- Rule 12: Planner 대형 파일에 구현 패턴 포함 ("follow patterns" 금지)
+- Rule 13: Planner 파일 크기 명시, 2000줄+ 리팩토링 Worker 배치 고려
+- 리팩토링 주의: 새 인터페이스 생성, import 경로 변경, 공개 API 보존 필수
 - Rule 3로 추가: chain 설정 규칙 (context:fresh, cwd, reads:false) 그룹화
 
 ## v3.5.7 — plan.md 제거 (2026-05-22)
@@ -391,3 +406,5 @@ v3.5 C1 █████████████                                 
 | v3.5.6 | P→W×10 명시적 템플릿 |
 | v3.5.7 | plan.md 제거 |
 | v3.5.8 | reads:false 사전 로딩 방지 |
+| v3.5.9 | output:false(Planner plan.md 방지), Rule 4 추가 |
+| v3.6.0 | Scout recon: 파일 크기+구현 패턴, 리팩토링 주의 |
