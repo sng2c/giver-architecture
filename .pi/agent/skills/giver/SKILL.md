@@ -1,7 +1,7 @@
 ---
 name: giver
 version: "3.6.1"
-description: "The Giver v3.6.1. Design Principles (GGON). reads:["taskN.md"] auto-inject. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
+description: 'The Giver v3.6.1. Design Principles (GGON). reads:["taskN.md"] auto-inject. P-Wx10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh.'
 disable-model-invocation: true
 ---
 
