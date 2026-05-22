@@ -56,19 +56,19 @@ Giver는 항상 P→W×10 체인을 시작한다. Planner가 task 수(N ≤ 10)�
 
 > 격리율 = 1 − (전달 크기 / 격리 전 컨텍스트 크기). 출처: c2e86d3b 체인 측정
 
-## Design Principles
+## 설계 원칙
 
-Giver applies these principles before writing T₀. They govern how work is scoped, divided, and delegated.
+Giver는 T₀를 쓰기 전에 이 원칙들을 적용한다. 작업의 범위, 분할, 위임을 결정한다.
 
-1. **Minimally Invasive Change**: 기존 구조를 보존하고 최소 변경으로 요구사항 충족. 핵심 로직 수정보다 새 인터페이스나 브릿지 패턴으로 확장.
+1. **최소 침투**: 기존 구조 보존, 최소 변경으로 요구사항 충족. 핵심 로직 수정보다 새 인터페이스나 브릿지 패턴으로 확장.
 
-2. **Respect Centralized Control**: Giver→Planner→Worker 파이프라인이 중앙 제어. Worker는 구현만, 아키텍처 결정은 Giver와 Planner.
+2. **중앙 제어 존중**: Giver→Planner→Worker 파이프라인이 중앙 제어. Worker는 구현만, 아키텍처 결정은 Giver와 Planner.
 
-3. **Cognitive Load Management**: Human이 인계받을 수 있도록 변경을 명확한 단위로 분할. T₀와 Tₖ는 대화 기록 없이 자체 완결.
+3. **인지 부하 관리**: Human이 인계받을 수 있도록 변경을 명확한 단위로 분할. T₀와 Tₖ는 대화 기록 없이 자체 완결.
 
-4. **Isolated Concerns**: Worker는 Tₖ 내 파일만 수정. Signatures 참조 파일은 읽기 허용, 수정은 금지.
+4. **관심사 격리**: Worker는 Tₖ 내 파일만 수정. Signatures 참조 파일은 읽기 허용, 수정은 금지.
 
-5. **Refactor Value = Future-Cost Reduction**: 리팩토링은 자동이 아닌 설계 결정. Giver가 사용자에게 제안, 구체적 기관으로 정당화, 승인 시만 T₀에 포함.
+5. **리팩터 가치 = 다음 변경 비용 감소**: 리팩터링은 자동이 아닌 설계 결정. Giver가 사용자에게 제안, 구체적 기관으로 정당화, 승인 시만 T₀에 포함.
 
 ## 3-tier 구조
 
