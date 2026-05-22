@@ -136,7 +136,7 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 
 # Phase 4: Chain
 
-Call chains (P→W or P→W→W→...).
+Call chains (P→W or P→W→W→...). The last Worker's output (accumulated RESULT summaries) returns to Giver automatically.
 
 + Write source files → delegate to Worker chains
 + Implement code → delegate to chains
@@ -152,6 +152,7 @@ Call chains (P→W or P→W→W→...).
 7. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 8. **Worker RESULT has 3 sections only** — Files (created/modified), Signatures (new exports), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
 9. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
+10. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver automatically. Since Workers pass {previous} (accumulated RESULT summaries), Giver receives all Results.
 
 ## H Document Format
 
@@ -332,9 +333,10 @@ Prerequisites: target files MUST NOT overlap. If any doubt → use separate sequ
 
 # Phase 5: Verify
 
-1. Run tests / verify results
-2. Report: what was done, key files, branch status
-3. Discuss next steps
+After the chain completes, the last Worker's output (accumulated RESULT summaries) is returned to Giver automatically. Giver then:
+1. Reviews the chain result (all Worker Files, Signatures, Summary)
+2. Runs tests / verifies results
+3. Reports to user: what was done, key files, branch status
 
 If tests fail:
 - Classify: Strategic (T_0 insufficient) / Tactical (P wrong) / Operational (W mistake)
