@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.5.9"
-description: "The Giver v3.5.9. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
+version: "3.6.0"
+description: "The Giver v3.6.0. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -62,18 +62,22 @@ When ambiguous → clarify with user before starting a chain.
 
 # Phase 1.5: Recon (MANDATORY)
 
-Before writing T_0, Giver MUST call Scout standalone to collect dependency signatures and file structure. This is mandatory — not optional.
+Before writing T_0, Giver MUST call Scout standalone to collect dependency signatures, file structure, and **implementation patterns**. This is mandatory — not optional.
 
 + Always call Scout for recon before T_0 → fill Imports needed with as much as you know
 + Delegate file reading to Scout → Giver never reads source/test files directly
 + Fill in every Imports needed signature the recon provides → leave only truly unknown ones
++ **Include file sizes** → Scout must report line counts for every file it reconnoiters
++ **Include implementation patterns** → Scout must extract representative code patterns (3-10 lines) from large files that Workers will modify
 
-**Why:** Giver reading files directly bloats context and cascades into Planner. Fresh agents need maximum context in T_0. Scout reads files, extracts only signatures and structure, returns a compact recon. Giver uses this to fill T_0 Imports needed as completely as possible. Only truly unknown signatures should remain unfilled in T_0.
+**Why:** Giver reading files directly bloats context and cascades into Planner. Fresh agents need maximum context in T_0. Scout reads files, extracts signatures, structure, and patterns, returns a compact recon. Workers who receive implementation patterns in their task file don't need to read large files themselves — this prevents the "edit → fail → re-read" loop that causes token explosions on large files (5000+ lines).
+
+**Implementation patterns** prevent Worker over-reading. When a Target File is large (500+ lines), Worker reads the entire file to find the pattern — sometimes 40+ times in a loop. Providing the pattern inline in the task eliminates this need.
 
 ```json
 {
   "agent": "scout",
-  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, and dependency signatures for {project}.\n\n### Where\n{target directories} within project root ONLY\n\n### Output limit\nKeep output under 150 lines. List: file tree, import relationships, and type signatures of exported functions/classes/interfaces.",
+  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, dependency signatures, and implementation patterns for {project}.\n\n### Where\n{target directories} within project root ONLY\n\n### Output format\nFor each file: path, line count, exported signatures.\nFor files over 500 lines: include 3-10 line code patterns showing HOW existing methods are structured (e.g., how a storage method uses db.prepare().run/get/all, how a handler case dispatches commands).\n\n### Output limit\nKeep output under 200 lines. Structure: file tree with line counts → signatures → implementation patterns for large files.",
   "context": "fresh",
   "cwd": "{project_root}"
 }
@@ -82,6 +86,8 @@ Before writing T_0, Giver MUST call Scout standalone to collect dependency signa
 **Scout fallback:** Ask the user before calling Scout with uncertain directories.
 
 **Scout task fallback:** If Scout cannot find relevant files in the provided directories, it lists top-level directories and suggests where to look next. When Scout returns empty or incomplete results, re-call with refined directories or ask the user for guidance.
+
+**File size awareness:** When Scout reports a file over 500 lines, Giver must note this in T_0 Constraints (e.g., "handler.ts is 5373 lines — implementation pattern provided below"). When a file is over 2000 lines, consider whether it should be refactored first (see Phase 2). **Refactoring creates new interfaces and import paths** — if refactoring is chosen, the refactoring Worker must export the same public API and update all import sites.
 
 After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports needed.
 
@@ -92,6 +98,8 @@ After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Imports nee
 + Make strategic decisions → discuss with user first
 + Send only T_0 downstream → curate decisions, not conversation transcript
 + Fill T_0 Imports needed as completely as possible from Scout recon (Phase 1.5) — minimize unknowns left in T_0
++ **Large file awareness** → when a Target File is over 500 lines, include implementation patterns in Constraints. When over 2000 lines, consider refactoring first.
++ **Refactoring caution** → refactoring a large file into smaller modules creates new interfaces and changes import paths. If refactoring is chosen, the refactoring Worker must export the same public API and update all import sites. Only refactor when the benefit (smaller Worker reads) outweighs the risk (interface changes, test breakage).
 
 **Context Compaction** — when conversation grows long, compact:
 - **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Imports needed state
@@ -123,6 +131,9 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 ### Constraints
 [Technical constraints: language, framework, patterns to follow, things to avoid]
 [Include exact test expectations: error messages, expected behavior, edge cases]
+[For files over 500 lines: include representative code patterns (3-10 lines) showing how existing methods are structured]
+[For files over 2000 lines: note file size and consider whether refactoring is needed first]
+[Include exact test expectations: error messages, expected behavior, edge cases]
 
 ### Imports needed
 [Type signatures for every imported module outside Target Files]
@@ -130,6 +141,7 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 [Format: `functionName(params): ReturnType — path/to/file.ts`]
 [MUST fill from Scout recon (Phase 1.5) — Giver includes all known signatures in T_0]
 [Write the actual signatures — do not write "see xxx.ts"]
+[For large dependencies (500+ lines): include 3-10 line pattern showing how the exported API is used in existing code]
 ```
 
 ---
@@ -154,7 +166,9 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 9. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 10. **Worker RESULT has 3 sections only** — Files (created/modified), Signatures (new exports), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
 11. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
-12. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
+12. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, include representative code patterns (3-10 lines) in Constraints showing how existing methods are structured. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
+13. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, consider whether a refactoring Worker should be added first. Refactoring creates new interfaces and import paths — if chosen, the refactoring Worker must preserve the public API and update all import sites.
+14. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
 
 ## RESULT Format
 
