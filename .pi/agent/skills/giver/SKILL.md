@@ -300,7 +300,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
 
 Giver constructs the chain with all 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10) in the chain directory. Each Worker reads its own task file. Workers without a task file output no-op immediately.
 
-The **last Worker** does not need the Signatures / Files sections (no subsequent Workers need them). Breaking section should still be included — forwarded items from previous Workers and this Worker's own breaking changes — so Giver can read the full change log from progress.md.
+The **last Worker** includes all RESULT sections (Files, Signatures, Breaking, Summary) as usual. While no subsequent Workers consume them, Giver reads progress.md for the full picture — Signatures and Breaking tell Giver what exports changed, Files tells Giver what was modified. Breaking includes forwarded items from all previous Workers plus this Worker's own breaking changes, giving Giver a complete change log.
 
 ---
 
