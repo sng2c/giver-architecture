@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.5.2"
-description: "The Giver v3.5.2. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
+version: "3.5.3"
+description: "The Giver v3.5.3. Discuss → Recon → Decide → Task → Chain → Verify → Iterate. Pipeline: P→W→W→... Workers pass {previous}. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
@@ -35,14 +35,14 @@ All subagents take {previous} (previous step only) and return their output. File
 
 ## Pipeline
 
-Planner writes separate task files (task1.md, task2.md, ...) for each Worker batch. Each Worker reads only its own task file. No Scout in chain. Workers receive {previous} with brief plan summary + accumulated RESULT summaries (Files, Signatures, Summary only — no code bodies).
+Planner writes separate task files (task1.md, task2.md, ...) for each Worker batch. Each Worker reads only its own task file. No Scout in chain. Workers receive {previous} which contains only the previous step's output (single RESULT, not accumulated).
 
 ```
 Giver → Task #0 (for Planner) — the only document Giver writes
 Planner → writes task1.md, task2.md, ... + brief plan.md
 Worker 1 → reads task1.md, {previous} = plan summary
-Worker 2 → reads task2.md, {previous} = plan summary + RESULT #0 (Files, Signatures, Summary)
-Worker N → reads task{N}.md, {previous} = plan summary + accumulated RESULTs (Files, Signatures, Summary)
+Worker 2 → reads task2.md, {previous} = Worker 1 output (RESULT #0 only)
+Worker N → reads task{N}.md, {previous} = Worker N-1 output (previous RESULT only)
 ```
 
 ---
@@ -136,7 +136,7 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 
 # Phase 4: Chain
 
-Call chains (P→W or P→W→W→...). The last Worker's output (accumulated RESULT summaries) returns to Giver automatically.
+Call chains (P→W or P→W→W→...). The chain returns the last Worker's RESULT to Giver automatically.
 
 + Write source files → delegate to Worker chains
 + Implement code → delegate to chains
@@ -152,7 +152,7 @@ Call chains (P→W or P→W→W→...). The last Worker's output (accumulated RE
 7. **Worker must run tests to verify** — each Worker runs the relevant tests after implementing. If tests fail, fix before outputting.
 8. **Worker RESULT has 3 sections only** — Files (created/modified), Signatures (new exports), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
 9. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
-10. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver automatically. Since Workers pass {previous} (accumulated RESULT summaries), Giver receives all Results.
+10. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
 
 ## H Document Format
 
@@ -274,7 +274,7 @@ Giver fills in {placeholders} and invokes the chain. Giver writes ONLY Task #0. 
 
 ## Template: 7+ files (3+ batches)
 
-Add Worker steps for each additional batch. Each Worker receives {previous} containing brief RESULT summaries (Files, Signatures, Summary) from previous Workers. Workers read only their own task{k}.md. If a Worker needs implementation details from a previous Worker's file, it reads the source file directly via SCOPE.
+Add Worker steps for each additional batch. Each Worker receives {previous} containing only the previous Worker's RESULT (Files, Signatures, Summary). Workers read only their own task{k}.md. If a Worker needs implementation details from a previous Worker's file, it reads the source file directly via SCOPE.
 
 ```json
 {
@@ -333,7 +333,7 @@ Prerequisites: target files MUST NOT overlap. If any doubt → use separate sequ
 
 # Phase 5: Verify
 
-After the chain completes, the last Worker's output (accumulated RESULT summaries) is returned to Giver automatically. Giver then:
+After the chain completes, Giver receives the last Worker RESULT. For the full picture, Giver reads progress.md in the chain directory (contains all Worker Results). Giver then:
 1. Reviews the chain result (all Worker Files, Signatures, Summary)
 2. Runs tests / verifies results
 3. Reports to user: what was done, key files, branch status
