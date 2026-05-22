@@ -3,7 +3,7 @@
 ## 버전 진화
 
 ```
-v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.5i → v3.0 → v3.5 → ... → v3.6.0
+v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.5i → v3.0 → v3.5 → ... → v3.5.10
 격리  준수   진단    구조화   요약   연속    DI    구조강제       병렬분할  파이프라인        reads:false
 ```
 
@@ -20,7 +20,7 @@ v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.
 - Rule 4: Planner step MUST include output:false
 - Rule 리넘버링: chain 설정 규칙 1-4, chain 로직 5-14
 
-## v3.6.1 — RESULT Breaking 섹션, aware+/− → Breaking 전환 (2026-05-22)
+## v3.5.11 — RESULT Breaking 섹션, aware+/− → Breaking 전환 (2026-05-22)
 
 - RESULT 형식: 3섹션 → 4섹션 (Files, Signatures, Breaking, Summary)
 - Breaking: Worker가 제거/변경한 export를 downstream Worker에게 전달
@@ -29,7 +29,14 @@ v1 → v2 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5 → v2.5a → ... → v2.
 - 리팩토링 시 Breaking에 import 변경 명시, 모든 import 사이트 업데이트
 - Rule 15: Worker Breaking section이 downstream 실패를 방지
 
-## v3.6.0 — Scout recon 강화: 파일 크기, 구현 패턴, 대형 파일 인식 (2026-05-22)
+## v3.5.12 — Planner Target Files 읽기 허용, 실제 패턴 인라인 제공 (2026-05-22)
+
+- Planner Working Rules: "read NO source or test files" → "You MAY read Target Files to extract implementation patterns"
+- Rule 3: "Planner reads only T₀" → "Planner reads T₀ and may read Target Files to extract implementation patterns"
+- Rule 12: Planner reads Target Files to extract key patterns inline
+- Worker 과다 읽기 방지: Planner가 실제 코드 패턴(3-10 lines) 제공
+
+## v3.5.10 — Scout recon 강화: 파일 크기, 구현 패턴, 대형 파일 인식 (2026-05-22)
 
 - Phase 1.5: Scout에 파일 크기(줄 수) + 구현 패턴(3-10줄) 요구 추가
 - Scout 출력 제한: 150→200줄
@@ -416,5 +423,6 @@ v3.5 C1 █████████████                                 
 | v3.5.7 | plan.md 제거 |
 | v3.5.8 | reads:false 사전 로딩 방지 |
 | v3.5.9 | output:false(Planner plan.md 방지), Rule 4 추가 |
-| v3.6.0 | Scout recon: 파일 크기+구현 패턴, 리팩토링 주의 |
-| v3.6.1 | RESULT Breaking 섹션, aware→Breaking 전환 |
+| v3.5.10 | Scout recon: 파일 크기+구현 패턴, 리팩토링 주의 |
+| v3.5.11 | RESULT Breaking 섹션, aware→Breaking 전환 |
+| v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |

@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.7.0"
-description: "The Giver v3.7.0. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
+version: "3.5.12"
+description: "The Giver v3.5.12. Planner groups by logical modification. P→W×10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh."
 disable-model-invocation: true
 ---
 
