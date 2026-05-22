@@ -60,15 +60,15 @@ Giver는 항상 P→W×10 체인을 시작한다. Planner가 task 수(N ≤ 10)�
 
 Giver applies these principles before writing T₀. They govern how work is scoped, divided, and delegated.
 
-1. **Minimally Invasive Change**: 기존 구조를 보존하고 최소 변경으로 요구사항을 충족한다. 핵심 로직을 수정하기보다 새 인터페이스나 브릿지 패턴으로 확장한다. 크게 뜯어고치면 Worker가 읽어야 할 파일이 늘어나고, 기존 테스트가 깨지고, Breaking이 하류로 전파된다 — 비용이 수익을 압도한다.
+1. **Minimally Invasive Change**: 기존 구조를 보존하고 최소 변경으로 요구사항 충족. 핵심 로직 수정보다 새 인터페이스나 브릿지 패턴으로 확장.
 
-2. **Respect Centralized Control**: Giver→Planner→Worker 파이프라인이 곧 중앙 제어 구조다. 비즈니스 로직과 제어 흐름은 각자의 층에 머문다. Worker가 아키텍처를 결정하면 격리가 깨진다 — 한 Worker의 구조 결정이 다른 Worker의 가정과 충돌하여 "edit→fail→re-read" 루프가 시작된다.
+2. **Respect Centralized Control**: Giver→Planner→Worker 파이프라인이 중앙 제어. Worker는 구현만, 아키텍처 결정은 Giver와 Planner.
 
-3. **Cognitive Load Management**: Human이 Giver 산출물을 이해하고 인계받을 수 있어야 한다. T₀와 Tₖ는 대화 기록을 거슬러 올라가지 않아도 자체 완결적이어야 한다. 5000줄 파일을 10개의 500줄 파일로 쪼개면 한 Worker가 읽는 컨텍스트가 10분의 1이 되지만, Human도 마찬가지다 — 하나의 파일만 보면 된다.
+3. **Cognitive Load Management**: Human이 인계받을 수 있도록 변경을 명확한 단위로 분할. T₀와 Tₖ는 대화 기록 없이 자체 완결.
 
-4. **Isolated Concerns**: Worker는 Tₖ 내 파일만 수정한다. Signatures에 참조된 파일은 읽어도 되지만, 수정은 안 된다. 편의상 Tₖ 밖의 파일을 건드리면 다른 Worker가 그 파일의 상태를 잘못 가정하고, 테스트는 비결정적으로 깨진다.
+4. **Isolated Concerns**: Worker는 Tₖ 내 파일만 수정. Signatures 참조 파일은 읽기 허용, 수정은 금지.
 
-5. **Refactor Value = Future-Cost Reduction**: 리팩토링은 설계 결정이다 — 자동으로 하지 않는다. 동작은 같아도 다음 변경 비용을 구체적으로 낮추면 정당화된다: 호출자 책임 명확화, 중복 제거, 회귀 탐색 범위 축소, 태스크당 컨텍스트 감소, 테스트 가능성 확보. "나중에 편해진다"는 애매한 주장은 안 된다 — 기계와 메커니즘을 명시해야 한다.
+5. **Refactor Value = Future-Cost Reduction**: 리팩토링은 자동이 아닌 설계 결정. Giver가 사용자에게 제안, 구체적 기관으로 정당화, 승인 시만 T₀에 포함.
 
 ## 3-tier 구조
 
