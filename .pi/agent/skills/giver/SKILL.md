@@ -17,7 +17,8 @@ Task #0 (T_0) = Goal + Background + Past failures + Constraints + Target Files +
 Task #k (T_k) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Curated by Planner per Worker — saved to task{k}.md)
 Dependency = (signature, filepath)  (tuple)
 Signatures = List of Dependency tuples. Direction implied by context: in T₀/Tₖ = dependencies this task needs (input); in RESULT = dependencies this Worker provides (output). Breaking = dependencies removed or changed (negative output).
-Target Files = Target file list (assigned groups for this Worker)
+Target Files (T₀) = All files to be modified or created across the entire task (written by Giver, from Scout recon)
+Target Files (Tₖ) = Files this Worker will modify or create (subset assigned by Planner from T₀)
 Result = Files + Signatures + Breaking + Summary
 History = T_0 → P output → W₁ output → W₂ output → ... → W₁₀ output  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
 ```
@@ -136,7 +137,7 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 [Include exact test expectations: error messages, expected behavior, edge cases]
 
 ### Target Files
-[Files that will be modified or created — derived from Goal and Scout recon]
+[All files to be modified or created to accomplish the Goal — derived from Goal and Scout recon. Planner will assign subsets to each Worker.]
 
 ### Signatures
 [Type signatures for every dependency outside Target Files]
@@ -239,7 +240,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
       "agent": "planner",
       "reads": false,
       "output": false,
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Target Files\n{files that will be modified}\n\n### Signatures\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
