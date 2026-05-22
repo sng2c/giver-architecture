@@ -490,6 +490,27 @@ Total −58%.
 - 같은 파일 순차 수정 허용
 - 최대 10 Workers 상한
 
+### v3.5.6 변경
+
+- P→W×10 명시적 템플릿 (W1-W10)
+- 병렬 workers 템플릿 제거
+- TargetFiles: max 3 → 논리적 수정 그룹 할당
+- H Document Format → RESULT Format (코드 본문 금지)
+- Rule 5: previous Worker only → previous step (W1은 Planner 출력)
+- 모순 제거 (context.md 참조, 배치/Worker 용어 혼용 등)
+
+### v3.5.7 변경
+
+- plan.md 제거: Planner가 plan.md를 작성하지 않음
+- Worker가 Planner 개요를 읽지 않음
+- Rule 6: (not plan.md) 참조 제거
+
+### v3.5.8 변경
+
+- reads:false: 모든 chain step에 추가 (Planner + Worker 10개)
+- Worker/Planner의 defaultReads(context.md, plan.md) 사전 로딩 방지
+- Rule 3로 추가: chain 설정 규칙 (context:fresh, cwd, reads:false) 그룹화
+
 ---
 
 ## v2.5n — 단일 체인 P→S→W→S→W→S→W, DI 누적 전달
