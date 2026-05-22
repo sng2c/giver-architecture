@@ -20,19 +20,19 @@ Signatures = List of Dependency tuples. Direction implied by context: in T₀/T�
 Target Files (T₀) = All files to be modified or created across the entire task (written by Giver, from Scout recon)
 Target Files (Tₖ) = Files this Worker will modify or create (subset assigned by Planner from T₀)
 Result = Files + Signatures + Breaking + Summary
-History = T_0 → P output → W₁ output → W₂ output → ... → W₁₀ output  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
+History = Giver writes T₀ → T₀ → P output → W₁ output → W₂ output → ... → W₁₀ output  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
 ```
 
 ## Signatures
 
 ```
-G: user_input → History
-P: History → History
-S: History → History
-W: History → History
+G: user_input → T₀
+P: T₀ → {Tₖ}
+S: recon → recon (called standalone by Giver, not in chain)
+W: Tₖ + {previous} → RESULT
 ```
 
-All subagents take {previous} (previous step only) and return their output. Task files persist across the chain.
+Planner and Workers operate within the chain. Each receives {previous} (previous step only) and returns output. Scout is called standalone by Giver before the chain — it does not participate in the chain pipeline. Task files persist across the chain.
 
 ## Pipeline
 
@@ -45,6 +45,22 @@ Worker 1 → reads task1.md, {previous} = Planner output
 Worker 2 → reads task2.md, {previous} = Worker 1 output (RESULT #1 only)
 Worker N → reads task{N}.md, {previous} = Worker N-1 output (previous RESULT only)
 ```
+
+---
+
+# Design Principles
+
+Giver applies these principles before writing T₀. They govern how work is scoped, divided, and delegated.
+
+1. **Minimally Invasive Change**: Preserve existing structure. Prefer the smallest, safest change that meets the requirement. When extending, prefer new interfaces or bridge patterns over modifying working core logic.
+
+2. **Respect Centralized Control**: The Giver→Planner→Worker pipeline IS the centralized control structure. Keep business logic and control flow in their proper layer. Prevent Workers from making architectural decisions — that belongs to Giver and Planner.
+
+3. **Cognitive Load Management**: Changes must be understandable by a human who takes over. Break work into clear, contextual chunks that fit within human cognitive limits. T₀ and Tₖ must be self-contained and readable without tracing back through conversation history.
+
+4. **Isolated Concerns**: Workers modify only files within their assigned Tₖ. When a file is not in a Worker's Tₖ, that Worker does not modify it — reading files referenced in Signatures is allowed. When refactoring is approved, Planner includes all affected import files in the refactoring Worker's Tₖ.
+
+5. **Refactor Value = Future-Cost Reduction**: A refactor that preserves runtime behavior is justified when it measurably lowers the cost of the next change. Concrete benefits: clearer responsibility for new callers, removed duplication, narrower search scope for regressions, smaller LLM context per task, unlocked testability. "Same behavior, cheaper to change next time" is a valid goal — but only with concrete mechanisms, not hand-waving.
 
 ---
 
@@ -88,7 +104,7 @@ Before writing T_0, Giver MUST call Scout standalone to collect Signatures, file
 
 **Scout task fallback:** If Scout cannot find relevant files in the provided directories, it lists top-level directories and suggests where to look next. When Scout returns empty or incomplete results, re-call with refined directories or ask the user for guidance.
 
-**File size awareness:** When Scout reports a file over 500 lines, Giver must note this in T_0 Constraints (e.g., "handler.ts is 5373 lines — implementation pattern provided below"). When a file is over 2000 lines, consider whether it should be refactored first (see Phase 2). **Refactoring changes dependencies** — modules that imported from the old file must update their imports. The refactoring Worker must list all breaking changes in the Breaking section of their RESULT.
+**File size awareness:** When Scout reports a file over 500 lines, Giver must note this in T₀ Constraints (e.g., "handler.ts is 5373 lines — implementation pattern provided below"). When a file is over 2000 lines, Giver proposes refactoring to the user (see Refactoring Decisions in Phase 2). **Refactoring changes dependencies** — the refactoring Worker must list all breaking changes in the Breaking section of their RESULT.
 
 After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Signatures.
 
@@ -99,8 +115,8 @@ After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Signatures.
 + Make strategic decisions → discuss with user first
 + Send only T_0 downstream → curate decisions, not conversation transcript
 + Fill T_0 Signatures as completely as possible from Scout recon (Phase 1.5) — minimize unknowns left in T_0
-+ **Large file awareness** → when a Target File is over 500 lines, include implementation patterns in Constraints. When over 2000 lines, consider refactoring first.
-+ **Refactoring caution** → refactoring a large file into smaller modules changes which modules import what. The refactoring Worker must list all breaking changes in the Breaking section of their RESULT: removed signatures, renamed exports, changed parameter types. All import updates must be handled in the same Worker. Only refactor when the benefit (smaller Worker reads) outweighs the risk (import changes, test breakage).
++ **Large file awareness** → when a Target File is over 500 lines, include implementation patterns in Constraints. When over 2000 lines, Giver proposes refactoring to user (see Refactoring Decisions below).
++ **Refactoring Decisions** → refactoring is a design decision, not automatic. When Giver determines that a change requires structural modification (file splitting, interface extraction, module reorganization), Giver proposes it to the user: what to refactor, why, what files are affected, what the risk is. Only after user approval does Giver include the refactoring in T₀. When refactoring is approved, Planner includes all affected import files in the refactoring Worker's Tₖ — this keeps changes within Isolated Concerns (Design Principle #4). The refactoring Worker must list all breaking changes in the Breaking section of their RESULT.
 
 **Context Compaction** — when conversation grows long, compact:
 - **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Signatures state
@@ -129,11 +145,16 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 [First attempt: "None — first attempt."]
 [Retry: structured failure log — what failed, why, what to avoid]
 
+### Past failures
+[First attempt: "None — first attempt."]
+[Retry: structured failure log — what failed, why, what to avoid]
+
 ### Constraints
 [Technical constraints: language, framework, patterns to follow, things to avoid]
 [Include exact test expectations: error messages, expected behavior, edge cases]
 [For files over 500 lines: include representative code patterns (3-10 lines) showing how existing methods are structured]
-[For files over 2000 lines: note file size and consider whether refactoring is needed first]
+[For files over 2000 lines: note file size. Giver must have proposed refactoring to user (Design Principle #5: justify with concrete future-cost reduction mechanisms)]
+[When refactoring is included: state what the refactoring achieves concretely — e.g., "splits 5373-line handler.ts so Workers read 800 lines instead of 5373"]
 
 ### Target Files
 [All files to be modified or created to accomplish the Goal — derived from Goal and Scout recon. Planner will assign subsets to each Worker.]
@@ -170,7 +191,7 @@ Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain retu
 10. **Worker RESULT has 4 sections** — Files (created/modified), Signatures (new/changed exports), Breaking (removed/changed exports — prevents downstream Workers from looking for things that no longer exist), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Subsequent Workers read files directly via SCOPE if they need details. This keeps {previous} small and prevents token bloat.
 11. **Planner curates for efficiency** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. When Workers have enough context, they don't read extra files — this saves tokens.
 12. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, Planner reads the Target File to extract key patterns (3-10 lines per file) and includes them inline in Constraints. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
-13. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, consider whether a refactoring Worker should be added first. Refactoring changes dependencies — the refactoring Worker must list all breaking changes (removed/renamed/changed exports) in the Breaking section of their RESULT and update all import sites.
+13. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, note that Giver should have discussed refactoring with the user. If user approved refactoring, Planner includes all affected import files in the refactoring Worker's Tₖ and the refactoring Worker lists all Breaking items (removed/renamed/changed exports).
 14. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver reads progress.md in the chain directory for full results from all Workers.
 15. **Worker Breaking section prevents downstream failures** — when a Worker removes or changes an export that another Worker might reference, it must list it in the Breaking section. Each Worker forwards all Breaking items from {previous} and adds its own. This way, Worker K+1 sees all breaking changes from Workers 1 through K. Downstream Workers who see a Breaking item for something in their Signatures should not attempt to use the old signature — this prevents the "edit → fail → re-read" loop.
 
@@ -334,7 +355,7 @@ When a chain fails, add to Failures in the next T_0:
 - Did I provide all constraints? If not → Giver error
 - Did I include edge cases? If not → Giver error
 
-Fix only the specific problem. Do refactor only when user explicitly requests.
+Fix only the specific problem. Giver proposes refactoring to user when structural change is needed — user decides.
 
 ---
 
