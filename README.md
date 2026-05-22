@@ -1,6 +1,6 @@
 # Giver
 
-v3.5.3
+v3.5.4
 
 ## Giver란
 
@@ -93,4 +93,4 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 | v3.2 | 2025-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
 | v3.3 | 2025-05 | Planner가 task{k}.md 분리 작성 |
 | v3.5 | 2025-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.3 | 2025-05 | RESULT에 의한 조합 전이, Giver가 progress.md로 전체 결과 확인 |
+| v3.5.4 | 2025-05 | P→W×N 일반화 (⌈files/3⌉ Workers), 단일 체인 템플릿, RESULT 1-based 인덱스 |
