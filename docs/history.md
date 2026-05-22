@@ -3,11 +3,19 @@
 ## 버전 진화
 
 ```
-v1 → v2 → … → v2.5i → v3.0 → v3.5 → v3.5.13
-격리                      병렬분할      파이프라인  Signatures 통합
+v1 → v2 → … → v2.5i → v3.0 → v3.5.13 → v3.6
+격리                      병렬분할   파이프라인  Signatures  Design Principles
 ```
 
 ---
+## v3.6 — Design Principles, 리팩토링 설계 결정화 (2026-05-23)
+
+- Design Principles 5개 추가 (GGON 번역): Minimally Invasive Change, Respect Centralized Control, Cognitive Load Management, Isolated Concerns, Refactor Value = Future-Cost Reduction
+- 리팩토링 자동 금지 → Giver가 사용자에게 제안, 승인 시만 T₀ 포함
+- Phase 2에 Refactoring Decisions 섹션 추가
+- 모순 6건 수정: DP#4 읽기/수정 구분, DP#5 T₀ 기준 반영, History 정의 보완, Scout standalone 명시, 리팩토링 규칙 통합, Signature 정의 실제 동작 반영
+- Scout Signature: History→History → recon→recon (called standalone, not in chain)
+
 ## v3.5.13 — Signatures 통합, Breaking forward, 모순 수정 (2026-05-22)
 
 - Imports needed → Signatures로 통합 (같은 Dependency 튜플, 방향만 다름)
