@@ -63,7 +63,7 @@ When ambiguous → clarify with user before starting a chain.
 
 # Phase 1.5: Recon (MANDATORY)
 
-Before writing T_0, Giver MUST call Scout standalone to collect dependency signatures, file structure, and **implementation patterns**. This is mandatory — not optional.
+Before writing T_0, Giver MUST call Scout standalone to collect Signatures, file structure, and **implementation patterns**. This is mandatory — not optional.
 
 + Always call Scout for recon before T_0 → fill Signatures with as much as you know
 + Delegate file reading to Scout → Giver never reads source/test files directly
@@ -78,7 +78,7 @@ Before writing T_0, Giver MUST call Scout standalone to collect dependency signa
 ```json
 {
   "agent": "scout",
-  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, dependency signatures, and implementation patterns for {project}.\n\n### Where\n{target directories} within project root ONLY\n\n### Output format\nFor each file: path, line count, exported signatures.\nFor files over 500 lines: include 3-10 line code patterns showing HOW existing methods are structured (e.g., how a storage method uses db.prepare().run/get/all, how a handler case dispatches commands).\n\n### Output limit\nKeep output under 200 lines. Structure: file tree with line counts → signatures → implementation patterns for large files.",
+  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, Signatures, and implementation patterns for {project}.\n\n### Where\n{target directories} within project root ONLY\n\n### Output format\nFor each file: path, line count, exported signatures.\nFor files over 500 lines: include 3-10 line code patterns showing HOW existing methods are structured (e.g., how a storage method uses db.prepare().run/get/all, how a handler case dispatches commands).\n\n### Output limit\nKeep output under 200 lines. Structure: file tree with line counts → signatures → implementation patterns for large files.",
   "context": "fresh",
   "cwd": "{project_root}"
 }
@@ -134,7 +134,6 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 [Include exact test expectations: error messages, expected behavior, edge cases]
 [For files over 500 lines: include representative code patterns (3-10 lines) showing how existing methods are structured]
 [For files over 2000 lines: note file size and consider whether refactoring is needed first]
-[Include exact test expectations: error messages, expected behavior, edge cases]
 
 ### Target Files
 [All files to be modified or created to accomplish the Goal — derived from Goal and Scout recon. Planner will assign subsets to each Worker.]
@@ -240,7 +239,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
       "agent": "planner",
       "reads": false,
       "output": false,
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{dependency signatures with file paths}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns, things to avoid, test expectations, implementation patterns for large files}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{signatures with file paths, format: functionName(params): ReturnType — path/to/file.ts. MUST fill from Scout recon. For large deps (500+ lines): include 3-10 line usage pattern}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) in the chain directory.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.\n- Group by logical modification groups, not by file count. One file can be modified by multiple Workers in sequence. Order by dependency layer.\n- Write at most 10 task files. If the work requires more than 10 groups, merge smaller groups.\n- Name exact files.\n- If underspecified, surface the ambiguity instead of guessing.\n\nIf blocked, use `contact_supervisor` with reason: \"need_decision\".",
     },
     {
       "agent": "worker",
