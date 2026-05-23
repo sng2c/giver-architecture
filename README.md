@@ -137,6 +137,7 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 |------|------|
 | [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
 | [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
+| [insights.md](docs/insights.md) | 프로젝트 인사이트 (8개 핵심 통찰) |
 | [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.6.3, tk/byte, 동일과제 비교) |
 | [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
 | [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
