@@ -1,6 +1,6 @@
 # Giver
 
-v3.6
+v3.6.2
 
 > *"기억을 전달받는다면, 그건 온전한 기억이어야 한다."*
 > — 로이스 로리, 《기억 전달자》
@@ -161,3 +161,5 @@ v3.6.2          3.6KB         5.7KB        —          auto-inject
 | v3.5 | 2026-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
 | v3.5.13 | 2026-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |
 | v3.6 | 2026-05 | 설계 원칙 (GGON), 리팩토링 설계 결정화, 모순 6건 수정 |
+| v3.6.1 | 2026-05 | reads:false, no-op 강화, 모순 8건 수정 |
+| v3.6.2 | 2026-05 | reads auto-inject, [Write to:] 경로 주입, 과다 읽기 −63% |
