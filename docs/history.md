@@ -416,6 +416,14 @@ v3.5 C1 █████████████                                 
 | v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |
 | v3.5.13 | Signatures 통합, Breaking forward, T₀ Target Files, 모순 수정 |
 | v3.6.2 | Task 파일 경로 근원 해결: output:"plan.md" + reads:["taskN.md"] |
+## v3.6.3 — Target Verification scope (2026-05)
+
+- **Target Verification**: Worker가 검증할 명령어를 T₀/Tₖ에 명시. "run the relevant tests" → "run ONLY the verification commands listed in Target Verification"
+- **최소 책임 원칙**: 각 Worker는 자기 Target Verification에 지정된 검증만 실행. 전체 테스트 스위트는 마지막 Worker 또는 Giver가 실행.
+- **테스트 없는 프로젝트**: Target Verification이 비어있으면 `npx tsc --noEmit`, `cargo check`, `go build` 등 타입 체크/빌드로 검증.
+- **언어별 예시**: TypeScript(npx vitest run, tsc --noEmit), Python(pytest, mypy), Rust(cargo test, cargo check), Go(go test, go build)
+- T₀ 섹션이 6개에서 7개로 변경: Goal + Background + Past failures + Constraints + Target Files + **Target Verification** + Signatures
+
 ## v3.6.2 — 2026-05-23
 
 **Task 파일 경로 문제 근원 해결**
