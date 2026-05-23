@@ -7,7 +7,7 @@
 ### 입력 소스
 | 소스 | 경로 | 내용 |
 |------|------|------|
-| 세션 로그 | `~/.pi/agent/sessions/<project>/*.jsonl` | Giver 대화 기록 (메시지, 도구 호출, 턴) |
+| [analysis-logic.md](01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
 | 서브에이전트 아티팩트 | `~/.pi/agent/sessions/<project>/subagent-artifacts/*_meta.json` | planner/scout/worker 실행 메타 (토큰, duration, exit code) |
 
 ### JSONL 엔트리 구조

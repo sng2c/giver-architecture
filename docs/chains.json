@@ -1,5 +1,6 @@
 {
-  "description": "Giver chain analysis \u2014 tokens AND bytes per agent",
+  "description": "Giver chain analysis — unified: tokens, bytes, tk/byte, same-task comparison (v1~v3.6.3)",
+  "last_updated": "2026-05",
   "chains": [
     {
       "run_id": "0666bc7a",
@@ -957,6 +958,258 @@
           "is_noop": true
         }
       ]
+    },
+    {
+      "run_id": "2dbe241a",
+      "project": "redbis",
+      "version": "monolithic-fresh-v3.6.3-era",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 0,
+      "p_tk_out": 0,
+      "p_tk_total": 0,
+      "p_by_in": 0,
+      "p_by_out": 0,
+      "p_by_total": 0,
+      "workers": [
+        {
+          "idx": 0,
+          "tk_in": 112614,
+          "tk_out": 2665,
+          "tk_total": 115279,
+          "by_in": 4331,
+          "by_out": 1068,
+          "by_total": 5399,
+          "tk_per_byte": 21,
+          "turns": 15,
+          "tool_count": 22,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "4fee1d8b",
+      "project": "redbis",
+      "version": "v3.6.3",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 132979,
+      "p_tk_out": 5743,
+      "p_tk_total": 138722,
+      "p_by_in": 4093,
+      "p_by_out": 5639,
+      "p_by_total": 9732,
+      "workers": [
+        {
+          "idx": 1,
+          "tk_in": 59623,
+          "tk_out": 1511,
+          "tk_total": 61134,
+          "by_in": 4098,
+          "by_out": 1150,
+          "by_total": 5248,
+          "tk_per_byte": 12,
+          "turns": 11,
+          "tool_count": 18,
+          "is_noop": false
+        },
+        {
+          "idx": 2,
+          "tk_in": 39848,
+          "tk_out": 1024,
+          "tk_total": 40872,
+          "by_in": 4725,
+          "by_out": 730,
+          "by_total": 5455,
+          "tk_per_byte": 7,
+          "turns": 9,
+          "tool_count": 10,
+          "is_noop": false
+        },
+        {
+          "idx": 3,
+          "tk_in": 19543,
+          "tk_out": 556,
+          "tk_total": 20099,
+          "by_in": 3465,
+          "by_out": 674,
+          "by_total": 4139,
+          "tk_per_byte": 5,
+          "turns": 7,
+          "tool_count": 6,
+          "is_noop": false
+        },
+        {
+          "idx": 4,
+          "tk_in": 113458,
+          "tk_out": 3134,
+          "tk_total": 116592,
+          "by_in": 3297,
+          "by_out": 985,
+          "by_total": 4282,
+          "tk_per_byte": 27,
+          "turns": 18,
+          "tool_count": 20,
+          "is_noop": false
+        },
+        {
+          "idx": 5,
+          "tk_in": 42915,
+          "tk_out": 826,
+          "tk_total": 43741,
+          "by_in": 4230,
+          "by_out": 472,
+          "by_total": 4702,
+          "tk_per_byte": 9,
+          "turns": 10,
+          "tool_count": 15,
+          "is_noop": false
+        },
+        {
+          "idx": 6,
+          "tk_in": 4038,
+          "tk_out": 103,
+          "tk_total": 4141,
+          "by_in": 2691,
+          "by_out": 36,
+          "by_total": 2727,
+          "tk_per_byte": 2,
+          "turns": 2,
+          "tool_count": 1,
+          "is_noop": true
+        }
+      ]
     }
-  ]
+  ],
+  "same_task_comparison": {
+    "task": "redbis-coding-test (10 modules, 44 tests)",
+    "model": "glm-5.1:cloud",
+    "runs": {
+      "description": "Monolithic vs Giver v3.6.2 vs v3.6.3 — same task (redbis-coding-test 44 tests)",
+      "monolithic_fresh_new": {
+        "run_id": "2dbe241a",
+        "bytes_in": 4331,
+        "bytes_out": 1068,
+        "bytes_ctx": 5399,
+        "tokens_in": 112614,
+        "tokens_out": 2665,
+        "tokens_total": 115279,
+        "turns": 15,
+        "tool_count": 22
+      },
+      "monolithic_fresh_old": {
+        "run_id": "22493b5c",
+        "tokens_total": 152076,
+        "bytes_ctx": 6191,
+        "note": "previous fresh baseline, 18 turns"
+      },
+      "giver_v362": {
+        "run_id": "fe9907dc",
+        "planner_tokens": 124446,
+        "workers_total_tokens": 1141219,
+        "workers_tk_per_byte_avg": 54
+      },
+      "giver_v363": {
+        "run_id": "4fee1d8b",
+        "planner": {
+          "tokens_in": 132979,
+          "tokens_out": 5743,
+          "bytes": 9732
+        },
+        "workers": [
+          {
+            "idx": 1,
+            "bytes_in": 4098,
+            "bytes_out": 1150,
+            "bytes_ctx": 5248,
+            "tokens_in": 59623,
+            "tokens_out": 1511,
+            "tokens_total": 61134,
+            "tk_per_byte": 12,
+            "tool_count": 18,
+            "is_noop": false
+          },
+          {
+            "idx": 2,
+            "bytes_in": 4725,
+            "bytes_out": 730,
+            "bytes_ctx": 5455,
+            "tokens_in": 39848,
+            "tokens_out": 1024,
+            "tokens_total": 40872,
+            "tk_per_byte": 7,
+            "tool_count": 10,
+            "is_noop": false
+          },
+          {
+            "idx": 3,
+            "bytes_in": 3465,
+            "bytes_out": 674,
+            "bytes_ctx": 4139,
+            "tokens_in": 19543,
+            "tokens_out": 556,
+            "tokens_total": 20099,
+            "tk_per_byte": 5,
+            "tool_count": 6,
+            "is_noop": false
+          },
+          {
+            "idx": 4,
+            "bytes_in": 3297,
+            "bytes_out": 985,
+            "bytes_ctx": 4282,
+            "tokens_in": 113458,
+            "tokens_out": 3134,
+            "tokens_total": 116592,
+            "tk_per_byte": 27,
+            "tool_count": 20,
+            "is_noop": false
+          },
+          {
+            "idx": 5,
+            "bytes_in": 4230,
+            "bytes_out": 472,
+            "bytes_ctx": 4702,
+            "tokens_in": 42915,
+            "tokens_out": 826,
+            "tokens_total": 43741,
+            "tk_per_byte": 9,
+            "tool_count": 15,
+            "is_noop": false
+          },
+          {
+            "idx": 6,
+            "bytes_in": 2691,
+            "bytes_out": 36,
+            "bytes_ctx": 2727,
+            "tokens_in": 4038,
+            "tokens_out": 103,
+            "tokens_total": 4141,
+            "tk_per_byte": 2,
+            "tool_count": 1,
+            "is_noop": true
+          }
+        ],
+        "workers_total_tokens": 282438,
+        "workers_tk_per_byte_avg": 12
+      },
+      "comparison": {
+        "w_tokens_sum": {
+          "monolithic": 115279,
+          "v362": 1141219,
+          "v363": 282438
+        },
+        "tk_per_byte": {
+          "monolithic": 21,
+          "v362": 54,
+          "v363": 12
+        },
+        "total_tokens": {
+          "monolithic": 115279,
+          "v362": 1265665,
+          "v363": 421160
+        },
+        "v363_vs_v362_w_tokens": "-75%",
+        "v363_vs_v362_tk_per_byte": "-78%"
+      }
+    }
+  }
 }

@@ -98,49 +98,38 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 
 ## 성능
 
-에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **1회 실행당 컨텍스트**로 비교한다.
+에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **1회 실행당 컨텍스트**와 **tk/byte 비율**(과다 처리 지표)로 비교한다.
 
-### 모놀리식·v1 → v3.6.2 진화
+### 모놀리식 → v3.6.3 진화
 
 ```
-버전            W_ctx평균    W_ctx최대    이상적%    핵심 변화
-──────────────────────────────────────────────────────────────────────
-모놀리식(fresh) 152K/18턴    누적 증가      0%       실측: Redbis 44테스트
-v1              1.9M 토큰    7.6M 토큰     19%       fork 누수 (Giver 베이스라인)
-v2              1.4M 토큰     —            20%       fork 제거
-v2.5b           103K 토큰    103K 토큰      67%       Do-When, DI
-v3.5            113K 토큰    184K 토큰      33%       Planner 읽기 금지
-v3.6.1          4.9KB        11.5KB        —          reads:false
-v3.6.2          3.6KB         5.7KB        —          auto-inject
+버전            W_tokens평균  W_bytes평균  tk/byte   핵심 변화
+────────────────────────────────────────────────────────────────────
+모놀리식(fresh) 152K/18턴   —           25×      실측: Redbis 44테스트
+v1            1.9M          —           —        Giver 베이스라인, fork 누수
+v2            1.4M          —           —        fork 제거
+v2.5b        103K          —           —        Do-When, DI
+v3.5         113K          —           —        Planner 읽기 금지
+v3.6.1       841K          4.9KB       171×     reads:false (과다 읽기)
+v3.6.2       228K          3.6KB       63×      auto-inject (과다 읽기 −63%)
+v3.6.3        56K          4.8KB       12×      Target Verification (과다 검증 −75%)
 ```
 
-**모놀리식(fresh) 152K토큰/18턴 → v3.6.2 Worker 900토큰/실행 (격리 파이프라인 효과)**
+**v3.6.3 tk/byte(12×)가 모놀리식(25×)보다 낮다** — Worker당 효율성이 모놀리식보다 높다.
 
 ### 동일 과제 비교 (Redbis 44테스트, 실측)
 
-| 지표 | 모놀리식(fresh) | v3.6.1 | **v3.6.2** |
-|------|----------------|--------|------------|
-| W_bytes 평균 | 6,191B | 3,559B | **4,228B** |
-| W_tokens 합 | 152K | 344K | 1,141K |
-| W_tokens 최대 | 152K | 188K | 397K |
-| tk/byte | 25× | 32× | **54×** |
-| P+W tokens | 152K | 378K | 1,266K |
-| 컨텍스트 | 누적(18턴) ❌ | fresh ✅ | **fresh ✅** |
-| 부분 재시도 | 불가 ❌ | Worker 단위 ✅ | **Worker 단위 ✅** |
+| 지표 | 모놀리식(fresh) | v3.6.1 | v3.6.2 | **v3.6.3** |
+|------|:-----------:|:------:|:------:|:------:|
+| 활성 Worker | 1 | 3 | 4 | 5 |
+| W_tokens 합 | 152K | 344K | 1,141K | **282K** |
+| W_tokens 평균 | 152K | 115K | 285K | **56K** |
+| tk/byte | 25× | 32× | 54× | **12×** |
+| P+W tokens | 152K | 378K | 1,266K | **421K** |
+| 컨텍스트 | 누적 ❌ | fresh ✅ | fresh ✅ | **fresh ✅** |
+| 부분 재시도 | 불가 ❌ | Worker 단위 ✅ | Worker 단위 ✅ | **Worker 단위 ✅** |
 
-> 모놀리식(fresh) = 단일 Worker 18턴 순수 실행. fork 버전은 208K(부모 컨텍스트 상속).
-
-### v3.6.1 → v3.6.2 (아티팩트 실측)
-
-| 지표 | v3.6.1 (18체인) | v3.6.2 (5체인) | 변화 |
-|------|:-----------:|:----------:|:----:|
-| W_bytes 평균 | 4.9KB | 3.6KB | −26% |
-| W_bytes 최대 | 11.5KB | 5.7KB | −50% |
-| W_tokens 평균 | 841K | 228K | **−73%** |
-| W_tokens 최대 | 6.0M | 474K | **−92%** |
-| tk/byte 비율 | 171× | 63× | −63% |
-
-> 바이트 = 프롬프트 크기, 토큰 = LLM 실제 처리량. tk/byte 비율이 높을수록 Worker가 파일을 많이 읽었다는 뜻.
+> 총 토큰은 모놀리식이 적지만, Worker당 효율과 재시도 가능성은 v3.6.3이 우위. [상세 분석](docs/performance-report.md)
 
 ## 참조
 
@@ -148,8 +137,10 @@ v3.6.2          3.6KB         5.7KB        —          auto-inject
 |------|------|
 | [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
 | [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
-| [analysis-logic.md](docs/analysis-logic.md) | 분석 로직 및 도구 사용법 |
-| [history.md](docs/history.md) | v1~v3.6 개선 이력 |
+| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.6.3, tk/byte, 동일과제 비교) |
+| [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
+| [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
+| [history.md](docs/history.md) | v1~v3.6.3 개선 이력 |
 
 ## 버전 히스토리
 
