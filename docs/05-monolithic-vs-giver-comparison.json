@@ -1,8 +1,22 @@
 {
-  "description": "Monolithic vs Giver v3.6.1/v3.6.2 — same task (redbis-coding-test 44 tests)",
-  "monolithic": {
+  "description": "Monolithic vs Giver — same task (redbis-coding-test 44 tests)",
+  "monolithic_fresh": {
+    "run_id": "22493b5c",
+    "type": "fresh-single-worker",
+    "result": "44/44 tests passed",
+    "bytes_in": 4831,
+    "bytes_out": 1360,
+    "bytes_ctx": 6191,
+    "tokens_in": 147618,
+    "tokens_out": 4458,
+    "tokens_total": 152076,
+    "turns": 18,
+    "model": "glm-5.1:cloud",
+    "tk_per_byte": 25
+  },
+  "monolithic_fork": {
     "run_id": "6ae6706a",
-    "type": "single-worker",
+    "type": "fork-single-worker",
     "result": "44/44 tests passed",
     "bytes_in": 3810,
     "bytes_out": 1613,
@@ -11,61 +25,22 @@
     "tokens_out": 5158,
     "tokens_total": 208181,
     "turns": 19,
-    "model": "glm-5.1:cloud"
+    "model": "glm-5.1:cloud",
+    "note": "inherited parent context, higher token count than fresh baseline"
   },
-  "v361_c2e86d3b": {
+  "giver_v361": {
     "run_id": "c2e86d3b",
     "type": "giver-v3.6.1",
     "result": "44/44 tests passed",
     "planner_tokens": 33666,
-    "workers": [
-      {
-        "bytes": 3560,
-        "tokens": 68578
-      },
-      {
-        "bytes": 4073,
-        "tokens": 88047
-      },
-      {
-        "bytes": 3044,
-        "tokens": 187646
-      }
-    ],
-    "total_tokens": 377937
+    "workers_total_tokens": 344271
   },
-  "v362_fe9907dc": {
+  "giver_v362": {
     "run_id": "fe9907dc",
     "type": "giver-v3.6.2",
     "result": "44/44 tests passed",
     "planner_tokens": 124446,
-    "workers": [
-      {
-        "bytes": 3548,
-        "tokens": 187534,
-        "noop": false
-      },
-      {
-        "bytes": 5405,
-        "tokens": 245263,
-        "noop": false
-      },
-      {
-        "bytes": 5019,
-        "tokens": 397440,
-        "noop": false
-      },
-      {
-        "bytes": 4415,
-        "tokens": 266051,
-        "noop": false
-      },
-      {
-        "bytes": 2751,
-        "tokens": 44931,
-        "noop": false
-      }
-    ],
-    "total_tokens": 1265665
+    "workers_total_tokens": 1141219,
+    "workers_bytes": 21138
   }
 }
