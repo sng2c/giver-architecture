@@ -415,7 +415,8 @@ v3.5 C1 █████████████                                 
 | v3.5.11 | RESULT Breaking 섹션, aware→Breaking 전환 |
 | v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |
 | v3.5.13 | Signatures 통합, Breaking forward, T₀ Target Files, 모순 수정 |
-## v3.6.2 — 2025-01-xx
+| v3.6.2 | Task 파일 경로 근원 해결: output:"plan.md" + reads:["taskN.md"] |
+## v3.6.2 — 2026-05-23
 
 **Task 파일 경로 문제 근원 해결**
 

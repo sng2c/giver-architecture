@@ -1,6 +1,6 @@
 ---
 name: giver
-version: "3.6.1"
+version: "3.6.2"
 description: 'The Giver v3.6.2. Design Principles (GGON). reads:["taskN.md"] auto-inject. P-Wx10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh.'
 disable-model-invocation: true
 ---
@@ -20,7 +20,7 @@ Signatures = List of Dependency tuples. Direction implied by context: in T₀/T�
 Target Files (T₀) = All files to be modified or created across the entire task (written by Giver, from Scout recon)
 Target Files (Tₖ) = Files this Worker will modify or create (subset assigned by Planner from T₀)
 Result = Files + Signatures + Breaking + Summary
-History = Giver writes T₀ → T₀ → P output → W₁ output → W₂ output → ... → W₁₀ output  (Planner writes task files to cwd. Workers read task files from cwd.)  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
+History = Giver writes T₀ → T₀ → P output → W₁ output → W₂ output → ... → W₁₀ output  (Planner writes task files to chain directory via [Write to:]. Workers receive task files via reads:["taskN.md"] auto-inject.)  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
 ```
 
 ## Signatures
