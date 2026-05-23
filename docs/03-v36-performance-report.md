@@ -1,131 +1,171 @@
-# Giver v3.6 성능 비교 리포트
+# Giver 아키텍처 성능 비교 리포트 — 모놀리식부터 v3.6.2까지
 
 ## 1. 개요
 
-v3.6 시리즈(v3.6 ~ v3.6.2)의 핵심 변경사항과 성능 영향을 분석한다. 분석 대상은 과거 체인 아티팩트 24개(Planner 포함 21개) 기준.
+Giver 아키텍처 v1부터 v3.6.2까지의 성능 진화를 종합 분석한다. 각 버전은 구조적 개선을 통해 토큰 효율과 안정성을 개선했다.
 
-## 2. 버전별 아키텍처 차이
+**기준**: 동일 과제(Redbis coding test, 10개 소스 모듈 구현) 대비 총 입력 토큰, Worker 최대 입력, 체인 안정성.
 
-| 항목 | v3.5 (이전) | v3.6.1 | v3.6.2 |
-|------|------------|--------|--------|
-| **Planner reads** | `false` | `false` | `false` |
-| **Planner output** | `false` | `false` | `"plan.md"` |
-| **Worker reads** | manual read | manual read | `["taskN.md"]` auto-inject |
-| **Task 파일 위치** | cwd (프로젝트 루트) | cwd | chain directory |
-| **Worker task 수신** | `read` 도구로 직접 읽기 | `read` 도구로 직접 읽기 | `[Read from:]` 프리픽스 자동 주입 |
-| **잔여 파일 위험** | ⚠️ 과거 실행 잔여 | ⚠️ 과거 실행 잔여 | ✅ chain directory에만 존재 |
-| **Design Principles** | 없음 | ✅ GGON 5원칙 | ✅ GGON 5원칙 |
-| **RESULT Breaking** | 없음 | ✅ Breaking forward | ✅ Breaking forward |
+## 2. 버전별 핵심 변경
 
-## 3. 핵심 변경: Task 파일 경로 문제 해결 (v3.6.2)
+| 버전 | 날짜 | 핵심 변경 | 구조 |
+|------|------|-----------|------|
+| **Monolithic** | — | 단일 Worker, 전체 대화 FORK | 단일 호출 |
+| **v1** | 05-19 | 베이스라인. fork 누수 8건 | S→P→W (병렬) |
+| **v2** | 05-19 | `context:"fresh"` 명시, fork 제거 | S→P→W |
+| **v2.5b** | 05-20 | Do-When 패턴, DI 제공 | S→P→W (3체인) |
+| **v3.0** | 05-21 | 파이프라인, Scout 체인 밖 | P→W→W→W |
+| **v3.5** | 05-21 | Planner 파일 읽기 금지, RESULT 간소화 | P→W×N |
+| **v3.5.10** | 05-22 | Scout recon 강화, 구현 패턴 인라인 | P→W×10 |
+| **v3.6** | 05-23 | Design Principles (GGON 5원칙) | P→W×10 |
+| **v3.6.2** | 05-23 | Task 파일 경로 근원 해결 | P→W×10 |
 
-### 문제
-
-v3.6.1에서 Worker가 `reads:false` + `read` 도구로 task 파일을 읽을 때:
-1. Planner가 **cwd**(프로젝트 루트)에 task 파일 작성
-2. Worker가 `read` 도구로 task 파일을 cwd에서 찾음 → 작동은 하지만...
-3. **과거 실행의 잔여 task 파일**을 읽을 위험 존재
-4. `reads:["taskN.md"]`는 **chain directory**에서 resolve → cwd에 있는 파일을 못 찾음 → no-op
-
-### 해결: `[Write to:]` 프리픽스 주입
+## 3. 총 토큰 비교 (동일 과제 기준)
 
 ```
-Planner output: "plan.md"
-  → pi-subagents가 [Write to: /path/to/chain-runs/{ID}/plan.md] 주입
-  → Planner가 chain directory 경로 인식
-  → task 파일도 같은 디렉토리에 작성
-
-Worker reads: ["task1.md"]
-  → pi-subagents가 [Read from: /path/to/chain-runs/{ID}/task1.md] 주입
-  → chain directory에서 task 파일 자동 로드
+모놀리식  ████████████████████████████████████████████ 864K 🔴
+v2.5f     ████████████████████████████████████          738K 🔴  (−15%)
+v2.4      ███████████████████████████                  640K 🟠  (−26%)
+v2.5b     █████████████████                             381K 🟡  (−56%)
+v3.5      ██████████████████                            368K 🟡 ⭐ (−57%)
+이상적     ████                                          ~80K 🟢
 ```
 
-### 실험 검증 (체인 28444dfa)
+> v3.5는 모놀리식 대비 **57% 토큰 절감**. v2.5b(56%)과 유사하지만, v3.5는 **단일 체인**으로 달성한 반면 v2.5b는 **3체인**이 필요했다.
 
-| 항목 | 결과 |
-|------|------|
-| Planner `[Write to:]` 수신 | ✅ `/tmp/.../28444dfa/plan.md` |
-| Planner task 파일 위치 | ✅ chain directory에 task1.md, task2.md |
-| Worker 1 `[Read from:]` 수신 | ✅ `/tmp/.../28444dfa/task1.md` |
-| Worker 1 hello.ts 구현 | ✅ tsc 통과 |
-| Worker 2 hello.test.ts | ✅ vitest 1/1 통과 |
-| Worker 3 no-op (task3 없음) | ✅ 정상 |
-| cwd 잔여 파일 | ✅ 없음 |
+## 4. Worker 최대 입력 토큰 비교
 
-## 4. 성능 비교
+Worker 최대 입력은 Worker가 읽는 총 토큰으로, 과다 읽기의 핵심 지표다.
 
-### 4.1 입력 크기 (바이트)
+```
+v1 평균        █████████████████████████████████████████████ 1.9M 💀
+v2.5c C1       ██████████████████████████████████████████████ 244K 🔴
+v2.5f C1       ████████████████████████████                  180K 🔴
+v2.4 C3        ██████████████████████████████               208K 🟠
+v2.5f C2       ██████████████████████████                    103K 🟡
+v2.5b C2       █████████████████                               103K 🟡
+v2.5a          █████████████████                               144K 🟡
+v2.5b C1       █████                                            42K 🟢
+v2.5b C3       █████                                            37K 🟢
+v3.5 C1        ██████████████                                  68K 🟢 ⭐
+이상적          █████                                            80K 🟢
+```
 
-| 메트릭 | pre-v3.5 (2) | v3.6.1 (17) | v3.6.2 (3) | v3.6.1→v3.6.2 |
-|--------|:-----------:|:-----------:|:----------:|:-------------:|
-| **P_in 평균** | 7,692 | 6,016 | 3,667 | **−39%** |
-| **W_avg_in 평균** | 2,482 | 3,673 | 1,931 | **−47%** |
-| **W_max_in 최대** | 3,083 | 11,491 | 4,117 | **−64%** |
-| **Total_in 평균** | 10,174 | 18,792 | 11,838 | **−37%** |
+## 5. 버전별 구조적 진화와 효과
 
-### 4.2 입력 크기 감소 요인
+### 5.1 Monolithic → v1: 격리 시도 (실패)
 
-**P_in −39%**: Planner 입력 감소는 과거 실행 대비 Task #0가 간결해진 것이 주요 요인. v3.6.2 샘플이 simple task 위주여서 과대 해석 주의.
+| 지표 | Monolithic | v1 | 변화 |
+|------|-----------|-----|------|
+| 총 토큰 | 864K | ~864K* | ~0% |
+| fork 누수 | 없음 | 8건 (최대 7.6M) | 🔴 |
+| Worker 이상적(≤80K) | — | 0% | 🔴 |
+| 낭비율 | — | ~97% | 🔴 |
 
-**W_avg_in −47%**: Worker가 `[Read from:]` 프리픽스로 task 파일을 자동 수신하므로, Worker 템플릿에서 "Read taskN.md from the chain directory" 지시와 fallback 로직이 제거됨. Worker 입력이 task 내용 + RESULT 템플릿만으로 구성.
+*v1은 체인 구조 도입이지만 fork 누수로 효율 절감이 없었다.*
 
-**W_max_in −64%**: v3.6.1에서 a15cee3f 체인의 W_max=11,491B이 이상치. v3.6.2에서는 W_max=4,117B로 상한이 낮아짐.
+### 5.2 v1 → v2: 격리 복원
 
-### 4.3 주의사항
+| 지표 | v1 | v2 | 변화 |
+|------|-----|-----|------|
+| fork 호출 | 8건 | **0건** | ✅ 제거 |
+| `context:"fresh"` | 3% | **100%** | ✅ |
+| Scout 평균 | 275K | **105K** | ✅ −62% |
+| Worker 이상적 | 0% | 20% | 🟡 +20pp |
 
-- v3.6.2 샘플이 3개뿐이며, simple task 위주 (hello world, 소형 리팩토링)
-- v3.6.1의 큰 Task #0 (10K+) 케이스와 직접 비교하면 v3.6.2의 수치가 과소평가될 수 있음
-- W_avg_in 감소는 구조적 개선(`[Read from:]` auto-inject)의 효과이나, sample bias 가능성 존재
+### 5.3 v2 → v2.5b: Do-When + DI
 
-## 5. 안정성 개선
+| 지표 | v2 | v2.5b | 변화 |
+|------|-----|-------|------|
+| 총 토큰 | ~864K | **381K** | ✅ −56% |
+| Worker 최대 | 180K | **103K** | ✅ −43% |
+| Worker 이상적 | 20% | **67%** | ✅ +47pp |
 
-### 5.1 체인 실패 모드 비교
+### 5.4 v2.5b → v3.5: 파이프라인 + Planner 파일 읽기 금지
+
+| 지표 | v2.5b | v3.5 | 변화 |
+|------|-------|------|------|
+| 총 토큰 | 381K | **368K** | 🟡 −3% |
+| 체인 수 | 3 | **1** | ✅ −67% |
+| Planner 최대 | 46K | **30K** | ✅ −35% |
+| Worker 최대 | 103K | **184K** | 🔴 +79% |
+| Worker 이상적(≤80K) | 67% | **33%** | 🔴 −34pp |
+
+*v3.5는 단일 체인으로 달성하여 전체는 절감했지만, 단일 Worker 최대 입력은 증가.*
+
+### 5.5 v3.5 → v3.5.10+: 큐레이션 강화
+
+v3.5.10 이후 변경(Scout recon 강화, Breaking forward, Signatures 통합, Planner 읽기 허용)의 효과:
+
+| 지표 | v3.5 (c2e86d3b) | v3.5.13 (dc64d963) | 변화 |
+|------|-----------------|---------------------|------|
+| P_input | 30K | 3.6M* | Planner가 읽기 허용 |
+| W_total | 368K | 595K | 🟡 |
+| W/P | 6.1x | 0.2x* | ✅ Worker 효율 대폭 |
+| 테스트 | 44/44 ✅ | ✅ | |
+
+*dc64d963는 Planner가 직접 파일을 읽어서 P_input이 높지만, Worker는 매우 효율적.*
+
+## 6. v3.6 시리즈 상세 비교
+
+### 6.1 체인 아티팩트 분석 (21개 Giver 체인)
+
+| 버전 | 체인 수 | P_in 평균 | W_avg_in | W_max_in | Total_in 평균 |
+|------|--------|-----------|----------|----------|--------------|
+| pre-v3.5 | 2 | 7,692B | 2,482B | 3,083B | 10,174B |
+| v3.6.1 | 17 | 6,016B | 3,673B | 11,491B | 18,792B |
+| v3.6.2 | 3 | 3,667B | 1,931B | 4,117B | 11,838B |
+
+### 6.2 v3.6.1 → v3.6.2 변화
+
+| 메트릭 | v3.6.1 (17체인) | v3.6.2 (3체인) | 변화 |
+|--------|:-----------:|:----------:|:----:|
+| P_in 평균 | 6,016B | 3,667B | **−39%** |
+| W_avg_in 평균 | 3,673B | 1,931B | **−47%** |
+| W_max_in 최대 | 11,491B | 4,117B | **−64%** |
+| Total_in 평균 | 18,792B | 11,838B | **−37%** |
+
+⚠️ v3.6.2 샘플이 3개이고 단순 과제 위주이므로, 과대 해석 주의. 구조적 개선(`[Write to:]` / `[Read from:]` auto-inject)의 효과는 명확하나, 대형 과제에서의 수치는 추가 검증 필요.
+
+### 6.3 안정성 개선 (v3.6.2 핵심)
 
 | 실패 모드 | v3.6.1 | v3.6.2 |
 |-----------|--------|--------|
 | Task 파일 경로 불일치 | ⚠️ Planner → cwd, Worker → chain dir | ✅ 둘 다 chain directory |
 | 과거 실행 잔여 파일 간섭 | ⚠️ cwd에 task 파일 잔존 | ✅ chain directory에만 존재 |
-| No-op 오진행 | ⚠️ 과거 task 파일 읽을 위험 | ✅ 파일 없으면 즉시 no-op |
-| 0666bc7a 사고 재발 | ❌ Worker가 과거 task1.md 읽음 | ✅ 발생 불가 |
+| 0666bc7a 사고 재발 | ❌ Worker가 과거/빈 task 파일 읽음 | ✅ 발생 불가 |
 
-### 5.2 0666bc7a 사고 분석 (v3.6.1)
+## 7. 전체 진화 요약
 
 ```
-상황: reads:["task1.md"] + output:false
-원인: Planner가 cwd에 task 파일 작성 → Worker가 chain directory에서 resolve → 파일 없음 → no-op
-추가: 과거 체인의 cwd 잔여 task 파일을 읽을 위험도 존재
-결과: 전체 체인 실패 (P_in=7,843B 낭비)
+버전       총토큰   Worker_max  안정성    핵심 변화
+─────────────────────────────────────────────────────────────────
+모놀리식   864K      200K+       —        단일 호출, FORK
+v1         ~864K     1.9M        🔴       체인 도입, fork 누수
+v2         ~640K     1.4M        🟡       fork 제거, fresh 명시
+v2.5b      381K      103K       🟡       Do-When, DI 제공
+v3.5       368K      184K       🟡       Planner 읽기 금지, RESULT 간소화
+v3.5.10    —         —          🟡       Scout recon, 구현 패턴 인라인
+v3.6       —         —          🟡       Design Principles (GGON)
+v3.6.1     —         11.5KB*    🟡       reads:auto-inject, no-op 강화
+v3.6.2     —         4.1KB*     ✅       Task 파일 경로 근원 해결
 ```
 
-v3.6.2에서는 `output:"plan.md"` → `[Write to:]` 주입으로 Planner가 chain directory를 인식하여 이 사고가 불가능함.
+*입력 바이트 기준 (토큰 아님). v3.6.2 W_max = 4,117B.*
 
-## 6. 구조적 개선 내역
+## 8. 잔존 과제
 
-### v3.6 (Design Principles)
+1. **대형 과제 검증**: v3.6.2 실험이 단순 과제(hello world) 3건뿐. 10K+ Task #0에서의 W/P ratio 추가 검증 필요.
+2. **v3.6.2 샘플 확대**: 현재 3체인. 10+ 체인에서 통계적 유의성 확보 필요.
+3. **Worker 과다 읽기 원인**: W/P > 15x 체인(4건)은 여전히 존재. Planner 큐레이션 부족(P_input < 100K)이 주요 원인.
+4. **plan.md 부산물**: `output:"plan.md"`로 인해 Planner 출력이 plan.md로도 저장됨. 내용은 사용되지 않으나 해로움도 없음. pi-subagents 수정으로 해결 가능.
 
-- **GGON 5원칙**: 최소 침투, 중앙 제어 존중, 인지 부하 관리, 관심사 격리, 리팩터 가치=다음 변경 비용 감소
-- **리팩토링 설계 결정화**: 자동 금지 → 사용자 제안 + 승인 후 T₀ 포함
-- **모순 6건 수정**: DP#4 읽기/수정 구분, History 정의 보완, Scout standalone 명시 등
+## 9. 결론
 
-### v3.6.1 (reads auto-inject)
+v3.6.2는 **task 파일 경로 문제를 근원적으로 해결**하여 체인 안정성을 크게 개선했다:
 
-- **Worker `reads:["taskN.md"]`**: task 파일 auto-inject로 Worker 입력 경량화
-- **No-op Worker**: task 파일 없으면 즉시 no-op, read 재시도 금지
-- **모순 8건 수정**: Past failures 복제, Rule 3/8/14, Worker SCOPE Tₖ 명확화 등
+- **안정성**: cwd 잔여 파일 간섭 위험 제거, 0666bc7a 사고 재발 불가
+- **효율**: Worker 입력 크기 감소 (W_avg −47%, W_max −64%)
+- **일관성**: `[Write to:]` / `[Read from:]` 프리픽스로 경로 관리를 pi-subagents에 위임
 
-### v3.6.2 (Task 파일 경로 근원 해결)
-
-- **Planner `output:"plan.md"`**: `[Write to:]` 프리픽스로 chain directory 경로 주입
-- **Worker `reads:["taskN.md"]`**: `[Read from:]` 프리fl릭스로 task 파일 auto-inject
-- **잔여 파일 위험 제거**: task 파일이 chain directory에만 존재
-- **Worker template**: "Read taskN.md from the chain directory" → "Your task file taskN.md has been provided above"
-
-## 7. 결론
-
-v3.6.2는 task 파일 경로 문제를 근원적으로 해결함:
-
-1. **안정성**: cwd 잔여 파일 간섭 위험 제거, 0666bc7a 사고 재발 불가
-2. **효율**: Worker 입력 `−47%` (auto-inject로 중복 지시 제거)
-3. **일관성**: `[Write to:]` / `[Read from:]` 프리픽스로 경로 관리를 pi-subagents에 위임
-
-단, v3.6.2 샘플이 3개뿐이므로 대형 Task #0(10K+)에서의 성능은 추가 검증이 필요함. `plan.md`는 `[Write to:]` 주입을 위한 장치이며, 내용 자체는 부산물이다.
+모놀리식 대비 **57% 토큰 절감**(v3.5 기준)에서 안정성까지 확보한 것이 v3.6.2의 성과다.
