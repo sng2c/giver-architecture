@@ -415,3 +415,19 @@ v3.5 C1 █████████████                                 
 | v3.5.11 | RESULT Breaking 섹션, aware→Breaking 전환 |
 | v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |
 | v3.5.13 | Signatures 통합, Breaking forward, T₀ Target Files, 모순 수정 |
+## v3.6.2 — 2025-01-xx
+
+**Task 파일 경로 문제 근원 해결**
+
+- **문제**: Planner가 cwd에 task 파일 작성 → 과거 실행 잔여 파일 오작동 위험
+  - `reads:false` + `read` 도구: cwd에서 읽어서 작동은 하지만 잔여 파일 위험
+  - `reads:["taskN.md"]`: chain directory에서 resolve → 파일 없음 → no-op
+- **해결**: Planner `output:"plan.md"` → `[Write to:]` 프리픽스 주입 → chain directory 경로 확보
+  - Planner가 chain directory에 task 파일 작성
+  - Worker `reads:["taskN.md"]` → chain directory에서 resolve → 정상 작동
+- **변경**:
+  - Planner: `output:false` → `output:"plan.md"`
+  - Worker: `reads:false` → `reads:["taskN.md"]`
+  - Rule 3/4/6/8: reads override 양쪽 설명, output:[Write to:] 설명
+  - Worker template: "Read taskN.md" → "Your task file taskN.md has been provided above"
+  - Planner Working Rules: "to the [Write to:] directory"
