@@ -1,0 +1,962 @@
+{
+  "description": "Giver chain analysis \u2014 tokens AND bytes per agent",
+  "chains": [
+    {
+      "run_id": "0666bc7a",
+      "project": "redbis",
+      "version": "?",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 375793,
+      "p_tk_out": 17126,
+      "p_bytes": 8854,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 4384,
+          "tokens_out": 83,
+          "bytes": 3119,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "1c87533c",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 19224,
+      "p_tk_out": 3094,
+      "p_bytes": 6183,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 141290,
+          "tokens_out": 4959,
+          "bytes": 3393,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 279441,
+          "tokens_out": 4124,
+          "bytes": 3692,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "23a36e07",
+      "project": "redbis",
+      "version": "?",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 350051,
+      "p_tk_out": 5518,
+      "p_bytes": 8371,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 3666,
+          "tokens_out": 83,
+          "bytes": 1917,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "2c9960b2",
+      "project": "redbis",
+      "version": "?",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 7631,
+      "p_tk_out": 2942,
+      "p_bytes": 10790,
+      "workers": []
+    },
+    {
+      "run_id": "2d451efc",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1314473,
+      "p_tk_out": 52519,
+      "p_bytes": 12001,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 1086522,
+          "tokens_out": 19565,
+          "bytes": 3279,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 470004,
+          "tokens_out": 8613,
+          "bytes": 3011,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "34e3f185",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1328154,
+      "p_tk_out": 25213,
+      "p_bytes": 12373,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 1719894,
+          "tokens_out": 23420,
+          "bytes": 8844,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 2637084,
+          "tokens_out": 36557,
+          "bytes": 11465,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "37cd3c09",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 379185,
+      "p_tk_out": 11080,
+      "p_bytes": 6732,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 43378,
+          "tokens_out": 486,
+          "bytes": 3603,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 111056,
+          "tokens_out": 4550,
+          "bytes": 2872,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 20667,
+          "tokens_out": 591,
+          "bytes": 4057,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 666987,
+          "tokens_out": 7977,
+          "bytes": 3593,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 7006,
+          "tokens_out": 147,
+          "bytes": 3835,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "392048db",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1543044,
+      "p_tk_out": 19631,
+      "p_bytes": 14074,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 638620,
+          "tokens_out": 9661,
+          "bytes": 10891,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 191170,
+          "tokens_out": 3756,
+          "bytes": 4780,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 134019,
+          "tokens_out": 3611,
+          "bytes": 6037,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 1799358,
+          "tokens_out": 11546,
+          "bytes": 6420,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 3127342,
+          "tokens_out": 25456,
+          "bytes": 6669,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 2195369,
+          "tokens_out": 18335,
+          "bytes": 6562,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "3dd85357",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 61080,
+      "p_tk_out": 9062,
+      "p_bytes": 8263,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 236142,
+          "tokens_out": 6456,
+          "bytes": 3197,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 297219,
+          "tokens_out": 13867,
+          "bytes": 4495,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 677434,
+          "tokens_out": 20469,
+          "bytes": 5564,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "3e51c1a3",
+      "project": "redbis",
+      "version": "v3.6.2",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1572004,
+      "p_tk_out": 12927,
+      "p_bytes": 7260,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 1752,
+          "tokens_out": 28,
+          "bytes": 1429,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 436191,
+          "tokens_out": 11346,
+          "bytes": 2860,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 464370,
+          "tokens_out": 9508,
+          "bytes": 4173,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 164803,
+          "tokens_out": 8187,
+          "bytes": 4516,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 6368,
+          "tokens_out": 209,
+          "bytes": 1547,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 1411,
+          "tokens_out": 27,
+          "bytes": 370,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 220533,
+          "tokens_out": 12796,
+          "bytes": 1652,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 1807,
+          "tokens_out": 27,
+          "bytes": 1652,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 287337,
+          "tokens_out": 7885,
+          "bytes": 1311,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 337931,
+          "tokens_out": 10026,
+          "bytes": 2368,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "559fc35e",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 68002,
+      "p_tk_out": 16075,
+      "p_bytes": 9534,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 249304,
+          "tokens_out": 6463,
+          "bytes": 3699,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 394689,
+          "tokens_out": 7152,
+          "bytes": 3776,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 662297,
+          "tokens_out": 13195,
+          "bytes": 3284,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "57d29f0e",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 101472,
+      "p_tk_out": 7497,
+      "p_bytes": 8714,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 139003,
+          "tokens_out": 3740,
+          "bytes": 3590,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "64b71ad3",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 992267,
+      "p_tk_out": 21655,
+      "p_bytes": 13586,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 3511677,
+          "tokens_out": 43681,
+          "bytes": 6879,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 598541,
+          "tokens_out": 10184,
+          "bytes": 6774,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 5091724,
+          "tokens_out": 36679,
+          "bytes": 6195,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "6ee6a580",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 187919,
+      "p_tk_out": 14245,
+      "p_bytes": 11687,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 1313303,
+          "tokens_out": 7355,
+          "bytes": 3650,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 6007860,
+          "tokens_out": 22551,
+          "bytes": 6297,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 579819,
+          "tokens_out": 7320,
+          "bytes": 6903,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "a15cee3f",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1791863,
+      "p_tk_out": 19689,
+      "p_bytes": 7631,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 53305,
+          "tokens_out": 1581,
+          "bytes": 4589,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 181604,
+          "tokens_out": 3487,
+          "bytes": 5256,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 530774,
+          "tokens_out": 9482,
+          "bytes": 6340,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 1073533,
+          "tokens_out": 9650,
+          "bytes": 6439,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 278628,
+          "tokens_out": 8502,
+          "bytes": 6917,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 862195,
+          "tokens_out": 11754,
+          "bytes": 6243,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 283871,
+          "tokens_out": 7582,
+          "bytes": 6147,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 1677655,
+          "tokens_out": 22753,
+          "bytes": 9982,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 8584,
+          "tokens_out": 86,
+          "bytes": 11527,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "a2060230",
+      "project": "redbis",
+      "version": "v3.6.2",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 593200,
+      "p_tk_out": 11952,
+      "p_bytes": 7556,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 103710,
+          "tokens_out": 2770,
+          "bytes": 4152,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 203576,
+          "tokens_out": 2602,
+          "bytes": 3246,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 168013,
+          "tokens_out": 6358,
+          "bytes": 3745,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 385389,
+          "tokens_out": 4971,
+          "bytes": 5707,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 426854,
+          "tokens_out": 3977,
+          "bytes": 3620,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "a58bf658",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 131210,
+      "p_tk_out": 3812,
+      "p_bytes": 2259,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 2156619,
+          "tokens_out": 11250,
+          "bytes": 3019,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 674387,
+          "tokens_out": 8379,
+          "bytes": 4209,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 3532,
+          "tokens_out": 80,
+          "bytes": 1677,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 95684,
+          "tokens_out": 1336,
+          "bytes": 699,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 11740,
+          "tokens_out": 615,
+          "bytes": 1095,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 8928,
+          "tokens_out": 431,
+          "bytes": 929,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 3749,
+          "tokens_out": 331,
+          "bytes": 1060,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 3951,
+          "tokens_out": 424,
+          "bytes": 1471,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 3991,
+          "tokens_out": 366,
+          "bytes": 1473,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "ae971ff0",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 75230,
+      "p_tk_out": 8359,
+      "p_bytes": 2556,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 6067,
+          "tokens_out": 91,
+          "bytes": 2592,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "cd148908",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 25236,
+      "p_tk_out": 7332,
+      "p_bytes": 8564,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 1185891,
+          "tokens_out": 14232,
+          "bytes": 4760,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 402697,
+          "tokens_out": 18387,
+          "bytes": 7122,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "d8087849",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 19238,
+      "p_tk_out": 3878,
+      "p_bytes": 1844,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 3584827,
+          "tokens_out": 15169,
+          "bytes": 3469,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 4878,
+          "tokens_out": 102,
+          "bytes": 4032,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "db552cac",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1050065,
+      "p_tk_out": 25687,
+      "p_bytes": 10589,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 1423842,
+          "tokens_out": 19948,
+          "bytes": 6370,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 268865,
+          "tokens_out": 5222,
+          "bytes": 8216,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "dc64d963",
+      "project": "redbis",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 3641536,
+      "p_tk_out": 25222,
+      "p_bytes": 2861,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 42912,
+          "tokens_out": 1835,
+          "bytes": 5330,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 546581,
+          "tokens_out": 9530,
+          "bytes": 5338,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 6192,
+          "tokens_out": 129,
+          "bytes": 5848,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "f670b431",
+      "project": "redbis",
+      "version": "v3.6.2",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 45093,
+      "p_tk_out": 5718,
+      "p_bytes": 4788,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 4732,
+          "tokens_out": 389,
+          "bytes": 372,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 74057,
+          "tokens_out": 1823,
+          "bytes": 3747,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 19892,
+          "tokens_out": 813,
+          "bytes": 4807,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 7030,
+          "tokens_out": 292,
+          "bytes": 1024,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 4804,
+          "tokens_out": 277,
+          "bytes": 370,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 2942,
+          "tokens_out": 139,
+          "bytes": 392,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 6407,
+          "tokens_out": 266,
+          "bytes": 392,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 2921,
+          "tokens_out": 103,
+          "bytes": 370,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 6125,
+          "tokens_out": 181,
+          "bytes": 370,
+          "is_noop": true
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 1407,
+          "tokens_out": 36,
+          "bytes": 370,
+          "is_noop": true
+        }
+      ]
+    },
+    {
+      "run_id": "c2e86d3b",
+      "project": "redbis-coding-test",
+      "version": "v3.6.1",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 30245,
+      "p_tk_out": 3421,
+      "p_bytes": 6579,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 67523,
+          "tokens_out": 1055,
+          "bytes": 3560,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 86264,
+          "tokens_out": 1783,
+          "bytes": 4073,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 184355,
+          "tokens_out": 3291,
+          "bytes": 3044,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "fe9907dc",
+      "project": "redbis-coding-test",
+      "version": "v3.6.2",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 121559,
+      "p_tk_out": 2887,
+      "p_bytes": 6416,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 186511,
+          "tokens_out": 1023,
+          "bytes": 3548,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 244054,
+          "tokens_out": 1209,
+          "bytes": 5405,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 395708,
+          "tokens_out": 1732,
+          "bytes": 5019,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 264807,
+          "tokens_out": 1244,
+          "bytes": 4415,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 44864,
+          "tokens_out": 67,
+          "bytes": 2751,
+          "is_noop": false
+        }
+      ]
+    },
+    {
+      "run_id": "28444dfa",
+      "project": "giver-arch",
+      "version": "v3.6.2",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 13690,
+      "p_tk_out": 1037,
+      "p_bytes": 2225,
+      "workers": [
+        {
+          "idx": "worker",
+          "tokens_in": 20190,
+          "tokens_out": 339,
+          "bytes": 2578,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 20482,
+          "tokens_out": 533,
+          "bytes": 2385,
+          "is_noop": false
+        },
+        {
+          "idx": "worker",
+          "tokens_in": 3774,
+          "tokens_out": 80,
+          "bytes": 2103,
+          "is_noop": true
+        }
+      ]
+    }
+  ]
+}
