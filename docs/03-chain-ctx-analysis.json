@@ -965,7 +965,100 @@
       ],
       "worker_count": 3,
       "worker_active": 2,
-      "total_ctx": 9291
+      "total_ctx": 9291,
+      "project": "giver-architecture"
+    },
+    {
+      "run_id": "fe9907dc",
+      "project": "redbis-coding-test",
+      "version": "v3.6.2",
+      "result": "44/44 tests passed",
+      "planner": {
+        "in": 5883,
+        "out": 533,
+        "ctx": 6416
+      },
+      "workers": [
+        {
+          "in": 2530,
+          "out": 1018,
+          "ctx": 3548,
+          "ver": "v3.6.2",
+          "noop": false
+        },
+        {
+          "in": 4499,
+          "out": 906,
+          "ctx": 5405,
+          "ver": "v3.6.2",
+          "noop": false
+        },
+        {
+          "in": 4163,
+          "out": 856,
+          "ctx": 5019,
+          "ver": "v3.6.2",
+          "noop": false
+        },
+        {
+          "in": 4013,
+          "out": 402,
+          "ctx": 4415,
+          "ver": "v3.6.2",
+          "noop": false
+        },
+        {
+          "in": 2651,
+          "out": 100,
+          "ctx": 2751,
+          "ver": "v3.6.2",
+          "noop": false
+        }
+      ],
+      "worker_count": 5,
+      "worker_active": 5,
+      "w_ctx_avg": 4227,
+      "w_ctx_max": 5405,
+      "w_act_avg": 4227,
+      "w_act_max": 5405,
+      "total_ctx": 27554
+    },
+    {
+      "run_id": "c2e86d3b",
+      "project": "redbis-coding-test",
+      "version": "v3.6.1",
+      "result": "44/44 tests passed (single chain, 3 workers)",
+      "planner": {
+        "in": 5691,
+        "out": 888,
+        "ctx": 6579
+      },
+      "workers": [
+        {
+          "in": 2426,
+          "out": 1134,
+          "ctx": 3560,
+          "ver": "v3.6.1",
+          "noop": false
+        },
+        {
+          "in": 3335,
+          "out": 738,
+          "ctx": 4073,
+          "ver": "v3.6.1",
+          "noop": false
+        },
+        {
+          "in": 2402,
+          "out": 642,
+          "ctx": 3044,
+          "ver": "v3.6.1",
+          "noop": false
+        }
+      ],
+      "worker_count": 3,
+      "worker_active": 3,
+      "total_ctx": 17256
     }
   ],
   "summary": {
@@ -974,6 +1067,8 @@
       "p_ctx_avg": 10790,
       "w_ctx_avg": 0,
       "w_ctx_max": 0,
+      "w_act_avg": 0,
+      "w_act_max": 0,
       "total_avg": 10790
     },
     "unknown": {
@@ -981,21 +1076,27 @@
       "p_ctx_avg": 8612,
       "w_ctx_avg": 2518,
       "w_ctx_max": 3119,
+      "w_act_avg": 0,
+      "w_act_max": 0,
       "total_avg": 11130
     },
     "v3.6.1": {
-      "chain_count": 17,
-      "p_ctx_avg": 8203,
-      "w_ctx_avg": 4995,
+      "chain_count": 18,
+      "p_ctx_avg": 8112,
+      "w_ctx_avg": 4895,
       "w_ctx_max": 11527,
-      "total_avg": 25430
+      "w_act_avg": 4920,
+      "w_act_max": 11465,
+      "total_avg": 24976
     },
     "v3.6.2": {
-      "chain_count": 4,
-      "p_ctx_avg": 5457,
-      "w_ctx_avg": 2411,
+      "chain_count": 5,
+      "p_ctx_avg": 5649,
+      "w_ctx_avg": 2517,
       "w_ctx_max": 5707,
-      "total_avg": 21573
+      "w_act_avg": 3600,
+      "w_act_max": 5707,
+      "total_avg": 22769
     }
   }
 }
