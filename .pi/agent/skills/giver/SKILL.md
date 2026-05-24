@@ -13,14 +13,13 @@ You selectively **give** only what they need via T_0. Each agent receives only t
 ## Data Structures
 
 ```
-Task #0 (T_0) = Goal + Background + Past failures + Constraints + Target Files + Target Verification + Signatures  (Written by Giver)
+Task #0 (T_0) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Written by Giver)
 Task #k (T_k) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Curated by Planner per Worker — saved to task{k}.md)
 Dependency = (signature, filepath)  (tuple)
 Signatures = List of Dependency tuples. Direction implied by context: in T₀/Tₖ = dependencies this task needs (input); in RESULT = dependencies this Worker provides (output). Breaking = dependencies removed or changed (negative output).
 Target Files (T₀) = All files to be modified or created across the entire task (written by Giver, from Scout recon)
 Target Files (Tₖ) = Files this Worker will modify or create (subset assigned by Planner from T₀)
-Target Verification (T₀) = Full verification for the entire task (test suites, type checks, builds). Written by Giver. Used by Giver in Phase 5 to verify all Workers' output together. Examples: `npx vitest run`, `pytest`, `npx tsc --noEmit`, `cargo test`, `go test ./...`
-Target Verification (Tₖ) = Removed. Each Worker verifies its own changes only — other Workers are responsible for their own scopes. This is rational and efficient, not an arbitrary rule.
+Each Worker verifies only its own changes — other Workers are responsible for their own scopes. This is rational and efficient, not an arbitrary rule. Giver runs full verification in Phase 5.
 Result = Files + Signatures + Breaking + Summary
 History = Giver writes T₀ → T₀ → P output → W₁ output → W₂ output → ... → W₁₀ output  (Planner writes task files to chain directory via [Write to:]. Workers receive task files via reads:["taskN.md"] auto-inject.)  ({previous} carries previous step output only, no accumulation. Breaking items are forwarded within each Worker's RESULT so all downstream Workers see accumulated Breaking.)
 ```
@@ -157,12 +156,6 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 ### Target Files
 [All files to be modified or created to accomplish the Goal — derived from Goal and Scout recon. Planner will assign subsets to each Worker.]
 
-### Target Verification
-[Full verification for the entire task — Giver runs these in Phase 5 to verify all Workers' output together.]
-[Examples: `npx vitest run`, `pytest`, `npx tsc --noEmit`, `cargo test`, `go test ./...`]
-[]
-[Workers do NOT run these. Each Worker verifies only its own changes — other Workers handle their own scopes.]
-
 ### Signatures
 [Type signatures for every relevant dependency — both inside and outside Target Files]
 [Brief dependency map between files — e.g., "A depends on B", provided by Scout recon]
@@ -264,7 +257,7 @@ Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Tas
       "agent": "planner",
       "reads": false,
       "output": "plan.md",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns, things to avoid, test expectations, implementation patterns for large files}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{signatures with file paths, format: functionName(params): ReturnType — path/to/file.ts. MUST fill from Scout recon. For large deps (500+ lines): include 3-10 line usage pattern}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) to the directory shown in the [Write to:] prefix above.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures. Do NOT include Target Verification in task files — Workers verify their own changes, not an assigned test list.
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns, things to avoid, test expectations, implementation patterns for large files}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{signatures with file paths, format: functionName(params): ReturnType — path/to/file.ts. MUST fill from Scout recon. For large deps (500+ lines): include 3-10 line usage pattern}\n\n---\n\n## Your Role\n\nWrite task1.md through taskN.md (N \u2264 10) to the directory shown in the [Write to:] prefix above.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.
     },
     {
       "agent": "worker",
