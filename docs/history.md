@@ -416,13 +416,13 @@ v3.5 C1 █████████████                                 
 | v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |
 | v3.5.13 | Signatures 통합, Breaking forward, T₀ Target Files, 모순 수정 |
 | v3.6.2 | Task 파일 경로 근원 해결: output:"plan.md" + reads:["taskN.md"] |
-## v3.6.4 — 최소 책임 검증, 협업 설명 (2026-05)
+## v3.6.4 — 최소 책임 검증, T₀ Target Verification 제거 (2026-05)
 
-- **Target Verification에서 협업 설명으로 전환**: Planner가 Worker에게 검증 대상을 지정하던 방식(v3.6.3)을 폐지. 대신 Worker에게 "다른 Worker가 각자 자기 범위를 담당하니, 네가 변경한 파일만 검증하면 된다"고 설명.
-- **Tₖ에서 Target Verification 제거**: task{k}.md에 Target Verification 섹션 제거. Worker가 자기 변경 범위를 스스로 판단하여 검증.
-- **T₀의 Target Verification은 Giver용**: T₀의 Target Verification은 Giver가 Phase 5에서 전체 검증을 실행할 때 사용. Worker는 참조하지 않음.
-- **실측 근거**: f7ef943b에서 Planner가 모든 Worker에 `npx vitest run` 전체 스위트를 지정 → tk/byte 12×(최소검증)에서 49×(전체스위트)로 회귀. Planner 컴플라이언스가 핵심 변수였음.
-- **핵심 전환**: "이 검증만 실행하라"(규칙) → "각자 자기 범위만 하면 된다"(합리적 자기이해). 규칙은 어기지만 합리적 설명은 따른다.
+- **Target Verification에서 협업 설명으로 전환**: Planner가 Worker에게 검증 대상을 지정하던 방식(v3.6.3)을 폐지. 대신 Worker에게 "다른 Worker가 각자 자기 범위를 담당하니, 네가 변경한 파일만 검증하면 된다"고 설명. 규칙("이 검증만 실행하라")은 어기지만 합리적 설명("각자 자기 범위만 하면 된다")은 따른다.
+- **T₀/Tₖ에서 Target Verification 완전 제거**: T₀ 7섹션 → 6섹션. T₀에 Target Verification을 적고 Giver가 Phase 5에서 다시 읽는 건 순환이었다. Giver는 프로젝트 컨텍스트에서 바로 판단. Tₖ에도 삭제.
+- **Planner 복사 회귀 구조적 방지**: f7ef943b에서 Planner가 T₀의 Target Verification(`npx vitest run`)을 모든 Worker에 복사 → tk/byte 49×. T₀에 검증 명령어가 없으면 Planner가 복사할 수 없음.
+- **Worker 자가 판단**: Worker가 자기 변경 범위를 스스로 판단하여 관련 테스트만 실행. Planner 개입 없이 합리적 자기이해로 동작.
+- **실측 근거**: f7ef943b에서 Planner가 모든 Worker에 전체 스위트 지정 → tk/byte 12×(최소검증)에서 49×(전체스위트)로 4배 악화. Planner 컴플라이언스가 v3.6.3의 취약점이었음.
 
 ## v3.6.3 — Target Verification scope, 최소 책임 원칙 (2026-05)
 
