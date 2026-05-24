@@ -1077,6 +1077,151 @@
           "is_noop": true
         }
       ]
+    },
+    {
+      "run_id": "f7ef943b",
+      "project": "redbis",
+      "version": "v3.6.3-big",
+      "notes": "Planner wrote 'npx vitest run' (full suite) for all Target Verification — defeats v3.6.3 purpose",
+      "model": "glm-5.1:cloud",
+      "p_tk_in": 1797715,
+      "p_tk_out": 25187,
+      "p_tk_total": 1822902,
+      "p_by_in": 15274,
+      "p_by_out": 1554,
+      "p_by_total": 16828,
+      "workers": [
+        {
+          "idx": 1,
+          "tk_in": 124246,
+          "tk_out": 3806,
+          "tk_total": 128052,
+          "by_in": 4402,
+          "by_out": 1216,
+          "by_total": 5618,
+          "tk_per_byte": 23,
+          "turns": 16,
+          "tool_count": 18,
+          "is_noop": false
+        },
+        {
+          "idx": 2,
+          "tk_in": 279065,
+          "tk_out": 9754,
+          "tk_total": 288819,
+          "by_in": 4923,
+          "by_out": 1439,
+          "by_total": 6362,
+          "tk_per_byte": 45,
+          "turns": 20,
+          "tool_count": 26,
+          "is_noop": false
+        },
+        {
+          "idx": 3,
+          "tk_in": 186558,
+          "tk_out": 8045,
+          "tk_total": 194603,
+          "by_in": 5592,
+          "by_out": 1914,
+          "by_total": 7506,
+          "tk_per_byte": 26,
+          "turns": 12,
+          "tool_count": 14,
+          "is_noop": false
+        },
+        {
+          "idx": 4,
+          "tk_in": 768884,
+          "tk_out": 22202,
+          "tk_total": 791086,
+          "by_in": 7017,
+          "by_out": 2364,
+          "by_total": 9381,
+          "tk_per_byte": 84,
+          "turns": 23,
+          "tool_count": 28,
+          "is_noop": false
+        },
+        {
+          "idx": 5,
+          "tk_in": 449046,
+          "tk_out": 18093,
+          "tk_total": 467139,
+          "by_in": 8367,
+          "by_out": 2746,
+          "by_total": 11113,
+          "tk_per_byte": 42,
+          "turns": 15,
+          "tool_count": 22,
+          "is_noop": false
+        },
+        {
+          "idx": 6,
+          "tk_in": 737555,
+          "tk_out": 17606,
+          "tk_total": 755161,
+          "by_in": 9513,
+          "by_out": 2648,
+          "by_total": 12161,
+          "tk_per_byte": 62,
+          "turns": 24,
+          "tool_count": 30,
+          "is_noop": false
+        },
+        {
+          "idx": 7,
+          "tk_in": 649955,
+          "tk_out": 20652,
+          "tk_total": 670607,
+          "by_in": 9241,
+          "by_out": 2814,
+          "by_total": 12055,
+          "tk_per_byte": 56,
+          "turns": 21,
+          "tool_count": 28,
+          "is_noop": false
+        },
+        {
+          "idx": 8,
+          "tk_in": 330670,
+          "tk_out": 5135,
+          "tk_total": 335805,
+          "by_in": 9717,
+          "by_out": 2054,
+          "by_total": 11771,
+          "tk_per_byte": 29,
+          "turns": 23,
+          "tool_count": 27,
+          "is_noop": false
+        },
+        {
+          "idx": 9,
+          "tk_in": 548310,
+          "tk_out": 26600,
+          "tk_total": 574910,
+          "by_in": 7437,
+          "by_out": 2861,
+          "by_total": 10298,
+          "tk_per_byte": 56,
+          "turns": 16,
+          "tool_count": 22,
+          "is_noop": false
+        },
+        {
+          "idx": 10,
+          "tk_in": 8190,
+          "tk_out": 209,
+          "tk_total": 8399,
+          "by_in": 9862,
+          "by_out": 36,
+          "by_total": 9898,
+          "tk_per_byte": 1,
+          "turns": 2,
+          "tool_count": 1,
+          "is_noop": true
+        }
+      ]
     }
   ],
   "same_task_comparison": {
@@ -1210,6 +1355,16 @@
         "v363_vs_v362_w_tokens": "-75%",
         "v363_vs_v362_tk_per_byte": "-78%"
       }
+    },
+    "v363_big": {
+      "run_id": "f7ef943b",
+      "project": "redbis",
+      "tests": 1338,
+      "active_workers": 9,
+      "target_verification_issue": "Planner wrote 'npx vitest run' (full suite) for all tasks",
+      "w_tokens_sum": 4206182,
+      "w_bytes_sum": 86265,
+      "w_tk_per_byte_avg": 49
     }
   }
 }
