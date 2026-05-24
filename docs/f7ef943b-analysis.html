@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Giver v3.6.3 체인 분석 — f7ef943b (redbis 1338테스트)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.6; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+  h1 { color: #58a6ff; border-bottom: 2px solid #21262d; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5em; }
+  h2 { color: #79c0ff; margin: 30px 0 15px; font-size: 1.3em; cursor: pointer; }
+  h2::before { content: '▼ '; color: #484f58; }
+  h2.collapsed::before { content: '▶ '; }
+  h3 { color: #d2a8ff; margin: 15px 0 8px; font-size: 1.1em; }
+  .section { margin-bottom: 20px; }
+  .section.collapsed .content { display: none; }
+  .content { padding: 10px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #21262d; padding: 8px 12px; text-align: left; }
+  th { background: #161b22; color: #8b949e; font-weight: 600; }
+  td { background: #0d1117; }
+  tr:hover td { background: #161b22; }
+  .metric { display: inline-block; min-width: 140px; margin: 5px 10px; }
+  .metric-label { color: #8b949e; font-size: 0.85em; }
+  .metric-value { color: #58a6ff; font-size: 1.3em; font-weight: 700; }
+  .metric-unit { color: #8b949e; font-size: 0.85em; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 6px; padding: 12px; overflow-x: auto; margin: 10px 0; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 500px; overflow-y: auto; }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .inline-code { background: #1c2128; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 600; }
+  .badge-green { background: #0d2818; color: #3fb950; border: 1px solid #238636; }
+  .badge-red { background: #2d1117; color: #f85149; border: 1px solid #da3633; }
+  .badge-yellow { background: #2d2000; color: #d29922; border: 1px solid #9e6a03; }
+  .badge-blue { background: #0d1d33; color: #58a6ff; border: 1px solid #1f6feb; }
+  .badge-purple { background: #1c0d2e; color: #d2a8ff; border: 1px solid #8957e5; }
+  .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 15px; }
+  .card-title { color: #8b949e; font-size: 0.85em; margin-bottom: 5px; }
+  .bar-container { margin: 5px 0; }
+  .bar-label { font-size: 0.8em; color: #8b949e; }
+  .bar { height: 20px; border-radius: 3px; background: linear-gradient(90deg, #1f6feb, #58a6ff); min-width: 2px; }
+  .bar-danger { background: linear-gradient(90deg, #da3633, #f85149); }
+  .bar-warning { background: linear-gradient(90deg, #9e6a03, #d29922); }
+  .bar-success { background: linear-gradient(90deg, #238636, #3fb950); }
+  .issue-box { background: #2d1117; border: 1px solid #da3633; border-radius: 8px; padding: 15px; margin: 15px 0; }
+  .issue-title { color: #f85149; font-weight: 700; margin-bottom: 8px; }
+  .nav { position: sticky; top: 0; background: #0d1117; border-bottom: 1px solid #21262d; padding: 10px 0; z-index: 100; }
+  .nav a { color: #58a6ff; text-decoration: none; margin-right: 15px; font-size: 0.9em; }
+  .nav a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="nav">
+  <a href="#overview">개요</a>
+  <a href="#comparison">비교</a>
+  <a href="#planner">Planner</a>
+  <a href="#t0">T₀</a>
+  <a href="#tasks">Task 파일</a>
+  <a href="#workers">Workers</a>
+  <a href="#issue">이슈</a>
+</div>
+
+<h1>🔍 Giver v3.6.3 체인 분석 — f7ef943b</h1>
+<p>redbis (1338테스트) · 9 활성 Worker · P+W 토큰 6,029K</p>
+
+<div class="section" id="overview">
+<h2>개요</h2>
+<div class="content">
+
+<div style="display:flex;flex-wrap:wrap;gap:15px;margin-bottom:20px;">
+  <div class="metric"><div class="metric-label">P+W 토큰</div><div class="metric-value">6.0M</div></div>
+  <div class="metric"><div class="metric-label">W 토큰 합</div><div class="metric-value">4.2M</div></div>
+  <div class="metric"><div class="metric-label">W tk/byte 평균</div><div class="metric-value">49×</div></div>
+  <div class="metric"><div class="metric-label">활성 Worker</div><div class="metric-value">9</div></div>
+  <div class="metric"><div class="metric-label">과제</div><div class="metric-value" style="font-size:1em;">redbis<br>1338테스트</div></div>
+</div>
+<div style="margin:20px 0;"><h3>Worker별 tk/byte</h3><div class="bar-container"><div class="bar-label">W1: 128K 토큰, 5.6KB, 23×</div><div class="bar bar-warning" style="width:22.79316482734069%"></div></div><div class="bar-container"><div class="bar-label">W2: 289K 토큰, 6.4KB, 45×</div><div class="bar bar-warning" style="width:45.397516504243946%"></div></div><div class="bar-container"><div class="bar-label">W3: 195K 토큰, 7.5KB, 26×</div><div class="bar bar-warning" style="width:25.92632560618172%"></div></div><div class="bar-container"><div class="bar-label">W4: 791K 토큰, 9.4KB, 84×</div><div class="bar bar-danger" style="width:84.32853640336852%"></div></div><div class="bar-container"><div class="bar-label">W5: 467K 토큰, 11.1KB, 42×</div><div class="bar bar-warning" style="width:42.03536398812202%"></div></div><div class="bar-container"><div class="bar-label">W6: 755K 토큰, 12.2KB, 62×</div><div class="bar bar-danger" style="width:62.09694926404079%"></div></div><div class="bar-container"><div class="bar-label">W7: 671K 토큰, 12.1KB, 56×</div><div class="bar bar-danger" style="width:55.62895064288678%"></div></div><div class="bar-container"><div class="bar-label">W8: 336K 토큰, 11.8KB, 29×</div><div class="bar bar-warning" style="width:28.52816243309829%"></div></div><div class="bar-container"><div class="bar-label">W9: 575K 토큰, 10.3KB, 56×</div><div class="bar bar-danger" style="width:55.82734511555641%"></div></div><div style="margin-top:10px;color:#8b949e;font-size:0.85em;"><span style="color:#3fb950;">■ 0~20×</span> 목표 범위 &nbsp; <span style="color:#d29922;">■ 20~50×</span> 과다 &nbsp; <span style="color:#f85149;">■ 50×+</span> 심각과다</div></div></div></div>
+<div class="section" id="comparison">
+<h2>비교: v3.6.3 최소검증 vs 전체스위트</h2>
+<div class="content">
+<div class="comparison-grid">
+<div class="card">
+  <div class="badge badge-green">✅ v3.6.3† 최소검증</div>
+  <div class="card-title">redbis-coding-test (44테스트) · 4fee1d8b</div>
+  <table>
+    <tr><td>Planner가 지정한 Target Verification</td><td><span class="badge badge-green">관련 테스트만</span></td></tr>
+    <tr><td>활성 Worker</td><td>5</td></tr>
+    <tr><td>W_tokens 합</td><td>282K</td></tr>
+    <tr><td>W tk/byte 평균</td><td><b>12×</b></td></tr>
+    <tr><td>W_tokens 최대</td><td>117K (W4)</td></tr>
+    <tr><td>P+W 토큰</td><td>421K</td></tr>
+  </table>
+</div>
+<div class="card">
+  <div class="badge badge-red">❌ v3.6.3‡ 전체스위트</div>
+  <div class="card-title">redbis (1338테스트) · f7ef943b</div>
+  <table>
+    <tr><td>Planner가 지정한 Target Verification</td><td><span class="badge badge-red">npx vitest run (전체)</span></td></tr>
+    <tr><td>활성 Worker</td><td>9</td></tr>
+    <tr><td>W_tokens 합</td><td>4,206K</td></tr>
+    <tr><td>W tk/byte 평균</td><td><b>49×</b></td></tr>
+    <tr><td>W_tokens 최대</td><td>791K (W4)</td></tr>
+    <tr><td>P+W 토큰</td><td>6,029K</td></tr>
+  </table>
+</div>
+</div>
+<div class="issue-box">
+  <div class="issue-title">⚠️ Planner가 Target Verification 의도를 무시함</div>
+  <p>Giver T₀에 "각 Worker에 관련 테스트만 지정"이라고 명시했음에도, Planner가 <code>npx vitest run</code>(전체 1338테스트 스위트)를 <b>모든 Worker</b>에 지정.</p>
+  <p>결과: <b>tk/byte 12× → 49×</b> (4배 악화, v3.6.2 수준으로 회귀)</p>
+  <p>원인: 과제가 크면(1338테스트, 9 Worker) Planner가 "관련 테스트만 지정"하는 큐레이션 부담이 커서 전체 스위트를 복사.</p>
+</div>
+</div>
+</div>
+
+<div class="section" id="planner">
+<h2>Planner</h2>
+<div class="content">
+<div style="display:flex;flex-wrap:wrap;gap:15px;margin-bottom:15px;">
+  <div class="metric"><div class="metric-label">입력</div><div class="metric-value">1798K</div><div class="metric-unit">토큰</div></div>
+  <div class="metric"><div class="metric-label">출력</div><div class="metric-value">25K</div><div class="metric-unit">토큰</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value">58</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value">91</div></div>
+</div>
+<h3>Planner 출력 (plan.md)</h3>
+<pre># Refactoring Plan: Extract Shared Utils + Remove @ts-nocheck
+
+This plan decomposes the redbis storage layer refactoring into 8 sequential tasks. Each task modifies a logical group of related files and must result in a compilable, test-passing state.
+
+## Dependency Graph
+
+```
+Task 1 (create shared utils + context types)
+  ├── Task 2 (HLL extraction)
+  ├── Task 3 (Bitmap extraction)
+  ├── Task 4 (Stream extraction)
+  ├── Task 5 (ZSet extraction + globToRegex in zset-core)
+  ├── Task 6 (JSON path extraction)
+  ├── Task 7 (Geo + Hash + Set)
+  └── Tasks 8-9 can run in parallel after Task 1, but safer sequentially
+```
+
+## Key Observations
+
+- `memory/core.ts` and `sqlite/core.ts` do NOT have `@ts-nocheck` — they need no changes.
+- `memory/index.ts` and `sqlite/index.ts` need no changes.
+- Sqlite files use `_sqliteXxx` prefix for local pure helpers; shared utils use non-prefixed names.
+- The sqlite `_sqliteDeepMerge` in json.ts is pure recursive but not listed for extraction; convert to standalone function in same file.
+- Both `memory/set.ts` and `memory/zset-core.ts` call `this._hashGlobToRegex` which is defined in `memory/hash.ts` (cross-mixin reference via prototype merge). All three need `globToRegex` import.
+- `memory/geo.ts` uses `radius * this._unitToMeters(unit)` (returns conversion factor), must become `convertToMeters(radius, unit)` (returns distance).
+- Sqlite geo.ts already imports `convertToMeters` from `../../utils/geo` but still has `_unitToMeters` method that returns a factor.</pre>
+</div></div>
+<div class="section" id="t0">
+<h2>T₀ (Giver → Planner 입력)</h2>
+<div class="content">
+<h3>T₀ 전체 (15,142자)</h3>
+<pre># Task for planner
+
+[Write to: /tmp/pi-subagents-uid-0/chain-runs/f7ef943b/plan.md]
+
+----
+# Task #0 (for Planner)
+
+### Goal
+Refactor redbis storage layer: (1) extract duplicated pure algorithmic functions into shared `src/utils/` modules, and (2) remove `@ts-nocheck` from all mixin files by adding proper `this` type annotations with `MemoryContext` and `SqliteContext` type aliases.
+
+### Background
+The codebase has two storage backends (memory/ and sqlite/) that implement the same IStorage interface. Many pure algorithmic functions (stream ID parsing, HLL hashing, JSON path resolution, ZSet score/lex bound parsing, bitmap byte operations) are duplicated between them. These should be extracted to shared utils/ modules. Additionally, all 30+ mixin files use `// @ts-nocheck` because the `this` type in mixin methods is untyped. By creating `MemoryContext` and `SqliteContext` type aliases, we can add proper `this` annotations and remove `@ts-nocheck`.
+
+### Past failures
+None — first attempt.
+
+### Constraints
+- **Language**: TypeScript with `strict: true` in tsconfig.json
+- **Test framework**: Vitest (`npx vitest run`)
+- **Type check**: `npx tsc --noEmit`
+- **All 1338 tests must pass** after every change
+- **No behavioral changes** — this is a pure refactoring. Extracted functions must have identical behavior to the originals.
+- **Naming convention**: Remove underscore prefix from extracted functions (e.g., `_murmurHash64` → `murmurHash64`, `_parseStreamId` → `parseStreamId`). Export them without underscore prefix from utils/ modules.
+- **Method name normalization**: Do NOT rename `evictIfExpired` or `evictExpired`. Keep them as-is since they belong to different classes with different semantics.
+- **For `_unitToMeters`**: Replace usage with existing `convertToMeters` from `utils/geo.ts`. Replace `radius * this._unitToMeters(unit)` → `convertToMeters(radius, unit)`. Remove the `_unitToMeters` method from both geo.ts files. Add `convertToMeters` to the import from `utils/geo.ts`.
+- **For `_hashGlobToRegex` in memory/hash.ts**: Replace with imported `globToRegex` from `../../utils/glob`. Remove the inline `_hashGlobToRegex` method.
+- **For sqlite-specific prefixes**: Remove `_sqlite` prefix from sqlite-only helper calls when replacing with shared imports. The shared utils functions use non-prefixed names (e.g., `parseJsonPath`, not `_sqliteParseJsonPath`).
+- **Context type pattern**: Create `src/storage/memory/context.ts` exporting `type MemoryContext = InMemoryStorage;` and `src/storage/sqlite/context.ts` exporting `type SqliteContext = SqliteStorage;`. Each mixin method that uses `this` gets `this: MemoryContext` or `this: SqliteContext` as first parameter. Static helpers that don't use `this` remain unchanged.
+- **The `InMemoryStorage` type already includes all `IStorage` methods** via declaration merging in `memory/index.ts` (`declare module './core' { interface InMemoryStorage extends IStorage {} }`). Same for `SqliteStorage` via `sqlite/index.ts`. So `this: InMemoryStorage` gives access to all methods and properties.
+- **Do NOT change method signatures in IStorage interface** or any test files.
+- **The `_ensureXxxTypeOrThrow` helper methods stay in the mixin files** — they access `this.store` or `this.db` so they're not pure.
+- **HLL constants**: `HLL_REGISTERS = 16384` and `HLL_BYTES = 12288` should also be exported from `src/utils/hll.ts`.
+- **Stream ID parsing**: Memory `_parseStreamId` handles `'-'` (returns ms=0, seq=0) and `'+'` (returns ms=Infinity, seq=Infinity). Sqlite `_parseStreamId` handles `'-'` and `'0-0'`. The shared function must handle ALL three sentinels: `'-'` → {ms:0, seq:0}, `'+'` → {ms:Infinity, seq:Infinity}, and `'0-0'` → {ms:0, seq:0}.
+- **Lex bound type**: `parseLexBound` returns `{ value: string; exclusive: boolean; infinite: boolean }` (with `infinite` field), not just `{ value: string; exclusive: boolean }`.
+- **Score bound type**: `parseScoreBound` accepts `number | string` as first parameter, not just `string`.
+- **Large file notes**: sqlite/stream.ts (1217 lines), memory/stream.ts (915 lines), sqlite/core.ts (766 lines), memory/hash.ts (614 lines), sqlite/hash.ts (752 lines), sqlite/json.ts (702 lines), memory/json-core.ts (506 lines), memory/geo.ts (612 lines), sqlite/geo.ts (608 lines), sqlite/zset-core.ts (611 lines), memory/zset-core.ts (465 lines), sqlite/list.ts (656 lines).
+
+### Target Files
+
+**New files to create:**
+- `src/utils/hll.ts` — Pure HLL functions
+- `src/utils/stream.ts` — Pure stream ID functions
+- `src/utils/bitmap.ts` — Pure bitmap byte operations
+- `src/utils/zset.ts` — Pure ZSet bound parsing functions
+- `src/utils/json-path.ts` — Pure JSON path parsing functions
+- `src/storage/memory/context.ts` — MemoryContext type alias
+- `src/storage/sqlite/context.ts` — SqliteContext type alias
+
+**Files to modify (extraction + type safety combined):**
+- `src/storage/memory/hll.ts` — Import from utils/hll, remove inline pure functions, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/bitmap.ts` — Import from utils/bitmap, remove inline pure functions, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/stream.ts` — Import from utils/stream, remove inline pure functions, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/zset-core.ts` — Import from utils/zset, remove inline pure functions, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/zset-union.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/zset.ts` — Remove @ts-nocheck
+- `src/storage/memory/json-core.ts` — Import from utils/json-path, remove inline pure functions, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/json-advanced.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/json.ts` — Remove @ts-nocheck
+- `src/storage/memory/geo.ts` — Import convertToMeters, remove _unitToMeters, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/hash.ts` — Import globToRegex, remove _hashGlobToRegex, remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/core.ts` — Remove @ts-nocheck
+- `src/storage/memory/list.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/set.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/sort.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/custom.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/server.ts` — Remove @ts-nocheck, add this: MemoryContext
+- `src/storage/memory/index.ts` — May need updates
+- `src/storage/sqlite/hll.ts` — Import from utils/hll, remove inline pure functions, remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/bitmap.ts` — Import from utils/bitmap, remove inline pure functions, remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/stream.ts` — Import from utils/stream, remove inline pure functions, remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/zset-core.ts` — Import from utils/zset, remove inline pure functions, remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/zset-union.ts` — Remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/zset.ts` — Remove @ts-nocheck
+- `src/storage/sqlite/json.ts` — Import from utils/json-path, remove _sqlite-prefixed pure functions, remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/geo.ts` — Import convertToMeters, remove _unitToMeters, remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/hash.ts` — Remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/core.ts` — Remove @ts-nocheck
+- `src/storage/sqlite/list.ts` — Remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/set.ts` — Remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/sort.ts` — Remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/custom.ts` — Remove @ts-nocheck, add this: SqliteContext
+- `src/storage/sqlite/server.ts` — Remove @ts-nocheck, add ...</pre>
+
+<div class="issue-box">
+  <div class="issue-title">📋 T₀ Target Verification 섹션</div>
+  <pre>### Target Verification
+- `npx tsc --noEmit` — must pass with zero errors
+- `npx vitest run` — all 1338 tests must pass</pre>
+</div>
+</div></div>
+<div class="section" id="tasks">
+<h2>Task 파일 (Planner → Worker)</h2>
+<div class="content">
+<h3>task1.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 11,392자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task1.md 전체 보기</summary><pre># Task 1: Create Shared Utils Modules + Context Type Aliases
+
+## Goal
+Create 7 new files: 5 shared utility modules (`hll.ts`, `stream.ts`, `bitmap.ts`, `zset.ts`, `json-path.ts`) in `src/utils/`, and 2 context type aliases (`context.ts`) in memory/ and sqlite/. No modifications to existing files in this task.
+
+## Background
+The memory/ and sqlite/ backends duplicate many pure algorithmic functions. These need to be extracted into shared modules so subsequent tasks can import them. The context type aliases enable typed `this` parameters in mixin methods once `@ts-nocheck` is removed.
+
+## Constraints
+- All 1338 tests must pass after this task (these are brand-new files, no existing code changes, so tests should be unaffected).
+- `npx tsc --noEmit` must pass — all new files must be valid TypeScript.
+- Extracted functions must have **identical behavior** to the originals. Copy implementations exactly, just remove the `this.` prefix pattern and underscore prefix.
+- Naming: remove underscore prefix (e.g., `_murmurHash64` → `murmurHash64`).
+- `parseStreamId` must handle ALL three sentinels: `'-'` → `{ms:0, seq:0}`, `'+'` → `{ms:Infinity, seq:Infinity}`, `'0-0'` → `{ms:0, seq:0}`.
+- `parseLexBound` must include `infinite` field: `{ value: string; exclusive: boolean; infinite: boolean }`.
+- `parseScoreBound` must accept `string | number` as first param.
+- `HLL_REGISTERS = 16384` and `HLL_BYTES = 12288` must be exported as constants.
+- `jsonResolvePath` returns an **array** (not nullable): `{ parent: any; key: string | number; value: any }[]`.
+
+## Past Failures
+None — first attempt.
+
+## Target Files — CREATE ONLY (do not modify any existing files)
+
+### `src/utils/hll.ts`
+```typescript
+export const HLL_REGISTERS = 16384;
+export const HLL_BYTES = 12288;
+
+export function murmurHash64(str: string): bigint {
+  let h1 = 0x9e3779b97f4a7c15n;
+  for (let i = 0; i < str.length; i++) {
+    h1 ^= BigInt(str.charCodeAt(i));
+    h1 = (h1 * 0xbf58476d1ce4e5b9n) & 0xffffffffffffffffn;
+    h1 = (h1 ^ (h1 >> 31n)) & 0xffffffffffffffffn;
+  }
+  return h1;
+}
+
+export function hllIndex(hash: bigint): number {
+  return Number(hash & 0x3fffn);
+}
+
+export function hllRho(hash: bigint): number {
+  const remaining = hash >> 14n;
+  if (remaining === 0n) return 51;
+  let count = 1;
+  let val = remaining;
+  while ((val & 1n) === 0n && count < 51) {
+    count++;
+    val >>= 1n;
+  }
+  return count;
+}
+
+export function hllEncode(registers: Uint8Array): string {
+  return Buffer.from(registers).toString('base64');
+}
+
+export function hllDecode(data: string): Uint8Array {
+  return new Uint8Array(Buffer.from(data, 'base64'));
+}
+
+export function read6BitRegister(data: Uint8Array, index: number): number {
+  const bitOffset = index * 6;
+  const byteOffset = Math.floor(bitOffset / 8);
+  const bitInByte = bitOffset % 8;
+  let value = 0;
+  let bitsNeeded = 6;
+  let currentByte = byteOffset;
+  let currentBit = bitInByte;
+  while (bitsNeeded > 0) {
+    const bitsAvailable = 8 - currentBit;
+    const bitsToRead = Math.min(bitsAvailable, bitsNeeded);
+    const mask = ((1 << bitsToRead) - 1) << (bitsAvailable - bitsToRead);
+    const bits = (data[currentByte] & mask) >> (bitsAvailable - bitsToRead);
+    value = (value << bitsToRead) | bits;
+    bitsNeeded -= bitsToRead;
+    currentBit = 0;
+    currentByte++;
+  }
+  return value;
+}
+
+export function write6BitRegister(data: Uint8Array, index: number, value: number): void {
+  const bitOffset = index * 6;
+  const byteOffset = Math.floor(bitOffset / 8);
+  const bitInByte = bitOffset % 8;
+  let bitsToWrite = 6;
+  let currentByte = byteOffset;
+  let currentBit = bitInByte;
+  let shiftedValue = value;
+  while (bitsToWrite > 0) {
+    const bitsAvailable = 8 - currentBit;
+    const bitsToWriteNow = Math.min(bitsAvailable, bitsToWrite);
+    const mask = (1 << bitsToWriteNow) - 1;
+    const bits = (shiftedValue >> (bitsToWrite - bitsToWriteNow)) & mask;
+    const shift = bitsAvailable - bitsToWriteNow;
+    data[currentByte] &= ~(mask << shift);
+    data[currentByte] |= bits << shift;
+    bitsToWrite -= bitsToWriteNow;
+    currentBit = 0;
+    currentByte++;
+  }
+}
+
+export function hllEstimate(registers: Uint8Array): number {
+  const m = HLL_REGISTERS;
+  let sum = 0;
+  let zeros = 0;
+  for (let i = 0; i < m; i++) {
+    const regVal = read6BitRegister(registers, i);
+    sum += 1 / Math.pow(2, regVal);
+    if (regVal === 0) zeros++;
+  }
+  const alpha = 0.7213 / (1 + 1.079 / m);
+  const estimate = (alpha * m * m) / sum;
+  if (estimate <= 2.5 * m && zeros > 0) {
+    return Math.round(m * Math.log(m / zeros));
+  }
+  return Math.max(0, Math.round(estimate));
+}
+```
+
+### `src/utils/stream.ts`
+```typescript
+export function parseStreamId(id: string): { ms: number; seq: number } {
+  if (id === '-' || id === '0-0') return { ms: 0, seq: 0 };
+  if (id === '+') return { ms: Infinity, seq: Infinity };
+  const parts = id.split('-');
+  return { ms: parseInt(parts[0], 10), seq: parseInt(parts[1], 10) };
+}
+
+export function formatStreamId(ms: number, seq:...</pre></details>
+
+<h3>task2.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 4,584자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task2.md 전체 보기</summary><pre># Task 2: HLL Extraction + Type-Safety
+
+## Goal
+Extract inline HLL pure functions from `memory/hll.ts` and `sqlite/hll.ts` into imports from `src/utils/hll.ts`, remove the underscore-prefixed inline methods, remove `@ts-nocheck`, and add `this: MemoryContext` / `this: SqliteContext` annotations to all methods.
+
+## Background
+Task 1 created `src/utils/hll.ts` with `murmurHash64`, `hllIndex`, `hllRho`, `hllEncode`, `hllDecode`, `read6BitRegister`, `write6BitRegister`, `hllEstimate`, `HLL_REGISTERS`, and `HLL_BYTES`. It also created the context type aliases.
+
+Both HLL files have identical pure functions with `_` prefix. The `hllEstimate` function internally calls `read6BitRegister` — in the extracted version, this is a direct module-level call (no `this.` needed).
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass.
+- `npx tsc --noEmit` must pass with zero errors.
+- Do NOT change any method signatures in IStorage interface or test files.
+- The `_ensureHllTypeOrThrow` methods stay in the mixin files (they access `this.store` / `this.db`).
+- Remove underscore prefix from extracted function names.
+- Replace `this._murmurHash64(el)` → `murmurHash64(el)`, `this._hllIndex(hash)` → `hllIndex(hash)`, etc.
+- Replace `HLL_REGISTERS` and `HLL_BYTES` local constants with imported ones.
+- `hllEstimate` internally calls `read6BitRegister(registers, i)` — not `this._read6BitRegister`. Use the imported function directly.
+- For `this: MemoryContext` / `this: SqliteContext`: add as first parameter to EVERY method in the mixin object literal (except `_ensureHllTypeOrThrow` and other helpers that also use `this`, which also need it).
+
+## Target Files
+
+### `src/storage/memory/hll.ts`
+1. Remove `// @ts-nocheck` line
+2. Add import: `import { murmurHash64, hllIndex, hllRho, hllEncode, hllDecode, read6BitRegister, write6BitRegister, hllEstimate, HLL_REGISTERS, HLL_BYTES } from '../../utils/hll';`
+3. Add import: `import type { MemoryContext } from './context';`
+4. Remove the old import `import type { InMemoryStorage } from './core';` (replaced by context import)
+5. Remove local `HLL_REGISTERS` and `HLL_BYTES` constants
+6. Remove `_murmurHash64`, `_hllIndex`, `_hllRho`, `_hllEncode`, `_hllDecode`, `_read6BitRegister`, `_write6BitRegister`, `_hllEstimate` method definitions
+7. Add `this: MemoryContext` as first param to all remaining methods (`_ensureHllTypeOrThrow`, `pfadd`, `pfcount`, `pfmerge`)
+8. Replace all `this._murmurHash64(x)` → `murmurHash64(x)`, `this._hllIndex(x)` → `hllIndex(x)`, etc.
+9. Replace `this._read6BitRegister(regs, i)` → `read6BitRegister(regs, i)`, `this._write6BitRegister(regs, i, v)` → `write6BitRegister(regs, i, v)`
+10. Replace `this._hllEstimate(regs)` → `hllEstimate(regs)`
+11. Replace `HLL_REGISTERS` and `HLL_BYTES` references (now imported)
+
+### `src/storage/sqlite/hll.ts`
+Same pattern as above but:
+- Import `SqliteContext` instead of `MemoryContext`
+- Import `assertType` and `WRONGTYPE_ERROR` stays (different type-check helpers)
+- Replace `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'`
+- Add `this: SqliteContext` to all methods
+- `_ensureHllTypeOrThrow` stays (accesses `this.db`)
+- `this.evictExpired(key)` calls stay (uses `this: SqliteContext`)
+
+## Key Patterns
+
+**Before (memory/hll.ts):**
+```typescript
+// @ts-nocheck
+import { assertType } from '../type-check';
+import type { InMemoryStorage } from './core';
+
+const HLL_REGISTERS = 16384;
+const HLL_BYTES = 12288;
+
+export const hllMethods = {
+  _murmurHash64(str: string): bigint { ... },
+  _hllIndex(hash: bigint): number { ... },
+  // ... more pure helpers ...
+  _hllEstimate(registers: Uint8Array): number {
+    // uses this._read6BitRegister internally
+  },
+  pfadd(key: string, elements: string[]): Promise<number> {
+    this.evictIfExpired(key);
+    const hash = this._murmurHash64(el);
+    const idx = this._hllIndex(hash);
+    // ...
+  },
+};
+```
+
+**After:**
+```typescript
+import { assertType } from '../type-check';
+import type { MemoryContext } from './context';
+import { murmurHash64, hllIndex, hllRho, hllEncode, hllDecode, read6BitRegister, write6BitRegister, hllEstimate, HLL_REGISTERS, HLL_BYTES } from '../../utils/hll';
+
+export const hllMethods = {
+  _ensureHllTypeOrThrow(this: MemoryContext, key: string): void { ... },
+  pfadd(this: MemoryContext, key: string, elements: string[]): Promise<number> {
+    this.evictIfExpired(key);
+    const hash = murmurHash64(el);
+    const idx = hllIndex(hash);
+    // ...
+  },
+};
+```
+
+## Target Verification
+```bash
+npx tsc --noEmit
+npx vitest run
+```</pre></details>
+
+<h3>task3.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 2,627자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task3.md 전체 보기</summary><pre># Task 3: Bitmap Extraction + Type-Safety
+
+## Goal
+Extract inline bitmap pure functions from `memory/bitmap.ts` and `sqlite/bitmap.ts` into imports from `src/utils/bitmap.ts`, remove the underscore-prefixed inline methods (and `_sqlite-` prefixed in sqlite), remove `@ts-nocheck`, and add `this: MemoryContext` / `this: SqliteContext` annotations.
+
+## Background
+Task 1 created `src/utils/bitmap.ts` with `stringToBytes`, `bytesToString`, `getBitAt`, `setBitAt`. Both bitmap files have identical implementations of these functions.
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- Sqlite bitmap uses `_sqliteStringToBytes`, `_sqliteBytesToString`, `_sqliteGetBitAt`, `_sqliteSetBitAt` — these map to the shared `stringToBytes`, `bytesToString`, `getBitAt`, `setBitAt`.
+- Memory bitmap uses `_stringToBytes`, `_bytesToString`, `_getBitAt`, `_setBitAt` — same mapping.
+- The `_ensureStringTypeOrThrow` methods stay in the mixin files.
+- Add `this: MemoryContext` / `this: SqliteContext` to all methods using `this`.
+
+## Target Files
+
+### `src/storage/memory/bitmap.ts`
+1. Remove `// @ts-nocheck`
+2. Add: `import { stringToBytes, bytesToString, getBitAt, setBitAt } from '../../utils/bitmap';`
+3. Add: `import type { MemoryContext } from './context';`
+4. Remove: `import type { InMemoryStorage } from './core';`
+5. Remove method definitions: `_stringToBytes`, `_bytesToString`, `_getBitAt`, `_setBitAt`
+6. Add `this: MemoryContext` to all remaining methods
+7. Replace all calls: `this._stringToBytes(x)` → `stringToBytes(x)`, `this._bytesToString(x)` → `bytesToString(x)`, `this._getBitAt(a,b)` → `getBitAt(a,b)`, `this._setBitAt(a,b,c)` → `setBitAt(a,b,c)`
+
+### `src/storage/sqlite/bitmap.ts`
+Same pattern but with SqliteContext and `_sqlite` prefix removal:
+1. Remove `// @ts-nocheck`
+2. Add: `import { stringToBytes, bytesToString, getBitAt, setBitAt } from '../../utils/bitmap';`
+3. Add: `import type { SqliteContext } from './context';`
+4. Remove: `import type { SqliteStorage } from './core';`
+5. Remove: `_sqliteStringToBytes`, `_sqliteBytesToString`, `_sqliteGetBitAt`, `_sqliteSetBitAt`
+6. Add `this: SqliteContext` to all remaining methods
+7. Replace: `this._sqliteStringToBytes(x)` → `stringToBytes(x)`, etc.
+
+**Note:** `_setBitAt`/`_sqliteSetBitAt` return type is `0 | 1` in the original. The shared `setBitAt` return type is `number`. This is fine since `0 | 1` is a subtype of `number` and the callers just use the return value in comparisons. Keep the shared util signature as returning `number`.
+
+## Target Verification
+```bash
+npx tsc --noEmit
+npx vitest run
+```</pre></details>
+
+<h3>task4.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 2,764자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task4.md 전체 보기</summary><pre># Task 4: Stream Extraction + Type-Safety
+
+## Goal
+Extract inline stream ID pure functions from `memory/stream.ts` and `sqlite/stream.ts` into imports from `src/utils/stream.ts`, remove the underscore-prefixed inline methods, remove `@ts-nocheck`, and add `this: MemoryContext` / `this: SqliteContext` annotations.
+
+## Background
+Task 1 created `src/utils/stream.ts` with `parseStreamId`, `formatStreamId`, `compareStreamId`. Both stream files use `_parseStreamId`, `_formatStreamId`, `_compareStreamId` (with `this.` prefix). The shared `parseStreamId` handles all three sentinels: `'-'`, `'+'`, and `'0-0'`.
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- Both files have many more methods beyond the pure stream helpers. Only extract the 3 pure functions.
+- `_ensureStreamTypeOrThrow`, `_ensureStreamKeyExists`, `_cleanupStreamIfEmpty`, `_generateStreamId` stay in the mixin files (they use `this.store`/`this.db`).
+- `_generateStreamId` calls `this._parseStreamId` and `this._formatStreamId` — these must be updated to use the imported functions.
+- Memory stream.ts also imports types from `./types` and `../interface` — keep those.
+- Add `this: MemoryContext` / `this: SqliteContext` to ALL methods that use `this`.
+
+## Target Files
+
+### `src/storage/memory/stream.ts`
+1. Remove `// @ts-nocheck`
+2. Add: `import { parseStreamId, formatStreamId, compareStreamId } from '../../utils/stream';`
+3. Add: `import type { MemoryContext } from './context';`
+4. Remove: `import type { InMemoryStorage } from './core';`
+5. Remove method definitions: `_parseStreamId`, `_formatStreamId`, `_compareStreamId`
+6. Add `this: MemoryContext` to all remaining methods
+7. Replace all calls:
+   - `this._parseStreamId(x)` → `parseStreamId(x)`
+   - `this._formatStreamId(a,b)` → `formatStreamId(a,b)`
+   - `this._compareStreamId(a,b)` → `compareStreamId(a,b)`
+
+### `src/storage/sqlite/stream.ts`
+Same pattern but with SqliteContext:
+1. Remove `// @ts-nocheck`
+2. Add: `import { parseStreamId, formatStreamId, compareStreamId } from '../../utils/stream';`
+3. Add: `import type { SqliteContext } from './context';`
+4. Remove: `import type { SqliteStorage } from './core';`
+5. Remove method definitions: `_parseStreamId`, `_formatStreamId`, `_compareStreamId`
+6. Add `this: SqliteContext` to all remaining methods
+7. Replace all `this._parseStreamId`/`this._formatStreamId`/`this._compareStreamId` calls with imported functions
+
+**Important:** These are large files (memory/stream.ts ~915 lines, sqlite/stream.ts ~1217 lines). Be thorough — search for all occurrences of `this._parseStreamId`, `this._formatStreamId`, `this._compareStreamId` and replace every one.
+
+## Target Verification
+```bash
+npx tsc --noEmit
+npx vitest run
+```</pre></details>
+
+<h3>task5.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 5,038자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task5.md 전체 보기</summary><pre># Task 5: ZSet Extraction + globToRegex + Type-Safety
+
+## Goal
+Extract ZSet pure functions (`parseScoreBound`, `parseLexBound`, `scoreInRange`, `memberInLexRange`, `formatScore`) from `memory/zset-core.ts` and `sqlite/zset-core.ts`, import `globToRegex` to replace `this._hashGlobToRegex` calls, remove `@ts-nocheck`, and add `this: MemoryContext` / `this: SqliteContext` annotations across all zset files and memory/set.ts.
+
+## Background
+Task 1 created `src/utils/zset.ts` with the extracted functions. The globToRegex replacement affects `memory/zset-core.ts` (which calls `this._hashGlobToRegex`), `memory/hash.ts`, and `memory/set.ts`. This task handles the zset-core.ts replacement; hash.ts and set.ts are handled in Task 7.
+
+The sqlite zset-core has extra methods (`_buildScoreWhereClause`, `_buildLexWhereClause`) that build SQL WHERE clauses — these stay in the file since they're sqlite-specific.
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- Memory zset-core uses `_scoreInRange` and `_memberInLexRange` — sqlite does NOT have these (it uses SQL WHERE clauses instead). Only memory zset-core extracts those.
+- Sqlite zset-core uses `_parseScoreBound` and `_parseLexBound` and `_formatScore` — extract those.
+- `_ensureZsetTypeOrThrow` stays (uses `this.store`/`this.db`).
+- `_ensureZsetKeyExists`, `_ensureZsetKvStoreEntry`, `_cleanupZsetIfEmpty`, `_sortedMembers` stay (they use `this`).
+- `memory/zset-core.ts` also has `this._hashGlobToRegex(pattern)` → replace with `globToRegex(pattern)`. Note: this method is defined in `hashMethods`, not in `zsetCoreMethods`, but called via prototype merge. Import `globToRegex` from `../../utils/glob`.
+- For `memory/zset.ts` and `sqlite/zset.ts` — these are simple re-exports that just merge methods. They just need `// @ts-nocheck` removed. No `this:` annotations needed since they define no methods.
+- For `memory/zset-union.ts` and `sqlite/zset-union.ts` — remove `@ts-nocheck` and add `this: MemoryContext` / `this: SqliteContext` to all methods.
+
+## Target Files
+
+### `src/storage/memory/zset-core.ts`
+1. Remove `// @ts-nocheck`
+2. Add imports:
+   ```typescript
+   import { parseScoreBound, parseLexBound, scoreInRange, memberInLexRange, formatScore } from '../../utils/zset';
+   import { globToRegex } from '../../utils/glob';
+   import type { MemoryContext } from './context';
+   ```
+3. Remove: `import type { InMemoryStorage } from './core';`
+4. Remove method definitions: `_parseScoreBound`, `_parseLexBound`, `_scoreInRange`, `_memberInLexRange`, `_formatScore`
+5. Do NOT remove `_hashGlobToRegex` from THIS file — it doesn't define it (it's defined in hashMethods). Just replace `this._hashGlobToRegex(pattern)` → `globToRegex(pattern)`.
+6. Add `this: MemoryContext` to all remaining methods
+7. Replace all calls:
+   - `this._parseScoreBound(x, y)` → `parseScoreBound(x, y)`
+   - `this._parseLexBound(x)` → `parseLexBound(x)`
+   - `this._scoreInRange(a, b, c)` → `scoreInRange(a, b, c)`
+   - `this._memberInLexRange(a, b, c)` → `memberInLexRange(a, b, c)`
+   - `this._formatScore(x)` → `formatScore(x)`
+   - `this._hashGlobToRegex(pattern)` → `globToRegex(pattern)`
+
+### `src/storage/memory/zset-union.ts`
+1. Remove `// @ts-nocheck`
+2. Add: `import type { MemoryContext } from './context';`
+3. Remove: `import type { InMemoryStorage } from './core';` (if present — check)
+4. Add `this: MemoryContext` to all methods
+
+### `src/storage/memory/zset.ts`
+1. Remove `// @ts-nocheck`
+(No method definitions here — it's a simple merge of zsetCoreMethods and zsetUnionMethods)
+
+### `src/storage/sqlite/zset-core.ts`
+1. Remove `// @ts-nocheck`
+2. Add imports:
+   ```typescript
+   import { parseScoreBound, parseLexBound, formatScore } from '../../utils/zset';
+   import type { SqliteContext } from './context';
+   ```
+3. Remove: `import type { SqliteStorage } from './core';`
+4. Remove method definitions: `_parseScoreBound`, `_parseLexBound`, `_formatScore`
+5. Keep `_buildScoreWhereClause` and `_buildLexWhereClause` (sqlite-specific SQL builders, they use parsed bounds but are not pure — they just build strings)
+6. Keep `_ensureZsetTypeOrThrow`, `_ensureZsetKvStoreEntry`, `_cleanupZsetIfEmpty`
+7. Add `this: SqliteContext` to all remaining methods
+8. Replace all calls:
+   - `this._parseScoreBound(x, y)` → `parseScoreBound(x, y)`
+   - `this._parseLexBound(x)` → `parseLexBound(x)`
+   - `this._formatScore(x)` → `formatScore(x)`
+   - Note: `_buildScoreWhereClause` and `_buildLexWhereClause` stay — they use parsed bound objects, which are now returned by the imported `parseScoreBound`/`parseLexBound`
+
+### `src/storage/sqlite/zset-union.ts`
+1. Remove `// @ts-nocheck`
+2. Add: `import type { SqliteContext } from './context';`
+3. Remove any `import type { SqliteStorage } from './core';` (if present)
+4. Add `this: SqliteContext` to all methods
+
+### `src/storage/sqlite/zset.ts`
+1. Remove `// @ts-nocheck`
+(No method definitions — simple re-export merge)
+
+## Target Verification
+```ba...</pre></details>
+
+<h3>task6.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 4,125자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task6.md 전체 보기</summary><pre># Task 6: JSON Path Extraction + Type-Safety
+
+## Goal
+Extract JSON path parsing functions (`parseJsonPath`, `jsonResolvePath`, `jsonTypeOf`) from `memory/json-core.ts` and `sqlite/json.ts`, remove `@ts-nocheck`, and add `this: MemoryContext` / `this: SqliteContext` annotations across all JSON files.
+
+## Background
+Task 1 created `src/utils/json-path.ts` with `parseJsonPath`, `jsonResolvePath`, and `jsonTypeOf`. Memory uses `_parseJsonPath`, `_jsonResolvePath`, `_jsonTypeOf`. Sqlite uses `_sqliteParseJsonPath`, `_sqliteJsonResolvePath`, `_sqliteJsonTypeOf`. Both have identical implementations (which match the shared utils).
+
+The sqlite `json.ts` also has `_sqliteDeepMerge` — a pure recursive function that's NOT listed for extraction to utils. Convert it to a standalone module-level function in the same file (remove `this.` prefix from recursive calls).
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- `_ensureJsonTypeOrThrow` stays in each file (accesses `this.store` / `this.db`).
+- `jsonResolvePath` returns an **array** of results, not null. The shared function signature matches.
+- For `memory/json-advanced.ts` — it also calls `this._jsonResolvePath` and `this._jsonTypeOf`. It does NOT define these methods; they're inherited via merge. Update calls to use imported functions and add `this: MemoryContext`.
+- For `memory/json.ts` — simple re-export merge. Just remove `@ts-nocheck`.
+- Sqlite `_sqliteDeepMerge` recursive call `this._sqliteDeepMerge(result[key], source[key])` must become a direct call `deepMerge(result[key], source[key])` after converting to standalone function.
+
+## Target Files
+
+### `src/storage/memory/json-core.ts`
+1. Remove `// @ts-nocheck`
+2. Add imports:
+   ```typescript
+   import { parseJsonPath, jsonResolvePath, jsonTypeOf } from '../../utils/json-path';
+   import type { MemoryContext } from './context';
+   ```
+3. Remove: `import type { InMemoryStorage } from './core';`
+4. Remove method definitions: `_parseJsonPath`, `_jsonResolvePath`, `_jsonTypeOf`
+5. Add `this: MemoryContext` to all remaining methods
+6. Replace all calls:
+   - `this._parseJsonPath(path)` → `parseJsonPath(path)`
+   - `this._jsonResolvePath(root, path)` → `jsonResolvePath(root, path)`
+   - `this._jsonTypeOf(val)` → `jsonTypeOf(val)`
+
+### `src/storage/memory/json-advanced.ts`
+1. Remove `// @ts-nocheck`
+2. Add imports:
+   ```typescript
+   import { jsonResolvePath, jsonTypeOf } from '../../utils/json-path';
+   import type { MemoryContext } from './context';
+   ```
+3. Remove: `import type { InMemoryStorage } from './core';`
+4. Add `this: MemoryContext` to all methods
+5. Replace all `this._jsonResolvePath(...)` → `jsonResolvePath(...)`
+6. Replace any `this._jsonTypeOf(...)` → `jsonTypeOf(...)`
+
+### `src/storage/memory/json.ts`
+1. Remove `// @ts-nocheck`
+(No method definitions — simple re-export of jsonCoreMethods and jsonAdvancedMethods)
+
+### `src/storage/sqlite/json.ts`
+1. Remove `// @ts-nocheck`
+2. Add imports:
+   ```typescript
+   import { parseJsonPath, jsonResolvePath, jsonTypeOf } from '../../utils/json-path';
+   import type { SqliteContext } from './context';
+   ```
+3. Remove: `import type { SqliteStorage } from './core';`
+4. Remove method definitions: `_sqliteParseJsonPath`, `_sqliteJsonResolvePath`, `_sqliteJsonTypeOf`
+5. Convert `_sqliteDeepMerge` to a standalone function:
+   ```typescript
+   function deepMerge(target: any, source: any): any {
+     // ... same body but replace this._sqliteDeepMerge with deepMerge
+   }
+   ```
+6. Replace all `this._sqliteDeepMerge(a, b)` → `deepMerge(a, b)`
+7. Replace all `this._sqliteParseJsonPath(path)` → `parseJsonPath(path)` (note: NO sqlite prefix in shared)
+8. Replace all `this._sqliteJsonResolvePath(root, path)` → `jsonResolvePath(root, path)`
+9. Replace all `this._sqliteJsonTypeOf(val)` → `jsonTypeOf(val)`
+10. Add `this: SqliteContext` to all methods that use `this`
+
+**Important:** This is the largest JSON file (~700 lines). There are ~25+ occurrences of `this._sqliteJsonResolvePath`. Replace ALL of them.
+
+## Target Verification
+```bash
+npx tsc --noEmit
+npx vitest run
+```</pre></details>
+
+<h3>task7.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 4,451자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task7.md 전체 보기</summary><pre># Task 7: Geo + Hash + Set — _unitToMeters, _hashGlobToRegex, Type-Safety
+
+## Goal
+Replace `_unitToMeters` with `convertToMeters` from `src/utils/geo.ts` in both geo files. Replace `_hashGlobToRegex` with `globToRegex` from `src/utils/glob.ts` in memory files. Remove `@ts-nocheck` and add proper `this:` type annotations throughout.
+
+## Background
+- `memory/geo.ts` and `sqlite/geo.ts` both have a `_unitToMeters(unit)` method that returns a conversion factor (1, 1000, 0.3048, 1609.34). Current usage is `radius * this._unitToMeters(unit)`. The shared `convertToMeters(distance, unit)` from `src/utils/geo.ts` already exists and returns `distance * factor`. So `radius * this._unitToMeters(unit)` becomes `convertToMeters(radius, unit)`.
+- `memory/hash.ts` defines `_hashGlobToRegex(pattern)` — this MUST be removed and replaced with the imported `globToRegex` from `../../utils/glob`.
+- `memory/set.ts` and `memory/zset-core.ts` already had their `_hashGlobToRegex` calls updated in Task 5 (for zset-core). task 7 handles hash.ts and set.ts.
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- **Behavior change for glob matching**: The `_hashGlobToRegex` in memory/hash.ts is a simpler implementation (handles only `*`, `?`, and escapes `.+^${}()|[]\`). The `globToRegex` from `src/utils/glob.ts` is more comprehensive (also handles `[...]` bracket expressions and backslash escapes). This is an intentional improvement per the task spec.
+- Sqlite geo.ts already imports `convertToMeters` AND `convertFromMeters` from `../../utils/geo`. Just add `convertToMeters` usage and remove `_unitToMeters`.
+- Memory geo.ts already imports several items from `../../utils/geo`. Add `convertToMeters` to that import.
+- `_ensureGeoTypeOrThrow` stays in each file.
+- For hash.ts, `_evictExpiredHashFields`, `_cleanupHashIfEmpty`, `_ensureHashTypeOrThrow`, `_ensureHashKvStoreEntry` all stay (they use `this.store`/`this.db`).
+- Remove the `_hashGlobToRegex` method definition from memory/hash.ts entirely.
+
+## Target Files
+
+### `src/storage/memory/geo.ts`
+1. Remove `// @ts-nocheck`
+2. Add `convertToMeters` to the existing import from `../../utils/geo`:
+   ```typescript
+   import { encodeGeohash, decodeGeohash, geohashToString, calculateDistance, getBoundingBox, isInRadius, convertToMeters } from '../../utils/geo';
+   ```
+3. Add: `import type { MemoryContext } from './context';`
+4. Remove: `import type { InMemoryStorage } from './core';`
+5. Remove the `_unitToMeters` method definition entirely
+6. Add `this: MemoryContext` to all methods that use `this`
+7. Replace `radius * this._unitToMeters(unit)` → `convertToMeters(radius, unit)`
+8. Replace `height * this._unitToMeters(unit)` → `convertToMeters(height, unit)`
+9. Replace any `this._unitToMeters(unit)` in other contexts (search thoroughly)
+
+### `src/storage/sqlite/geo.ts`
+1. Remove `// @ts-nocheck`
+2. `convertToMeters` is already imported. Verify it's in the import.
+3. Add: `import type { SqliteContext } from './context';`
+4. Remove: `import type { SqliteStorage } from './core';`
+5. Remove the `_unitToMeters` method definition entirely
+6. Add `this: SqliteContext` to all methods that use `this`
+7. Replace `radius * this._unitToMeters(unit)` → `convertToMeters(radius, unit)`
+8. Replace `height * this._unitToMeters(unit)` → `convertToMeters(height, unit)`
+9. Replace any other `this._unitToMeters(unit)` calls (e.g., `options.byRadius.radius * this._unitToMeters(options.byRadius.unit)` → `convertToMeters(options.byRadius.radius, options.byRadius.unit)`)
+
+### `src/storage/memory/hash.ts`
+1. Remove `// @ts-nocheck`
+2. Add imports:
+   ```typescript
+   import { globToRegex } from '../../utils/glob';
+   import type { MemoryContext } from './context';
+   ```
+3. Remove: `import type { InMemoryStorage } from './core';`
+4. Remove the `_hashGlobToRegex` method definition entirely
+5. Add `this: MemoryContext` to all methods that use `this`
+6. Replace `this._hashGlobToRegex(pattern)` → `globToRegex(pattern)`
+
+### `src/storage/memory/set.ts`
+1. Remove `// @ts-nocheck`
+2. Add: `import { globToRegex } from '../../utils/glob';`
+3. Add: `import type { MemoryContext } from './context';`
+4. Remove: `import type { InMemoryStorage } from './core';`
+5. Add `this: MemoryContext` to all methods that use `this`
+6. Replace `this._hashGlobToRegex(pattern)` → `globToRegex(pattern)`
+
+## Target Verification
+```bash
+npx tsc --noEmit
+npx vitest run
+```</pre></details>
+
+<h3>task8.md <span class="badge badge-red">Target Verification: 전체 스위트 ❌</span></h3>
+<p>크기: 3,077자 · Target Verification: <code>npx tsc --noEmit
+npx vitest run</code></p>
+<details><summary>task8.md 전체 보기</summary><pre># Task 8: Remaining Memory Files — @ts-nocheck Removal + Type Annotations
+
+## Goal
+Remove `@ts-nocheck` from the remaining memory mixin files that were not handled in Tasks 2–7, and add `this: MemoryContext` annotations to all methods that use `this`.
+
+## Background
+Tasks 2–7 already handled the files with extractions. This task handles the simpler memory files that only need `@ts-nocheck` removal and `this: MemoryContext` addition.
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- `memory/core.ts` does NOT have `@ts-nocheck` and does NOT need changes (it's the InMemoryStorage class itself, not a mixin).
+- For each file: remove `// @ts-nocheck` line, change `import type { InMemoryStorage } from './core'` to `import type { MemoryContext } from './context'`, and add `this: MemoryContext` as first parameter to every method in the exported object that uses `this`.
+- Methods that don't use `this` at all can still benefit from `this: MemoryContext` annotation (it doesn't hurt and provides consistency). However, if a method has no `this` usage, TypeScript won't require it — you may add it or skip it.
+- For `memory/custom.ts` — note it doesn't import from `../type-check`, only imports from `./core`. Change to import from `./context`.
+
+## Target Files
+
+### `src/storage/memory/list.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { InMemoryStorage } from './core'` with `import type { MemoryContext } from './context'`
+3. Add `this: MemoryContext` to all methods using `this`
+
+### `src/storage/memory/sort.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { InMemoryStorage } from './core'` with `import type { MemoryContext } from './context'`
+3. Add `this: MemoryContext` to all methods using `this`
+
+### `src/storage/memory/custom.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { InMemoryStorage } from './core'` with `import type { MemoryContext } from './context'`
+3. Add `this: MemoryContext` to all methods using `this`
+
+### `src/storage/memory/server.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { InMemoryStorage } from './core'` with `import type { MemoryContext } from './context'`
+3. Add `this: MemoryContext` to all methods using `this`
+
+## Key Pattern
+
+**Before:**
+```typescript
+// @ts-nocheck
+import type { InMemoryStorage } from './core';
+
+export const listMethods = {
+  _ensureListTypeOrThrow(key: string): void {
+    assertType(this.store.get(key)?.type, 'list');
+  },
+  async lpush(key: string, ...values: string[]): Promise<number> {
+    this.evictIfExpired(key);
+    // ...
+  },
+};
+```
+
+**After:**
+```typescript
+import { assertType } from '../type-check';
+import type { MemoryContext } from './context';
+
+export const listMethods = {
+  _ensureListTypeOrThrow(this: MemoryContext, key: string): void {
+    assertType(this.store.get(key)?.type, 'list');
+  },
+  async lpush(this: MemoryContext, key: string, ...values: string[]): Promise<number> {
+    this.evictIfExpired(key);
+    // ...
+  },
+};
+```
+
+## Target Verification
+```bash
+npx tsc --noEmit
+npx vitest run
+```</pre></details>
+
+<h3>task9.md <span class="badge badge-green">Target Verification: 최소검증 ✅</span></h3>
+<p>크기: 4,052자 · Target Verification: <code>(없음)</code></p>
+<details><summary>task9.md 전체 보기</summary><pre># Task 9: Remaining Sqlite Files — @ts-nocheck Removal + Type Annotations
+
+## Goal
+Remove `@ts-nocheck` from all remaining sqlite mixin files and add `this: SqliteContext` annotations to all methods that use `this`.
+
+## Background
+Tasks 2–7 already handled files with extractions (hll, bitmap, stream, zset, json, geo). This task handles the remaining sqlite files: hash, list, set, sort, custom, server, and expire.
+
+## Past Failures
+None.
+
+## Constraints
+- All 1338 tests must pass. `npx tsc --noEmit` must pass.
+- `sqlite/core.ts` does NOT have `@ts-nocheck` and does NOT need changes (it's the SqliteStorage class itself).
+- For each file: remove `// @ts-nocheck` line, change `import type { SqliteStorage } from './core'` to `import type { SqliteContext } from './context'`, and add `this: SqliteContext` to every method that uses `this`.
+- `sqlite/expire.ts` has no imports from `./core` currently — it just has `// @ts-nocheck`. Add `import type { SqliteContext } from './context'` and add `this: SqliteContext` annotations.
+- `sqlite/hash.ts` already imports `globToRegex` and uses it directly (not via `this.`). No functional changes needed.
+- `sqlite/set.ts` already imports `globToRegex` and uses it directly.
+
+## Target Files
+
+### `src/storage/sqlite/hash.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'`
+3. Add `this: SqliteContext` to all methods using `this`
+4. `_evictExpiredHashFields`, `_cleanupHashIfEmpty`, `_ensureHashKvStoreEntry` stay — they use `this.db`
+
+### `src/storage/sqlite/list.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'`
+3. Add `this: SqliteContext` to all methods using `this`
+
+### `src/storage/sqlite/set.ts`
+1. Remove `// @ts-nocheck`
+2. Add: `import type { SqliteContext } from './context'`
+3. Replace or add alongside existing `import type { SqliteStorage } from './core'` — change to `import type { SqliteContext } from './context'`
+4. Add `this: SqliteContext` to all methods using `this`
+
+### `src/storage/sqlite/sort.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'`
+3. Add `this: SqliteContext` to all methods using `this`
+
+### `src/storage/sqlite/custom.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'`
+3. Add `this: SqliteContext` to all methods using `this`
+
+### `src/storage/sqlite/server.ts`
+1. Remove `// @ts-nocheck`
+2. Replace `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'`
+3. Add `this: SqliteContext` to all methods using `this`
+
+### `src/storage/sqlite/expire.ts`
+1. Remove `// @ts-nocheck`
+2. Add `import type { SqliteContext } from './context'`
+3. Add `this: SqliteContext` to all methods using `this`
+4. Note: `expireMethods` methods use `this.evictExpired(key)` and `this.db` — all need `this: SqliteContext`
+
+## Key Pattern
+
+**Before:**
+```typescript
+// @ts-nocheck
+import type { SqliteStorage } from './core';
+
+export const hashMethods = {
+  _ensureHashTypeOrThrow(key: string): void {
+    // ...
+  },
+  async hset(key: string, pairs: ...): Promise<number> {
+    this.evictExpired(key);
+    // ...
+  },
+};
+```
+
+**After:**
+```typescript
+import type { SqliteContext } from './context';
+
+export const hashMethods = {
+  _ensureHashTypeOrThrow(this: SqliteContext, key: string): void {
+    // ...
+  },
+  async hset(this: SqliteContext, key: string, pairs: ...): Promise<number> {
+    this.evictExpired(key);
+    // ...
+  },
+};
+```
+
+## Final Verification
+After this task, ALL 31 files that originally had `@ts-nocheck` should now be clean. Run full verification:
+
+```bash
+# Verify no @ts-nocheck remains
+grep -r "@ts-nocheck" src/storage/ || echo "No @ts-nocheck found - SUCCESS"
+
+# Verify TypeScript compiles
+npx tsc --noEmit
+
+# Verify all tests pass
+npx vitest run
+```</pre></details>
+
+</div></div>
+<div class="section" id="workers">
+<h2>Workers</h2>
+<div class="content">
+<h3>W1: 128K토큰, 23× <span class="badge badge-yellow">23×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">124K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">4K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">5.6KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">16</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">18</div></div>
+</div>
+<details><summary>W1 RESULT</summary><pre>----
+# RESULT #1 (by Worker 1)
+
+All tests pass.
+
+## Files
+- created: `src/utils/hll.ts`, `src/utils/stream.ts`, `src/utils/bitmap.ts`, `src/utils/zset.ts`, `src/utils/json-path.ts`, `src/storage/memory/context.ts`, `src/storage/sqlite/context.ts`
+
+## Signatures
+- `hll.ts`: `HLL_REGISTERS`, `HLL_BYTES`, `murmurHash64`, `hllIndex`, `hllRho`, `hllEncode`, `hllDecode`, `read6BitRegister`, `write6BitRegister`, `hllEstimate`
+- `stream.ts`: `parseStreamId`, `formatStreamId`, `compareStreamId`
+- `bitmap.ts`: `stringToBytes`, `bytesToString`, `getBitAt`, `setBitAt`
+- `zset.ts`: `parseScoreBound`, `parseLexBound`, `scoreInRange`, `memberInLexRange`, `formatScore`
+- `json-path.ts`: `ParsedPathPart`, `parseJsonPath`, `JsonResolveResult`, `jsonResolvePath`, `jsonTypeOf`
+- `memory/context.ts`: `MemoryContext`
+- `sqlite/context.ts`: `SqliteContext`
+
+## Breaking
+- None (new files only, no existing code modified)
+
+## Summary
+Created 5 shared utility modules (`hll.ts`, `stream.ts`, `bitmap.ts`, `zset.ts`, `json-path.ts`) in `src/utils/` and 2 context type aliases (`memory/context.ts`, `sqlite/context.ts`) — pure creation with no modifications to existing files. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W2: 289K토큰, 45× <span class="badge badge-yellow">45×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">279K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">10K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">6.4KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">20</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">26</div></div>
+</div>
+<details><summary>W2 RESULT</summary><pre># RESULT #2 (by Worker 2)
+
+All tests pass.
+
+## Files
+- modified: `src/storage/memory/hll.ts`, `src/storage/sqlite/hll.ts`
+
+## Signatures
+- `memory/hll.ts`: `HllContext` (local type = `MemoryContext & { _ensureHllTypeOrThrow }`), `hllMethods` (methods now have `this` type annotations; pure helpers removed, imported from `../../utils/hll`)
+- `sqlite/hll.ts`: `HllContext` (local type = `SqliteContext & { _ensureHllTypeOrThrow }`), `hllMethods` (same pattern with `SqliteContext`)
+
+## Breaking
+- Removed `_murmurHash64`, `_hllIndex`, `_hllRho`, `_hllEncode`, `_hllDecode`, `_read6BitRegister`, `_write6BitRegister`, `_hllEstimate` from both `hllMethods` objects (now imported from `src/utils/hll` as module-level functions without `_` prefix)
+- Removed local `HLL_REGISTERS` and `HLL_BYTES` constants from both files (now imported from `src/utils/hll`)
+- Removed `// @ts-nocheck` from both files
+- Replaced `import type { InMemoryStorage }` with `import type { MemoryContext }` in memory/hll.ts
+- Replaced `import type { SqliteStorage }` with `import type { SqliteContext }` in sqlite/hll.ts
+
+## Summary
+Extracted all inline HLL pure functions and constants from both `memory/hll.ts` and `sqlite/hll.ts` into imports from `src/utils/hll`, removed `@ts-nocheck`, and added `this: MemoryContext`/`this: SqliteContext` (via local `HllContext` intersection type) annotations to all methods. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W3: 195K토큰, 26× <span class="badge badge-yellow">26×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">187K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">8K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">7.5KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">12</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">14</div></div>
+</div>
+<details><summary>W3 RESULT</summary><pre># RESULT #3 (by Worker 3)
+
+All tests pass.
+
+## Files
+- modified: `src/storage/memory/bitmap.ts`, `src/storage/sqlite/bitmap.ts`
+
+## Signatures
+- `memory/bitmap.ts`: `BitmapContext` (local type = `MemoryContext & { _ensureStringTypeOrThrow(key: string): void }`), `bitmapMethods` (methods now have `this: BitmapContext` annotations; pure helpers removed, imported from `../../utils/bitmap`)
+- `sqlite/bitmap.ts`: `BitmapContext` (local type = `SqliteContext & { _ensureStringTypeOrThrow(key: string): void }`), `bitmapMethods` (same pattern with `SqliteContext`)
+
+## Breaking
+- Removed `_stringToBytes`, `_bytesToString`, `_getBitAt`, `_setBitAt` from `memory/bitmap.ts` `bitmapMethods` object (now imported from `src/utils/bitmap` as `stringToBytes`, `bytesToString`, `getBitAt`, `setBitAt`)
+- Removed `_sqliteStringToBytes`, `_sqliteBytesToString`, `_sqliteGetBitAt`, `_sqliteSetBitAt` from `sqlite/bitmap.ts` `bitmapMethods` object (now imported from `src/utils/bitmap`)
+- Removed `// @ts-nocheck` from both files
+- Replaced `import type { InMemoryStorage }` with `import type { MemoryContext }` in memory/bitmap.ts
+- Replaced `import type { SqliteStorage }` with `import type { SqliteContext }` in sqlite/bitmap.ts
+- (Forwarded from Worker 2) Removed `_murmurHash64`, `_hllIndex`, `_hllRho`, `_hllEncode`, `_hllDecode`, `_read6BitRegister`, `_write6BitRegister`, `_hllEstimate` from both HLL `hllMethods` objects; removed local `HLL_REGISTERS`/`HLL_BYTES` constants; removed `// @ts-nocheck` from both HLL files; replaced `InMemoryStorage`/`SqliteStorage` imports with `MemoryContext`/`SqliteContext`
+
+## Summary
+Extracted all inline bitmap pure functions from both `memory/bitmap.ts` and `sqlite/bitmap.ts` into imports from `src/utils/bitmap`, removed `@ts-nocheck`, and added `this: BitmapContext` (via local intersection type) annotations to all methods. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W4: 791K토큰, 84× <span class="badge badge-red">84×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">769K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">22K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">9.4KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">23</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">28</div></div>
+</div>
+<details><summary>W4 RESULT</summary><pre># RESULT #4 (by Worker 4)
+
+All tests pass.
+
+## Files
+- modified: `src/storage/memory/stream.ts`, `src/storage/sqlite/stream.ts`
+
+## Signatures
+- `memory/stream.ts`: `StreamContext` (local type = `MemoryContext & { _ensureStreamTypeOrThrow, _ensureStreamKeyExists, _cleanupStreamIfEmpty, _generateStreamId, _binarySearchStreamEntry }`), `streamMethods` (methods now have `this: StreamContext` annotations; pure helpers removed, imported from `../../utils/stream`)
+- `sqlite/stream.ts`: `StreamContext` (local type = `SqliteContext & { _generateStreamId, _ensureStreamTypeOrThrow, _ensureStreamKvStoreEntry, _cleanupStreamIfEmpty, _xtrimInternal }`), `streamMethods` (same pattern with `SqliteContext`)
+
+## Breaking
+- Removed `_parseStreamId`, `_formatStreamId`, `_compareStreamId` from `memory/stream.ts` `streamMethods` object (now imported from `src/utils/stream` as `parseStreamId`, `formatStreamId`, `compareStreamId`)
+- Removed `_parseStreamId`, `_formatStreamId`, `_compareStreamId` from `sqlite/stream.ts` `streamMethods` object (now imported from `src/utils/stream`)
+- Removed `// @ts-nocheck` from both files
+- Replaced `import type { InMemoryStorage }` with `import type { MemoryContext }` in memory/stream.ts
+- Replaced `import type { SqliteStorage }` with `import type { SqliteContext }` in sqlite/stream.ts
+- Removed unused imports `assertTypeOneOf` and `WRONGTYPE_ERROR` from sqlite/stream.ts
+- Added missing type imports (`StreamEntry`, `StreamConsumer`, `StreamInfo`, `GroupInfo`, `PendingEntry`) to sqlite/stream.ts
+- (Forwarded from Worker 3) Removed `_stringToBytes`, `_bytesToString`, `_getBitAt`, `_setBitAt` from `memory/bitmap.ts`; removed `_sqliteStringToBytes`, etc. from `sqlite/bitmap.ts`; removed `@ts-nocheck` from both bitmap files; replaced `InMemoryStorage`/`SqliteStorage` imports with context types
+- (Forwarded from Worker 2) Removed HLL pure function inlines from both HLL files; removed `@ts-nocheck`; replaced storage imports with context types
+
+## Summary
+Extracted all inline stream ID pure functions (`_parseStreamId`, `_formatStreamId`, `_compareStreamId`) from both `memory/stream.ts` and `sqlite/stream.ts` into imports from `src/utils/stream`, removed `@ts-nocheck`, added `this: StreamContext` annotations via local intersection types, and cleaned up unused imports. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W5: 467K토큰, 42× <span class="badge badge-yellow">42×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">449K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">18K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">11.1KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">15</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">22</div></div>
+</div>
+<details><summary>W5 RESULT</summary><pre># RESULT #5 (by Worker 5)
+
+All tests pass.
+
+## Files
+- modified: `src/storage/memory/zset-core.ts`, `src/storage/memory/zset-union.ts`, `src/storage/memory/zset.ts`, `src/storage/sqlite/zset-core.ts`, `src/storage/sqlite/zset-union.ts`, `src/storage/sqlite/zset.ts`
+
+## Signatures
+- `memory/zset-core.ts`: `ZsetContext` (local type = `MemoryContext & { _ensureZsetTypeOrThrow, _ensureZsetKeyExists, _cleanupZsetIfEmpty, _sortedMembers }`), `zsetCoreMethods` (methods now have `this: ZsetContext`; pure helpers replaced with imports from `../../utils/zset` and `../../utils/glob`)
+- `memory/zset-union.ts`: `ZsetUnionContext` (local type = `MemoryContext & { _ensureZsetTypeOrThrow, _ensureZsetKeyExists, _cleanupZsetIfEmpty, _sortedMembers }`), `zsetUnionMethods` (methods now have `this: ZsetUnionContext`)
+- `sqlite/zset-core.ts`: `ZsetContext` (local type = `SqliteContext & { _ensureZsetTypeOrThrow, _ensureZsetKvStoreEntry, _cleanupZsetIfEmpty, _buildScoreWhereClause, _buildLexWhereClause }`), `zsetCoreMethods` (methods now have `this: ZsetContext`; pure helpers replaced with imports from `../../utils/zset` and `../../utils/glob`)
+- `sqlite/zset-union.ts`: `ZsetUnionContext` (local type = `SqliteContext & { _ensureZsetTypeOrThrow, _ensureZsetKvStoreEntry, _cleanupZsetIfEmpty }`), `zsetUnionMethods` (methods now have `this: ZsetUnionContext`)
+
+## Breaking
+- Removed `_parseScoreBound`, `_parseLexBound`, `_scoreInRange`, `_memberInLexRange`, `_formatScore` from `memory/zset-core.ts` `zsetCoreMethods` (now imported from `src/utils/zset` as `parseScoreBound`, `parseLexBound`, `scoreInRange`, `memberInLexRange`, `formatScore`)
+- Removed `_parseScoreBound`, `_parseLexBound`, `_formatScore` from `sqlite/zset-core.ts` `zsetCoreMethods` (now imported from `src/utils/zset`)
+- Replaced `this._hashGlobToRegex(pattern)` with `globToRegex(pattern)` (imported from `src/utils/glob`) in memory/zset-core.ts and sqlite/zset-core.ts
+- Removed `// @ts-nocheck` from all 6 files
+- Replaced `import type { InMemoryStorage }` with `import type { MemoryContext }` from `./context` in memory/zset-core.ts
+- Replaced `import type { SqliteStorage }` with `import type { SqliteContext }` from `./context` in sqlite/zset-core.ts
+- (Forwarded from Worker 4) Stream pure functions extracted, `@ts-nocheck` removed, context types introduced
+
+## Summary
+Extracted all inline ZSet pure functions from both `memory/zset-core.ts` and `sqlite/zset-core.ts` into imports from `src/utils/zset`, replaced `this._hashGlobToRegex` with `globToRegex` from `src/utils/glob`, removed `@ts-nocheck`, added `this: ZsetContext`/`this: ZsetUnionContext` annotations via local intersection types, and cleaned up imports. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W6: 755K토큰, 62× <span class="badge badge-red">62×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">738K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">18K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">12.2KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">24</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">30</div></div>
+</div>
+<details><summary>W6 RESULT</summary><pre># RESULT #6 (by Worker 6)
+
+All tests pass.
+
+## Files
+- modified: `src/storage/memory/json-core.ts`, `src/storage/memory/json-advanced.ts`, `src/storage/memory/json.ts`, `src/storage/sqlite/json.ts`
+
+## Signatures
+- `memory/json-core.ts`: `JsonContext` (local type = `MemoryContext & { _ensureJsonTypeOrThrow }`), `jsonCoreMethods` (methods now have `this: JsonContext`; pure helpers replaced with imports from `../../utils/json-path`)
+- `memory/json-advanced.ts`: `JsonAdvancedContext` (local type = `MemoryContext & { _ensureJsonTypeOrThrow, _deepMerge, jsonSet }`), `jsonAdvancedMethods` (methods now have `this: JsonAdvancedContext`; `this._jsonResolvePath` → `jsonResolvePath` import)
+- `memory/json.ts`: `jsonMethods` (simple re-export merge; `@ts-nocheck` removed)
+- `sqlite/json.ts`: `JsonContext` (local type = `SqliteContext & { _ensureJsonTypeOrThrow, jsonSet }`), `jsonMethods` (methods now have `this: JsonContext`; pure helpers replaced with imports; `_sqliteDeepMerge` → standalone `deepMerge`)
+
+## Breaking
+- Removed `_parseJsonPath`, `_jsonResolvePath`, `_jsonTypeOf` from `memory/json-core.ts` `jsonCoreMethods` (now imported from `src/utils/json-path` as `parseJsonPath`, `jsonResolvePath`, `jsonTypeOf`)
+- Removed `_sqliteParseJsonPath`, `_sqliteJsonResolvePath`, `_sqliteJsonTypeOf` from `sqlite/json.ts` `jsonMethods` (now imported from `src/utils/json-path`)
+- Replaced `this._sqliteDeepMerge(a, b)` with standalone `deepMerge(a, b)` in `sqlite/json.ts`
+- Replaced all `this._jsonResolvePath(...)` / `this._sqliteJsonResolvePath(...)` → `jsonResolvePath(...)` and `this._jsonTypeOf(...)` / `this._sqliteJsonTypeOf(...)` → `jsonTypeOf(...)`
+- Removed `// @ts-nocheck` from all 4 JSON files
+- Replaced `import type { InMemoryStorage }` with `import type { MemoryContext }` from `./context` in memory/json-core.ts and memory/json-advanced.ts
+- Replaced `import type { SqliteStorage }` with `import type { SqliteContext }` from `./context` in sqlite/json.ts
+- (Forwarded from Worker 5) ZSet pure functions extracted, `@ts-nocheck` removed, context types introduced
+- (Forwarded from Worker 4) Stream pure functions extracted, `@ts-nocheck` removed, context types introduced
+
+## Summary
+Extracted JSON path parsing pure functions (`parseJsonPath`, `jsonResolvePath`, `jsonTypeOf`) from both memory and sqlite JSON files into imports from `src/utils/json-path`, converted `_sqliteDeepMerge` to a standalone `deepMerge` function, removed `@ts-nocheck`, added `this: JsonContext`/`this: JsonAdvancedContext` annotations via local intersection types, and cleaned up imports. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W7: 671K토큰, 56× <span class="badge badge-red">56×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">650K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">21K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">12.1KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">21</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">28</div></div>
+</div>
+<details><summary>W7 RESULT</summary><pre># RESULT #7 (by Worker 7)
+
+All tests pass.
+## Files
+- modified: `src/storage/memory/geo.ts`, `src/storage/sqlite/geo.ts`, `src/storage/memory/hash.ts`, `src/storage/memory/set.ts`
+
+## Signatures
+- `memory/geo.ts`: `GeoContext` (local type = `MemoryContext & { _ensureGeoTypeOrThrow, _ensureZsetKeyExists }`), `geoMethods` (methods now have `this: GeoContext`; `_unitToMeters` removed; `convertToMeters` imported from `../../utils/geo`)
+- `sqlite/geo.ts`: `GeoContext` (local type = `SqliteContext & { _ensureGeoTypeOrThrow, _ensureZsetKvStoreEntry, _getGeoCoords }`), `geoMethods` (methods now have `this: GeoContext`; `_unitToMeters` removed; `convertToMeters` already imported)
+- `memory/hash.ts`: `HashContext` (local type = `MemoryContext & { _ensureHashTypeOrThrow, _evictExpiredHashFields, _cleanupHashIfEmpty, _ensureHashKvStoreEntry }`), `hashMethods` (methods now have `this: HashContext`; `_hashGlobToRegex` removed; `globToRegex` imported from `../../utils/glob`)
+- `memory/set.ts`: `SetContext` (local type = `MemoryContext & { _ensureSetTypeOrThrow, _cleanupSetIfEmpty }`), `setMethods` (methods now have `this: SetContext`; `globToRegex` imported from `../../utils/glob`)
+
+## Breaking
+- Removed `_unitToMeters` from `memory/geo.ts` and `sqlite/geo.ts` `geoMethods` (replaced by `convertToMeters` import from `src/utils/geo`)
+- Removed `_hashGlobToRegex` from `memory/hash.ts` `hashMethods` (replaced by `globToRegex` import from `src/utils/glob`)
+- Replaced all `radius * this._unitToMeters(unit)` / `height * this._unitToMeters(unit)` / `width * this._unitToMeters(unit)` → `convertToMeters(...)` in both geo files
+- Replaced `this._hashGlobToRegex(pattern)` → `globToRegex(pattern)` in `memory/hash.ts` and `memory/set.ts`
+- Removed `// @ts-nocheck` from all 4 files
+- Replaced `import type { InMemoryStorage }` with `import type { MemoryContext }` from `./context` in memory/geo.ts, memory/hash.ts, memory/set.ts
+- Replaced `import type { SqliteStorage }` with `import type { SqliteContext }` from `./context` in sqlite/geo.ts
+- (Forwarded from Worker 6) JSON pure functions extracted, `@ts-nocheck` removed, context types introduced
+- (Forwarded from Worker 5) ZSet pure functions extracted, `@ts-nocheck` removed, context types introduced
+- (Forwarded from Worker 4) Stream pure functions extracted, `@ts-nocheck` removed, context types introduced
+
+## Summary
+Extracted `_unitToMeters` from both geo files (memory and sqlite) into shared `convertToMeters` imports from `src/utils/geo`, extracted `_hashGlobToRegex` from memory/hash.ts into `globToRegex` import from `src/utils/glob`, removed `@ts-nocheck`, added `this: GeoContext`/`this: HashContext`/`this: SetContext` type annotations via local intersection types, and updated imports. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W8: 336K토큰, 29× <span class="badge badge-yellow">29×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">331K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">5K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">11.8KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">23</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">27</div></div>
+</div>
+<details><summary>W8 RESULT</summary><pre># RESULT #8 (by Worker 8)
+
+All tests pass.
+## Files
+- modified: `src/storage/memory/list.ts`, `src/storage/memory/sort.ts`, `src/storage/memory/custom.ts`, `src/storage/memory/server.ts`
+
+## Signatures
+- `memory/list.ts`: `ListContext` (local type = `MemoryContext & { _ensureListTypeOrThrow, _ensureListKeyExists, _cleanupListIfEmpty }`), `listMethods` (all methods now have `this: ListContext`; `// @ts-nocheck` removed; import changed to `MemoryContext` from `./context`)
+- `memory/sort.ts`: `sortMethods.sort` now has `this: MemoryContext`; `// @ts-nocheck` removed; import changed to `MemoryContext` from `./context`
+- `memory/custom.ts`: `customMethods.delex` and `customMethods.msetex` now have `this: MemoryContext`; `// @ts-nocheck` removed; import changed to `MemoryContext` from `./context`
+- `memory/server.ts`: `serverMethods.save`, `bgsave`, `info`, `getLastSaveTime` now have `this: MemoryContext`; `// @ts-nocheck` removed; import changed to `MemoryContext` from `./context`
+
+## Breaking
+- Removed `// @ts-nocheck` from all 4 files
+- Replaced `import type { InMemoryStorage } from './core'` with `import type { MemoryContext } from './context'` in all 4 files
+- (Forwarded from Worker 7) Removed `_unitToMeters` from geo files, removed `_hashGlobToRegex` from hash/set files, replaced with shared utility imports
+- (Forwarded from Worker 6) JSON pure functions extracted, `@ts-nocheck` removed, context types introduced
+- (Forwarded from Worker 5) ZSet pure functions extracted, `@ts-nocheck` removed, context types introduced
+- (Forwarded from Worker 4) Stream pure functions extracted, `@ts-nocheck` removed, context types introduced
+
+## Summary
+Removed `@ts-nocheck` and added `this: ListContext`/`this: MemoryContext` type annotations to all methods in the four remaining memory mixin files (list, sort, custom, server), replacing `InMemoryStorage` imports with `MemoryContext` from `./context`. Created a `ListContext` local intersection type for list.ts's private helper methods. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W9: 575K토큰, 56× <span class="badge badge-red">56×</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:5px 0 15px;">
+  <div class="metric"><div class="metric-label">토큰 in</div><div class="metric-value" style="font-size:1em;">548K</div></div>
+  <div class="metric"><div class="metric-label">토큰 out</div><div class="metric-value" style="font-size:1em;">27K</div></div>
+  <div class="metric"><div class="metric-label">바이트</div><div class="metric-value" style="font-size:1em;">10.3KB</div></div>
+  <div class="metric"><div class="metric-label">턴</div><div class="metric-value" style="font-size:1em;">16</div></div>
+  <div class="metric"><div class="metric-label">도구</div><div class="metric-value" style="font-size:1em;">22</div></div>
+</div>
+<details><summary>W9 RESULT</summary><pre># RESULT #9 (by Worker 9)
+
+All tests pass.
+## Files
+- modified: `src/storage/sqlite/hash.ts`, `src/storage/sqlite/list.ts`, `src/storage/sqlite/set.ts`, `src/storage/sqlite/sort.ts`, `src/storage/sqlite/custom.ts`, `src/storage/sqlite/server.ts`, `src/storage/sqlite/expire.ts`
+
+## Signatures
+- `sqlite/hash.ts`: `HashContext` (local type = `SqliteContext & { _evictExpiredHashFields, _cleanupHashIfEmpty, _ensureHashKvStoreEntry }`); all methods now have `this: HashContext`; `// @ts-nocheck` removed; import changed to `SqliteContext` from `./context`
+- `sqlite/list.ts`: `ListContext` (local type = `SqliteContext & { _ensureListKvStoreEntry, _ensureListTypeOrThrow, _cleanupListIfEmpty }`); all methods now have `this: ListContext`; `// @ts-nocheck` removed; import changed to `SqliteContext` from `./context`
+- `sqlite/set.ts`: `SetContext` (local type = `SqliteContext & { _ensureSetTypeOrThrow, _ensureSetKvStoreEntry, _cleanupSetIfEmpty, __computeSetDiff, __computeSetInter, __computeSetUnion }`); all methods now have `this: SetContext`; `// @ts-nocheck` removed; import changed to `SqliteContext` from `./context`
+- `sqlite/sort.ts`: `sortMethods.sort` now has `this: SqliteContext`; `// @ts-nocheck` removed; import changed to `SqliteContext` from `./context`
+- `sqlite/custom.ts`: `customMethods.delex` and `customMethods.msetex` now have `this: SqliteContext`; `// @ts-nocheck` removed; import changed to `SqliteContext` from `./context`
+- `sqlite/server.ts`: `serverMethods.save`, `bgsave`, `info`, `getLastSaveTime` now have `this: SqliteContext`; `// @ts-nocheck` removed; import changed to `SqliteContext` from `./context`
+- `sqlite/expire.ts`: All `expireMethods` methods now have `this: SqliteContext`; `// @ts-nocheck` removed; added `import type { SqliteContext } from './context'`
+
+## Breaking
+- Removed `// @ts-nocheck` from all 7 sqlite mixin files
+- Replaced `import type { SqliteStorage } from './core'` with `import type { SqliteContext } from './context'` in 6 files (hash, list, set, sort, custom, server)
+- Added `import type { SqliteContext } from './context'` to expire.ts (which had no prior type import)
+- (Forwarded from Worker 8) Removed `@ts-nocheck` from all 4 memory mixin files, replaced `InMemoryStorage` imports with `MemoryContext`, created `ListContext` local type
+- (Forwarded from Workers 4–7) Various extractions and `@ts-nocheck` removals for stream, zset, json, geo, hash/set utility files
+
+## Summary
+Removed `@ts-nocheck` and added `this: SqliteContext`/`this: HashContext`/`this: ListContext`/`this: SetContext` type annotations to all methods in the 7 remaining sqlite mixin files (hash, list, set, sort, custom, server, expire), replacing `SqliteStorage` imports with `SqliteContext` from `./context`. All 31 original `@ts-nocheck` files are now clean. TypeScript compiles cleanly and all 1338 tests pass.</pre></details>
+<h3>W10: No-op <span class="badge badge-yellow">작업 없음</span></h3>
+</div></div>
+<div class="section" id="issue">
+<h2>🔴 핵심 이슈: Target Verification 무력화</h2>
+<div class="content">
+
+<h3>문제</h3>
+<p>v3.6.3의 Target Verification은 Worker가 <b>관련 테스트만</b> 실행하게 하여 tk/byte를 54× → 12×로 낮추는 메커니즘이다. 하지만 이 과제에서 Planner가 <b>모든 Worker에 <code>npx vitest run</code></b> (전체 1338테스트)를 지정했다.</p>
+
+<h3>원인 분석</h3>
+<table>
+<tr><th>요인</th><th>내용</th><th>영향</th></tr>
+<tr><td>과제 크기</td><td>1338테스트, 9개 Worker, 30+ 파일</td><td>Planner가 각 Worker에 관련 테스트만 지정하는 큐레이션 부담 증가</td></tr>
+<tr><td>Planner 큐레이션</td><td>모든 task에 동일한 <code>npx vitest run</code> 복사</td><td>최소 검증 의도 완전 무력화</td></tr>
+<tr><td>Planner 턴</td><td>58턴 (과도)</td><td>큰 과제에서 Planner 자체도 과도한 처리</td></tr>
+<tr><td>W4 비율</td><td>84× (심각과다)</td><td>전체 스위트 + 수정 루프 겹침</td></tr>
+</table>
+
+<h3>해결 방향</h3>
+<table>
+<tr><th>방안</th><th>설명</th><th>난이도</th></tr>
+<tr><td>Giver가 T₀에 Target Verification 분할 제공</td><td>Planner가 아닌 Giver가 각 Worker의 검증 명령을 미리 지정</td><td>중</td></tr>
+<tr><td>Planner 프롬프트 강화</td><td>"각 Worker에 관련 테스트만 지정하라" 지시 강화 + 예시 추가</td><td>낮음</td></tr>
+<tr><td>과제 크기 제한</td><td>Worker 수/과제 복잡도에 따라 Giver가 분할 전략 변경</td><td>높음</td></tr>
+</table>
+
+</div>
+</div>
+</div>
+</body>
+</html>
