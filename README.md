@@ -1,6 +1,6 @@
 # Giver
 
-v3.6.3
+v3.6.4
 
 > *"기억을 전달받는다면, 그건 온전한 기억이어야 한다."*
 > — 로이스 로리, 《기억 전달자》
@@ -155,4 +155,5 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | v3.6 | 2026-05 | 설계 원칙 (GGON), 리팩토링 설계 결정화, 모순 6건 수정 |
 | v3.6.1 | 2026-05 | reads:false, no-op 강화, 모순 8건 수정 |
 | v3.6.2 | 2026-05 | reads auto-inject, [Write to:] 경로 주입, 과다 읽기 −63% |
-| v3.6.3 | 2026-05 | Target Verification scope, 최소 책임 원칙, 검증 범위 제한 |
+| v3.6.3 | 2026-05 | Target Verification scope, Planner가 검증 대상 지정 |
+| v3.6.4 | 2026-05 | 최소 책임 검증, 협업 설명, Tₖ Target Verification 제거 |

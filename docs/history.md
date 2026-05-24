@@ -416,6 +416,14 @@ v3.5 C1 █████████████                                 
 | v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |
 | v3.5.13 | Signatures 통합, Breaking forward, T₀ Target Files, 모순 수정 |
 | v3.6.2 | Task 파일 경로 근원 해결: output:"plan.md" + reads:["taskN.md"] |
+## v3.6.4 — 최소 책임 검증, 협업 설명 (2026-05)
+
+- **Target Verification에서 협업 설명으로 전환**: Planner가 Worker에게 검증 대상을 지정하던 방식(v3.6.3)을 폐지. 대신 Worker에게 "다른 Worker가 각자 자기 범위를 담당하니, 네가 변경한 파일만 검증하면 된다"고 설명.
+- **Tₖ에서 Target Verification 제거**: task{k}.md에 Target Verification 섹션 제거. Worker가 자기 변경 범위를 스스로 판단하여 검증.
+- **T₀의 Target Verification은 Giver용**: T₀의 Target Verification은 Giver가 Phase 5에서 전체 검증을 실행할 때 사용. Worker는 참조하지 않음.
+- **실측 근거**: f7ef943b에서 Planner가 모든 Worker에 `npx vitest run` 전체 스위트를 지정 → tk/byte 12×(최소검증)에서 49×(전체스위트)로 회귀. Planner 컴플라이언스가 핵심 변수였음.
+- **핵심 전환**: "이 검증만 실행하라"(규칙) → "각자 자기 범위만 하면 된다"(합리적 자기이해). 규칙은 어기지만 합리적 설명은 따른다.
+
 ## v3.6.3 — Target Verification scope, 최소 책임 원칙 (2026-05)
 
 - **Target Verification**: Worker가 검증할 명령어를 T₀/Tₖ에 명시. "run the relevant tests" → "run ONLY the verification commands listed in Target Verification"
