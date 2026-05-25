@@ -1,14 +1,14 @@
 # Giver 아키텍처 성능 분석 리포트
 
 **최종 갱신**: 2026-05  
-**측정**: 모놀리식 ~ v3.6.4, 바이트+토큰+tk/byte  
+**측정**: 모놀리식 ~ v3.6.6, 바이트+토큰+tk/byte  
 **과제**: redbis-coding-test (10모듈, 44 테스트) 동일 과제 실측 포함
 
 ---
 
 ## 1. 요약
 
-Giver v3.6.4는 검증 관련 회귀를 구조적으로 방지한다. v3.6.3은 Planner가 Target Verification을 제대로 분배하면 12×, 전체 스위트를 복사하면 49×로 Плanner 컴플라이언스에 따라 4배 차이가 났다. v3.6.4는 T₀에서 Target Verification 섹션을 제거하여 Planner가 검증 명령을 복사하는 것 자체가 불가능해졌다.
+Giver v3.6.6는 검증 관련 회귀를 구조적으로 방지한다. v3.6.3은 Planner가 Target Verification을 제대로 분배하면 12×, 전체 스위트를 복사하면 49×로 Плanner 컴플라이언스에 따라 4배 차이가 났다. v3.6.6는 T₀에서 Target Verification 섹션을 제거하여 Planner가 검증 명령을 복사하는 것 자체가 불가능해졌다.
 
 v3.6.2의 과다 읽기, v3.6.3의 과다 검증을 연속 해소하여, 총 W_tokens는 v3.6.1 대비 **97% 감소**했다.
 
@@ -125,7 +125,7 @@ v3.6.3 Worker 토큰 구성 (추정):
 
 > **v3.6.1 치명 케이스(468×~1,038×)**: Worker가 대형 파일을 반복 읽으며 40~81턴 루프.  
 > **v3.6.3‡ (f7ef943b)**: Planner가 모든 Worker에 `npx vitest run`(1338테스트 전체 스위트)를 지정. Target Verification 의도(최소 검증)가 무력화됨. tk/byte 49× = v3.6.3†(12×)의 4배.  
-> **v3.6.4**: T₀에서 Target Verification 섹션을 제거. Planner가 검증 명령을 복사하는 것이 구조적으로 불가능. Worker는 "각자 자기 범위만" 합리적 설명으로 직접 판단.  
+> **v3.6.6**: T₀에서 Target Verification 섹션을 제거. Planner가 검증 명령을 복사하는 것이 구조적으로 불가능. Worker는 "각자 자기 범위만" 합리적 설명으로 직접 판단.  
 > **v3.6.2 개선**: 최대 117× (reads:auto-inject 효과).  
 > **v3.6.3 개선**: 12× (Target Verification 효과). W3은 5×까지 도달.
 
@@ -138,7 +138,7 @@ v3.6.1의 두 가지 과다 원인:
 
 v3.6.2: 과다 읽기 해소 (auto-inject)     → tk/byte 63× (과다 읽기 −63%)
 v3.6.3: 과다 검증 해소 (Target Verif.)   → tk/byte 12× (과다 검증 −75%, Planner 순응 시)
-v3.6.4: 구조적 방지 (T₀ 검증 섹션 제거) → Planner 복사 회귀 불가능
+v3.6.6: 구조적 방지 (T₀ 검증 섹션 제거) → Planner 복사 회귀 불가능
 ```
 
 각 버전이 하나의 과다 원인을 해소. 직교적 개선.

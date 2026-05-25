@@ -416,6 +416,18 @@ v3.5 C1 █████████████                                 
 | v3.5.12 | Planner Target Files 읽기 허용, 실제 패턴 인라인 |
 | v3.5.13 | Signatures 통합, Breaking forward, T₀ Target Files, 모순 수정 |
 | v3.6.2 | Task 파일 경로 근원 해결: output:"plan.md" + reads:["taskN.md"] |
+## v3.6.5 — RESULT 포맷 개선 (2026-05)
+
+- **RESULT "All tests pass" → "Verification passed"**: 전체 스위트를 돌렸다는 뉘앙스 대신 자기 검증만 통과했다는 의미. Worker가 검증 결과를 구체적으로 표현하도록 유도.
+
+## v3.6.6 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
+
+- **페르소나 도입**: 소설 The Giver의 캐릭터 역할을 에이전트 페르소나로 매핑. Giver = 기억 전달자(모든 맥락 보유, 직접 수정하지 않음), Planner = 배정 위원회(역할 분배만, 검증은 관심사外), Worker = 수령자/전문가(자기 범위 완전 책임).
+- **Worker "owns its scope"**: 규칙("verify only your changes") → 정체성("you own your scope"). Worker가 자기 검증을 선택하는 게 아니라 자기 범위를 책임지는 전문가.
+- **Giver "memory keeper"**: Phase 5에서 직접 수정 금지. 실패 시 Past failures에 기록하고 사용자와 대화. "고칠 수 있는 게 아니라, 기억으로 남긴다."
+- **테스트 명령어 예시 제거**: Worker template에서 `npx vitest run src/__tests__/config.test.ts` 등 구체적 명령어 제거. b91d3d73에서 Worker가 예시의 `npx vitest run`을 전체 스위트로 확장하는 회귀 발견.
+- **실측 근거**: b91d3d73에서 모든 활성 Worker가 `npx vitest run` 1338테스트 전체 스위트 실행. "각자 자기 범위만" 설명이 모델의 안전망 행동(전체 스위트)을 막지 못함. 템플릿 예시가 모델 행동에 강한 영향.
+
 ## v3.6.4 — 최소 책임 검증, T₀ Target Verification 제거 (2026-05)
 
 - **Target Verification에서 협업 설명으로 전환**: Planner가 Worker에게 검증 대상을 지정하던 방식(v3.6.3)을 폐지. 대신 Worker에게 "다른 Worker가 각자 자기 범위를 담당하니, 네가 변경한 파일만 검증하면 된다"고 설명. 규칙("이 검증만 실행하라")은 어기지만 합리적 설명("각자 자기 범위만 하면 된다")은 따른다.
