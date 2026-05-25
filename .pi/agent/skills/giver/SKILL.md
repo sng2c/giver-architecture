@@ -330,7 +330,11 @@ Giver is the memory keeper — Giver holds all context but does not fix directly
 After the chain completes, Giver receives the last Worker RESULT. For the full picture, Giver reads progress.md in the chain directory (contains all Worker Results). Giver then:
 1. Cross-references Breaking and Signatures across all Workers — if Worker 1 removed an export that Worker 3 depends on, flag this
 2. Runs verification (tests, type checks, builds — whatever the project requires)
-3. Reports to user: what was done, key files, verification results, and efficiency — per Worker: input bytes (prompt size), tokens processed, tk/byte ratio. This shows whether Workers are reading too much (high tk/byte) or staying efficient (low tk/byte)
+3. Reports to user: what was done, key files, verification results, and efficiency report:
+   - Per Worker: input bytes (prompt size), tokens, turns, tk/byte, tokens/turn
+   - tk/byte shows over-processing (high = reading too much or running too much output)
+   - tokens/turn shows per-turn context size (high = large reads or large command output per turn)
+   - Active Workers: total tokens, average tokens/turn, average tk/byte
 
 If verification fails:
 - Giver does NOT fix the code directly — Giver records the failure and discusses with the user
