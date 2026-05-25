@@ -456,7 +456,7 @@ v3.5 C1 █████████████                                 
 
 W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "no edit made for implementation task"로 판단하여 체인 실패로 처리. 실제로는 모든 작업이 완료된 정상 종료. Giver가 progress.md에서 실제 결과를 확인하여 대응.
 
-## v3.6.6 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
+## v3.6.7 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
 
 - **페르소나 도입**: 소설 The Giver의 캐릭터 역할을 에이전트 페르소나로 매핑. Giver = 기억 전달자(모든 맥락 보유, 직접 수정하지 않음), Planner = 배정 위원회(역할 분배만, 검증은 관심사外), Worker = 수령자/전문가(자기 범위 완전 책임).
 - **Worker "owns its scope"**: 규칙("verify only your changes") → 정체성("you own your scope"). Worker가 자기 검증을 선택하는 게 아니라 자기 범위를 책임지는 전문가.
