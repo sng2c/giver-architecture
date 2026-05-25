@@ -85,9 +85,9 @@ Giver는 T₀를 쓰기 전에 이 원칙들을 적용한다. 작업의 범위, 
 ```
 G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
                                 ↓
-                           W₁(T₁) → R₁
-                           W₂(T₂, R₁) → R₂       ← R₂는 R₁을 반영 (조합 전이)
-                           W₃(T₃, R₂) → R₃       ← R₃는 R₁, R₂를 반영
+                           W₁(T₁) → R₁           ← task file only, NO Planner output
+                           W₂(T₂, R₁) → R₂       ← prev Worker RESULT only
+                           W₃(T₃, R₂) → R₃       ← 조합 전이
 ```
 
 - **Scout**: Giver가 코드 구조를 직접 읽지 않고 Scout에게 위임. 체인 밖에서만 호출.
@@ -141,7 +141,7 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.6.6, tk/byte, 동일과제 비교) |
 | [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
 | [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
-| [history.md](docs/history.md) | v1~v3.6.6 개선 이력 |
+| [history.md](docs/history.md) | v1~v3.6.7 개선 이력 |
 
 ## 버전 히스토리
 
@@ -156,4 +156,4 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | v3.6.1 | 2026-05 | reads:false, no-op 강화, 모순 8건 수정 |
 | v3.6.2 | 2026-05 | reads auto-inject, [Write to:] 경로 주입, 과다 읽기 −63% |
 | v3.6.3 | 2026-05 | Target Verification scope, Planner가 검증 대상 지정 |
-| v3.6.6 | 2026-05 | 최소 책임 검증, 협업 설명, T₀ Target Verification 완전 제거 |
+| v3.6.7 | 2026-05 | W₁ Planner 출력 수신 제거, Completion Guard 이슈 기록, R8 체인 실측 |

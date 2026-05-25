@@ -1,14 +1,14 @@
 # Giver 아키텍처 성능 분석 리포트
 
 **최종 갱신**: 2026-05  
-**측정**: 모놀리식 ~ v3.6.6, 바이트+토큰+tk/byte  
+**측정**: 모놀리식 ~ v3.6.7, 바이트+토큰+tk/byte  
 **과제**: redbis-coding-test (10모듈, 44 테스트) 동일 과제 실측 포함
 
 ---
 
 ## 1. 요약
 
-Giver v3.6.6는 검증 관련 회귀를 구조적으로 방지한다. v3.6.3은 Planner가 Target Verification을 제대로 분배하면 12×, 전체 스위트를 복사하면 49×로 Плanner 컴플라이언스에 따라 4배 차이가 났다. v3.6.6는 T₀에서 Target Verification 섹션을 제거하여 Planner가 검증 명령을 복사하는 것 자체가 불가능해졌다.
+Giver v3.6.7는 W₁의 불필요한 Planner 출력 수신을 제거하여 토큰 낭비를 줄인다. v3.6.6 체인(66ecddfd)에서 W₁이 74,357토큰의 Planner 출력을 수신했지만 실제로는 task1.md만 참조했다. v3.6.6은 검증 관련 회귀를 구조적으로 방지한다. v3.6.3은 Planner가 Target Verification을 제대로 분배하면 12×, 전체 스위트를 복사하면 49×로 Planner 컴플라이언스에 따라 4배 차이가 났다. v3.6.6는 T₀에서 Target Verification 섹션을 제거하여 Planner가 검증 명령을 복사하는 것 자체가 불가능해졌다.
 
 v3.6.2의 과다 읽기, v3.6.3의 과다 검증을 연속 해소하여, 총 W_tokens는 v3.6.1 대비 **97% 감소**했다.
 
@@ -224,7 +224,39 @@ Giver의 가치는 **총 토큰 최소화가 아니라 격리와 재시도**다.
 
 ---
 
-## 8. W4 이상치 분석 (v3.6.3, 27×/117K)
+### 9.1 v3.6.7 R8 체인 (Redbis double-ERR 수정, 66ecddfd)
+
+Redbis R8 에러 메시지 double-ERR 수정. Planner가 T₀의 잘못된 가정((ERR prefix 추가)을 반전시켜 "ERR prefix 제거"로 수정한 케이스.
+
+| Step | Agent | 역할 | Turns | Tokens | 바이트 | tk/byte | 결과 |
+|------|-------|------|:-----:|-------:|--------|--------|------|
+| 0 | Planner | 계획 | 30 | 74,357 | — | — | 6 task 파일 작성, T₀ 가정 반전 발견 |
+| 1 | Worker 1 | zset 3파일 | 12 | 22,955 | ~2,800 | ~8× | ✅ |
+| 2 | Worker 2 | string-ops | 9 | 11,250 | ~1,200 | ~9× | ✅ |
+| 3 | Worker 3 | stream 2파일 | 11 | 17,214 | ~1,800 | ~10× | ✅ |
+| 4 | Worker 4 | hash+json | 10 | 18,266 | ~1,600 | ~11× | ✅ |
+| 5 | Worker 5 | set/list/key/sort | 10 | 15,481 | ~1,500 | ~10× | ✅ |
+| 6 | Worker 6 | geo/bitmap/custom | 9 | 17,020 | ~1,400 | ~12× | ✅ + tsc+vitest 통과 |
+| 7 | Worker 7 | (no task) | 2 | 2,537 | ~200 | — | ⬜ No-op |
+| 8-10 | — | — | — | — | — | — | 미할당 |
+
+**W₁에 전달된 Planner 출력 74,357토큰은 task1.md로 충분한 컨텍스트가 있어 낭비.** v3.6.7에서 제거.
+
+| 지표 | 값 |
+|------|-----|
+| 활성 Worker | 7 (P + W1~W6) |
+| 총 토큰 | ~179,080 |
+| W 토큰 (P 제외) | ~104,723 |
+| W 평균 토큰/turn | ~17,131 |
+| 수정 파일 | 15개 핸들러, 307줄 |
+| 테스트 | 1338/1338 통과 |
+| 타입체크 | clean |
+
+**Completion Guard 문제**: W7이 no-op로 종료한 후 체인 실행기가 "completed without making edits"로 판단하여 체인 실패 처리. 실제로는 모든 작업 완료. Giver가 progress.md에서 결과 확인하여 대응.
+
+---
+
+## 10. W4 이상치 분석 (v3.6.3, 27×/117K)
 
 v3.6.3 W4는 다른 Worker(5~12×)보다 tk/byte가 높다 (27×, 117K토큰, 18턴/20 tools).
 
@@ -241,6 +273,8 @@ v3.6.3 W4는 다른 Worker(5~12×)보다 tk/byte가 높다 (27×, 117K토큰, 18
 2. **태스크 분할 최적화**: W4(27×)와 W3(5×)의 차이에서, Planner의 분할 전략이 tk/byte에 미치는 영향 분석.
 3. **측정 단위 통일**: v1~v3.5는 토큰만, v3.6+는 토큰+바이트 측정 가능.
 4. **Breaking forward 검증**: 모든 테스트 체인에서 Breaking="None"이었음. 실제 Breaking 항목 전달 검증 필요.
+5. **W₁ Planner 출력 낭비**: v3.6.6 체인(66ecddfd)에서 W₁이 Planner 출력 74,357토큰을 수신했지만 task1.md만 참조. v3.6.7에서 W₁의 {previous} 제거.
+6. **Completion Guard false positive**: no-op Worker가 "completed without making edits"로 처리되어 체인이 실패로 종료. Giver가 progress.md에서 실제 결과를 확인하여 대응. 해결: W₁부터 Wₖ까지 작업 완료 후 미사용 슬롯은 정상 종료 처리 필요.
 
 ---
 
@@ -255,6 +289,7 @@ v3.6.3 W4는 다른 Worker(5~12×)보다 tk/byte가 높다 (27×, 117K토큰, 18
 | v3.6.1 | 아티팩트 | 토큰+바이트 | 18체인 |
 | v3.6.2 | 아티팩트 | 토큰+바이트 | 5체인 |
 | v3.6.3 | 아티팩트 | 토큰+바이트 | 1체인 (동일과제) |
+| v3.6.7 | 아티팩트 | 토큰 | 1체인 (R8 Redbis, 66ecddfd) |
 | 모놀리식 | 아티팩트 | 토큰+바이트 | 1체인 (동일과제) |
 
 전체 체인 데이터: `docs/chains.json` (28체인, 토큰+바이트)  

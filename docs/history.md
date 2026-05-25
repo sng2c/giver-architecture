@@ -420,6 +420,42 @@ v3.5 C1 █████████████                                 
 
 - **RESULT "All tests pass" → "Verification passed"**: 전체 스위트를 돌렸다는 뉘앙스 대신 자기 검증만 통과했다는 의미. Worker가 검증 결과를 구체적으로 표현하도록 유도.
 
+## v3.6.7 — W₁ Planner 출력 수신 제거 (2026-05)
+
+- **W₁ {previous} 제거**: Worker 1의 태스크 템플릿에서 `{previous}` 참조 제거. W₁은 task1.md에서만 컨텍스트를 받음.
+- **W₁ Breaking**: "forward Breaking items from {previous}" → "add this Worker's own" (W₁은 {previous}가 없으므로).
+- **Rule 5 변경**: "{previous} carries previous step's output" → "W₁ does NOT receive Planner's text output. Wₖ(K≥2) receives {previous}=Wₖ₋₁'s RESULT."
+- **Rule 7 변경**: "Worker 1 receives Planner output" → "Worker 1 does NOT receive Planner output. Worker K(K≥2) receives Wₖ₋₁'s RESULT."
+- **Pipeline 다이어그램**: `W₁ → {previous} = Planner output` → `W₁ → NO {previous} (task file only)`
+- **Signatures**: `W: Tₖ + {previous} → RESULT` → `W: Tₖ → RESULT (W₁: task file only; Wₖ≥2: task file + {previous})`
+
+**근거**: Planner의 텍스트 출력은 "6 task files written" 확인 메시지. W₁은 task1.md에서 충분한 컨텍스트를 받으므로 Planner 출력은 토큰 낭비. 실측(66ecddfd 체인): Planner 출력 74,357토큰이 W₁에 전달되었지만 W₁은 task1.md만 참조함.
+
+### R8 체인 실측 (Redbis double-ERR 수정, 66ecddfd)
+
+| Step | Agent | Turns | Tokens | Result |
+|------|-------|:-----:|-------:|--------|
+| 0 | Planner | 30 | 74,357 | 6 task files + T₀ 가정 반전 발견 |
+| 1 | Worker 1 | 12 | 22,955 | ✅ zset 3개 파일 |
+| 2 | Worker 2 | 9 | 11,250 | ✅ string-ops |
+| 3 | Worker 3 | 11 | 17,214 | ✅ stream 2개 파일 |
+| 4 | Worker 4 | 10 | 18,266 | ✅ hash + json |
+| 5 | Worker 5 | 10 | 15,481 | ✅ set/list/key/sort |
+| 6 | Worker 6 | 9 | 17,020 | ✅ geo/bitmap/custom |
+| 7 | Worker 7 | 2 | 2,537 | ⬜ No-op (task 없음) |
+| 8-10 | — | — | — | 미할당 |
+
+- **활성 Worker**: 7 (P + W1~W6)
+- **총 토큰**: ~179,080
+- **W₁에 전달된 Planner 출력**: 74,357토큰 (W₁은 참조하지 않음 → 낭비)
+- **수정 파일**: 15개, 307줄 변경
+- **테스트**: 1338/1338 통과, tsc clean
+- **W₁ 토큰**: 22,955 (Planner 출력 74,357토큰 제거 시 약 30% 절감 예상)
+
+### Completion Guard 문제
+
+W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "no edit made for implementation task"로 판단하여 체인 실패로 처리. 실제로는 모든 작업이 완료된 정상 종료. Giver가 progress.md에서 실제 결과를 확인하여 대응.
+
 ## v3.6.6 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
 
 - **페르소나 도입**: 소설 The Giver의 캐릭터 역할을 에이전트 페르소나로 매핑. Giver = 기억 전달자(모든 맥락 보유, 직접 수정하지 않음), Planner = 배정 위원회(역할 분배만, 검증은 관심사外), Worker = 수령자/전문가(자기 범위 완전 책임).
