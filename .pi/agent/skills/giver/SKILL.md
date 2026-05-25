@@ -1,7 +1,7 @@
 ---
 name: giver
 version: "3.6.6"
-description: 'The Giver v3.6.6. Each agent owns its scope. Giver records failures, does not fix directly. reads:["taskN.md"] auto-inject. P-Wx10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh.'
+description: 'The Giver v3.6.6. Each agent owns its scope. Giver records failures, does not fix directly. Efficiency report per chain. reads:["taskN.md"] auto-inject. P-Wx10 chain. Same file OK across Workers. No Scout in chain. All subagents run fresh.'
 disable-model-invocation: true
 ---
 
@@ -330,7 +330,7 @@ Giver is the memory keeper — Giver holds all context but does not fix directly
 After the chain completes, Giver receives the last Worker RESULT. For the full picture, Giver reads progress.md in the chain directory (contains all Worker Results). Giver then:
 1. Cross-references Breaking and Signatures across all Workers — if Worker 1 removed an export that Worker 3 depends on, flag this
 2. Runs verification (tests, type checks, builds — whatever the project requires)
-3. Reports to user: what was done, key files, verification results
+3. Reports to user: what was done, key files, verification results, and efficiency — per Worker: input bytes (prompt size), tokens processed, tk/byte ratio. This shows whether Workers are reading too much (high tk/byte) or staying efficient (low tk/byte)
 
 If verification fails:
 - Giver does NOT fix the code directly — Giver records the failure and discusses with the user
