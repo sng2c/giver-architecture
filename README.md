@@ -40,11 +40,12 @@ $$
 graph LR
     G["Giver"] -->|Recon| S["Scout"]
     S -->|시그니처| G
-    G -->|"T₀"| P["Planner"]
-    P -->|task| W1["Worker 1"]
-    W1 -->|R₁| W2["Worker 2"]
-    W2 -->|R₂| W3["Worker 3"]
-    W3 -->|R₃| W4["..."]
+    G -->|"T₀"| P["Planner (1-step)"]
+    P -->|task files| G
+    G -->|W×N chain| W1["Worker 1"]
+    W1 -->|results.md| W2["Worker 2"]
+    W2 -->|results.md| W3["Worker 3"]
+    W3 -->|results.md| W4["..."]
 ```
 Giver는 항상 P→W×10 체인을 시작한다. Planner가 task 수(N ≤ 10)를 결정하면, task 파일이 없는 Worker 슬롯은 no-op로 즉시 종료된다. 같은 파일을 여러 Worker가 순차 수정 가능.
 
