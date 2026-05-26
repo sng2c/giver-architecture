@@ -1,6 +1,6 @@
 # Giver
 
-v3.7.1
+v3.7.2
 
 > *"기억을 전달받는다면, 그건 온전한 기억이어야 한다."*
 > — 로이스 로리, 《기억 전달자》
@@ -116,7 +116,7 @@ v3.6.3           56K           12K        Target Verification (과다 검증 −
 v3.6.7            —           12K        W₁ {previous} 제거, R8 수정
 v3.6.8            —           17K        brief/echo 충돌
 v3.7.0            —           19K        results.md 도입
-v3.7.1            —           19K        results.md + RESULT 양쪽 기록
+v3.7.2            —           19K        results.md + RESULT 양쪽 기록
 ```
 
 **v3.6.3 in/turn(12K)은 모놀리식(8K)과 동급** — Worker당 효율성이 모놀리식과 비슷하면서 부분 재시도 가능.
@@ -142,10 +142,10 @@ v3.7.1            —           19K        results.md + RESULT 양쪽 기록
 | [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
 | [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
 | [insights.md](docs/insights.md) | 프로젝트 인사이트 (8개 핵심 통찰) |
-| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.1, in/turn, 동일과제 비교) |
+| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.2, in/turn, 동일과제 비교) |
 | [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
 | [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
-| [history.md](docs/history.md) | v1~v3.7.1 개선 이력 |
+| [history.md](docs/history.md) | v1~v3.7.2 개선 이력 |
 
 ## 버전 히스토리
 
@@ -163,4 +163,4 @@ v3.7.1            —           19K        results.md + RESULT 양쪽 기록
 | v3.6.7 | 2026-05 | {previous} 체인 echo, Breaking 템플릿 버그픽스, 3회→1회 치환 수정 |
 | v3.6.8 | 2026-05 | "brief" 제거로 echo/RESULT 충돌 해결, "Reproduce" 지시어 도입 (33588327 실측: echo 미준수, Breaking forward는 작동) |
 | v3.7.0 | 2026-05 | results.md 구조적 통신, {previous} 제거, reads 자동 주입 (echo 미준수 → 구조적 해결) |
-| v3.7.1 | 2026-05 | RESULT output + results.md 양쪽 기록 (67df5f65 실측: W1~W5 RESULT 포맷 + results.md 누적) |
+| v3.7.2 | 2026-05 | RESULT output + results.md 양쪽 기록 (67df5f65 실측: W1~W5 RESULT 포맷 + results.md 누적) |
