@@ -497,3 +497,17 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
   - Rule 3/4/6/8: reads override 양쪽 설명, output:[Write to:] 설명
   - Worker template: "Read taskN.md" → "Your task file taskN.md has been provided above"
   - Planner Working Rules: "to the [Write to:] directory"
+
+## v3.6.8 — echo/RESULT 충돌 해결, "brief" 제거 (2026-05-26)
+
+- **"Write a brief RESULT" → "Write a RESULT"**: "brief"가 "echo {previous}"와 충돌. 모델이 brief를 선택하여 echo를 건너뜀. 33588327 체인에서 모든 Worker가 echo 미준수.
+- **W2+ 지시 변경**: "Echo the previous Worker result below, then write your RESULT" → "Reproduce the previous Worker result below, then write your RESULT". reproduce가 echo보다 강한 지시어.
+- **v3.6.7에서 발견한 버그**: {previous}가 템플릿에서 3회 치환되어 Planner output이 Breaking 줄, Echo 지시줄, echo 위치에 중복 삽입. v3.6.7에서 1회로 수정.
+- **Breaking forward는 지시 없이도 작동**: 33588327에서 W7이 W1~W6의 Breaking을 모두 forward. echo는 안 했지만 Breaking은 전달. 인사이트 #7 "지시보다 정체성" 재확인.
+
+## v3.6.7 — {previous} 체인 echo, Breaking 템플릿 버그픽스 (2026-05-26)
+
+- **{previous} 체인 echo**: W2+ output 앞에 `----\n{previous}\n----` 추가. 이전 Worker 결과를 체인으로 전달.
+- **Breaking 템플릿 수정**: `{previous}`가 Breaking 줄 안에 들어있어 Planner output이 템플릿을 깨는 버그. Breaking 줄에서 `{previous}` 제거.
+- **W1 Breaking**: "add this Worker's own" (이전 Worker 없음). W2+ Breaking: "forward all Breaking items from previous Workers above and add this Worker's own".
+- **{previous} 3회→1회 치환**: 템플릿에서 `{previous}` 리터럴이 3곳에 있어 pi-subagents가 전부 치환. "contains RESULT #N"과 "Echo {previous}"를 정적 텍스트로 변경. echo 위치 1곳만 `{previous}` 유지.

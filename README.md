@@ -156,4 +156,5 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | v3.6.1 | 2026-05 | reads:false, no-op 강화, 모순 8건 수정 |
 | v3.6.2 | 2026-05 | reads auto-inject, [Write to:] 경로 주입, 과다 읽기 −63% |
 | v3.6.3 | 2026-05 | Target Verification scope, Planner가 검증 대상 지정 |
-| v3.6.8 | 2026-05 | W₁ Planner 출력 수신 제거, Completion Guard 이슈 기록, R8 체인 실측 |
+| v3.6.7 | 2026-05 | {previous} 체인 echo, Breaking 템플릿 버그픽스, 3회→1회 치환 수정 |
+| v3.6.8 | 2026-05 | "brief" 제거로 echo/RESULT 충돌 해결, "Reproduce" 지시어 도입 (33588327 실측: echo 미준수, Breaking forward는 작동) |
