@@ -527,3 +527,20 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **W2+ 지시 변경**: "Echo the previous Worker result below, then write your RESULT" → "Reproduce the previous Worker result below, then write your RESULT". reproduce가 echo보다 강한 지시어.
 - **v3.6.7에서 발견한 버그**: {previous}가 템플릿에서 3회 치환되어 Planner output이 Breaking 줄, Echo 지시줄, echo 위치에 중복 삽입. v3.6.7에서 1회로 수정.
 - **Breaking forward는 지시 없이도 작동**: 33588327에서 W7이 W1~W6의 Breaking을 모두 forward. echo는 안 했지만 Breaking은 전달. 인사이트 #7 "지시보다 정체성" 재확인.
+
+## v3.7.1 — RESULT output + results.md 양쪽 기록 (2026-05-26)
+
+- **v3.7.0 문제**: Worker가 output에 간단한 요약만 쓰고 results.md에만 RESULT 포맷 기록. "After writing your RESULT, append it to results.md"가 "output에 안 쓰고 results.md에만 써라"로 해석됨.
+- **해결**: "Write your RESULT below. Also append it to results.md." — output에 RESULT 포맷을 쓰고, results.md에도 추가하라는 의미를 명확히 함.
+- **실측 (67df5f65)**: W1~W5 전부 output에 RESULT 포맷 작성 ✅, results.md에 5개 RESULT 누적 (97줄) ✅, W2+ reads=['taskN.md', 'results.md'] 자동 주입 ✅.
+- **W평균tk/t**: 19K (v3.6.8과 동급, 과제 차이가 더 큼).
+
+## v3.7.0 — results.md 구조적 통신, {previous} 제거 (2026-05-26)
+
+- **results.md 파일로 Worker 간 통신**: {previous} echo/reproduce 지시가 모델에 의해 무시됨 (v3.6.7, v3.6.8 실측). Breaking 수동 forward도 단일 홉 제한으로 이론적 간극 존재. results.md를 Worker가 append/reads하는 구조적 방식으로 교체.
+- **reads 자동 주입**: W2+ reads=['taskN.md', 'results.md'] → pi-subagents가 results.md를 자동 주입. Worker가 안 읽을 수 없음.
+- **append 지시**: 각 Worker가 작업 후 RESULT를 results.md에 append. 파일 쓰기는 소스 코드 쓰기와 같은 맥락에서 잘 지켜짐.
+- **{previous} 완전 제거**: W1은 reads=['task1.md']만 (이전 결과 없음). W2+는 reads=['taskN.md', 'results.md'] (모든 이전 결과). Worker template에서 {previous}, echo, reproduce, "Context from previous", Breaking forward 모두 제거.
+- **Breaking forward 불필요**: results.md에 모든 Worker의 Breaking이 누적. 수동 forward 지시 없이도 구조적으로 보장.
+- **실측 (09a860c5)**: W1~W3 output에 RESULT 포맷 없음 (간단한 요약만), results.md에 3개 RESULT 누적. W2 input에 results.md 자동 주입 확인. v3.7.1에서 output에도 RESULT 기록하도록 수정.
+- **인사이트 #10 "통신 채널은 구조로 보장한다"**: echo 지시(v3.6.7), Reproduce 지시(v3.6.8) 모두 무시됨. results.md reads 자동 주입은 구조적 — 지시 불필요. "지시보다 구조" (#6)의 확증.

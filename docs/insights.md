@@ -227,3 +227,5 @@ v3.7.0에서 results.md로 교체했다. W2+의 reads에 results.md를 넣으니
 - v3.7.0: echo 지시 제거 → results.md reads 자동 주입 구조적 보장
 
 **지시보다 구조** (#6의 확장): 불만족스러운 지시를 더 강한 지시로 대치하는 게 아니라, 지시가 필요 없는 구조로 바꾼다.
+
+v3.7.1 실측 (67df5f65): W1~W5 전부 output에 RESULT 포맷 작성, results.md에 5개 RESULT 누적. W2+ reads=['taskN.md', 'results.md'] 자동 주입. {previous} 없이도 구조적으로 정보 전달 보장. W평균tk/t 19K (v3.6.8과 동급).
