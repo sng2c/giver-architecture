@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.7.3"
-description: 'The Giver v3.7.3. Planner as 1-step chain before W×N. Dynamic worker count. Same-file Workers merged. reads:["taskN.md"] auto-inject. results.md structural communication. All subagents run fresh.'
+version: "3.7.2"
+description: 'The Giver v3.7.2. Each agent owns its scope. Giver records failures, does not fix directly. Efficiency report per chain. Workers read task files via `read` tool, results.md via reads auto-inject. P-Wx10 chain. W1 gets task file only (no P output). Same file OK across Workers. No Scout in chain. All subagents run fresh.'
 disable-model-invocation: true
 ---
 
@@ -21,7 +21,7 @@ Target Files (T₀) = All files to be modified or created across the entire task
 Target Files (Tₖ) = Files this Worker will modify or create (subset assigned by Planner from T₀)
 Each Worker owns its scope — verifies its own changes, not someone else's. Giver is the memory keeper: records failures, discusses with user, does not fix directly.
 Result = Files + Signatures + Breaking + Summary. Each Worker appends its RESULT to results.md in the chain directory.
-History = Giver writes T₀ → Giver runs Planner (1-step chain, writes task files) → Giver reads directory, finds N → Giver runs W×N chain (same sessionDir) → W₁ appends to results.md → W₂ reads results.md + appends → ... → Wₙ appends
+History = Giver writes T₀ → T₀ → P output → W₁ appends to results.md → W₂ reads results.md + appends → ... → W₁₀ appends  (Planner writes task files to chain directory via [Write to:]. Workers receive task files via Workers read task files via `read` tool, results.md via reads auto-inject and previous results via reads:["results.md"] auto-inject.)  (W₁ reads only task1.md. Wₖ (K≥2) reads taskK.md + results.md to see all previous Workers' results. Each Worker appends its RESULT to results.md after completing work.)
 ```
 
 ## Signatures
@@ -30,21 +30,21 @@ History = Giver writes T₀ → Giver runs Planner (1-step chain, writes task fi
 G: user_input → T₀
 P: T₀ → {Tₖ}
 S: recon → recon (called standalone by Giver, not in chain)
-W: Tₖ → RESULT  (W₁ reads task1.md only. Wₖ (K≥2) reads task file + results.md for all previous results)
+W: Tₖ → RESULT  (W₁ reads task1.md via `read` tool, no previous results. Wₖ (K≥2) reads task file via `read` tool + results.md via reads injection for all previous results)
 ```
 
-Scout is called standalone by Giver (before T₀). Planner runs as a 1-step chain before the W×N chain (Phase 3.5). Workers operate within the W×N chain (Phase 4). Both Planner and Worker chains share the same sessionDir so Workers find task files written by Planner. Workers receive task files and results.md (via reads injection). Task files and results.md persist across the W×N chain.
+Planner and Workers operate within the chain. Planner returns output for the chain system. Workers read task files using the `read` tool and receive results.md via reads injection. Task files and results.md persist across the chain. Scout is called standalone by Giver before the chain — it does not participate in the chain pipeline. Task files and results.md persist across the chain.
 
 ## Pipeline
 
 Planner writes separate task files (task1.md, task2.md, ...) for each Worker. Each Worker reads only its own task file plus results.md (which accumulates all previous Worker results). No Scout in chain. Workers do NOT receive {previous} — instead, they read results.md via reads injection to see all previous Workers' Files, Signatures, Breaking, and Summary. Each Worker appends its RESULT to results.md after completing work.
 
 ```
-Giver → T₀ → Planner (1-step chain, writes task files) → Giver reads directory → W×N chain (same sessionDir)
+Giver → Task #0 (for Planner) — the only document Giver writes
 Planner → writes task1.md, task2.md, ...
-Worker 1 → reads ["task1.md"] auto-injected, no previous results (first Worker)
-Worker 2 → reads ["task2.md", "results.md"] auto-injected, sees Worker 1's result in results.md
-Worker N → reads ["taskN.md", "results.md"] auto-injected, sees all previous results in results.md
+Worker 1 → reads: false, reads task1.md with `read` tool (no previous results)
+Worker 2 → reads: ["results.md"] auto-injected, reads task2.md with `read` tool
+Worker N → reads: ["results.md"] auto-injected, reads taskN.md with `read` tool
 ```
 
 ---
@@ -134,7 +134,7 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 
 ```markdown
 ----
-# T₀ (for Planner)
+# Task #0 (for Planner)
 
 ### Goal
 [One sentence: what needs to be done and why]
@@ -167,56 +167,23 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 
 ---
 
-# Phase 3.5: Plan
-
-Giver calls Planner as a 1-step chain (output: "plan.md") to get the [Write to:] directory path. Planner writes task1.md through taskN.md to that directory. After the Planner chain completes, Giver reads the directory, counts N task files, then constructs a W×N Worker chain using the same sessionDir — so Workers find the task files in the same directory.
-
-```json
-{
-  "chain": [
-    {
-      "agent": "planner",
-      "reads": false,
-      "output": "plan.md",
-      "task": "----\n# T₀ (for Planner)\n\n### Goal\n...\n\n## Your Role\n\nWrite SEPARATE task files (task1.md, task2.md, ...) to the directory shown in the [Write to:] prefix. DO NOT write to plan.md — plan.md is a system file for the chain directory path. Write task files as separate files: task1.md, task2.md, etc.\n\n## Working Rules\n\n- Curate from T₀ primarily. You MAY read Target Files listed in T₀ to extract implementation patterns (3-10 lines per file).\n- Curate per Worker — each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures.\n- When multiple groups modify the same file, merge them into one Worker.\n- Workers are trusted specialists — provide clear requirements, not verification instructions."
-    }
-  ]
-}
-```
-
-After Planner completes:
-1. Giver reads the [Write to:] directory (the chain directory from Phase 3.5)
-2. Giver counts task files: N = number of task1.md, task2.md, ... found
-3. Giver constructs a W×N Worker chain with the same sessionDir as the Planner chain
-4. Workers find their task files via reads auto-inject (same directory)
-
-+ Planner writes task files via [Write to:] path injection (same mechanism as before)
-+ Giver determines N by counting task files — no unused Worker slots
-+ Both chains share the same session directory — Workers find task files from the Planner chain
-+ Planner MUST write task files (task1.md, task2.md, ...) — NOT to plan.md
-
----
-
 # Phase 4: Chain
 
-Giver constructs a W×N chain with the same sessionDir as the Planner chain (from Phase 3.5). N = number of task files. Workers find their task files in the shared directory. The chain returns the last Worker's RESULT to Giver automatically.
+Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain returns the last Worker's RESULT to Giver automatically.
 
-+ Same sessionDir as Planner chain — Workers find task files from Phase 3.5
-+ W×N chain: exactly N workers, no unused slots
-+ Workers receive task files via reads auto-inject
-+ Workers append RESULT to results.md (in the shared directory)
-+ Giver reads results.md for all Worker results (Phase 5)
++ Write source files → delegate to the Worker chain
++ Implement code → delegate to the chain
 
 ## Critical Rules
 
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
-3. **`reads` override is required for every chain step** — Workers use `reads: ["taskN.md"]` (auto-injects task file, prevents defaultReads). W₁ reads only task1.md (no previous results). Wₖ (K≥2) reads taskK.md + results.md (accumulated previous Worker results). Planner is not in the chain — Giver runs Planner as a 1-step chain (Phase 3.5) with T₀ as task prompt.
-4. **Planner runs as a 1-step chain** — Giver calls Planner with `output: "plan.md"` which injects the [Write to:] directory path. Planner writes task1.md through taskN.md to that directory. After the Planner chain completes, Giver reads the directory, counts N task files, then constructs a W×N Worker chain with the same sessionDir.
-5. **Workers receive previous results via results.md, not {previous}** — W₁ reads only task1.md (no previous results). Wₖ (K≥2) reads task file + results.md (accumulated previous Worker results via reads injection). Each Worker appends its RESULT to results.md. No echo or forwarding instructions needed — results.md is structural.
-6. **Planner runs as a 1-step chain before the Worker chain** — Giver runs Planner first (Phase 3.5), producing task files. Giver then runs a W×N Worker chain (Phase 4) with the same sessionDir so Workers find the task files. N = number of task files, no unused Worker slots.
-7. **Workers read results.md for previous Worker results** — Worker 1 reads only task1.md (no previous results). Worker K (K≥2) reads results.md (injected via reads) to see all previous Workers' Files, Signatures, Breaking, and Summary. When multiple groups modify the same file, merge them into one Worker (same-file sequential modification multiplies verification cost).
-8. **Worker's auto-injected file is its own task file** — `reads: ["taskN.md"]` in the chain step auto-injects the task file. Workers may also read files listed in their Target Files and Signatures (see SCOPE in Worker template). If the task file does not exist, Worker outputs no-op immediately (do NOT retry reading the task file).
+3. **`reads` override is required for every chain step** — Planner uses `reads: false` (prevents context.md/plan.md pre-loading; reads T₀ from task prompt, may read Target Files with `read` tool). Workers use `reads: false` for W₁ (reads task file using `read` tool, no previous results), `reads: ["results.md"]` for Wₖ (K≥2, accumulates previous Worker results via reads injection). Planner's `output: "plan.md"` injects the chain directory path via `[Write to:]` — Planner writes task files to that same directory.
+4. **Planner step includes `"output": "plan.md"`** — this injects the chain directory path via `[Write to:]` prefix, so Planner knows where to write task files. Planner's text output (not plan.md) is consumed by the chain system but not passed to Workers.
+5. **Workers receive previous results via results.md** — W₁ reads its task file using the `read` tool (no previous results). Wₖ (K≥2) reads results.md (accumulated previous Worker results via reads injection) plus its task file using the `read` tool. Each Worker appends its RESULT to results.md. No echo or forwarding instructions needed — results.md is structural.
+6. **Planner is in the chain** — P writes task1.md through taskN.md to the chain directory (shown in `[Write to:]` prefix). Workers read their task file using the `read` tool. N depends on logical modification groups, not file count. Chain always has 10 Worker slots. Unused Workers find no task file and output no-op immediately.
+7. **Workers read results.md for previous Worker results** — Worker 1 reads its task file using the `read` tool (no previous results). Worker K (K≥2) reads results.md (injected via reads) to see all previous Workers' Files, Signatures, Breaking, and Summary, plus its task file using the `read` tool. Same file can be modified by multiple Workers in sequence (Wₖ reads files modified by Wₖ₋₁).
+8. **Workers read their task file using the `read` tool** — W₁ uses `reads: false` and reads task1.md with the `read` tool. Wₖ (K≥2) uses `reads: ["results.md"]` (auto-injected) and reads taskK.md with the `read` tool. If the task file does not exist, the `read` tool returns an error and the Worker outputs no-op. Workers may also read files listed in their Target Files and Signatures.
 9. **Each Worker owns its scope completely** — you are a specialist trusted to deliver working code. You verify your own changes because you own your scope, not because of a rule. Other Workers own their scopes — checking their work is not your concern. Check what you changed works: type check, build, or targeted test. Giver verifies the complete result in Phase 5.
 10. **Worker RESULT has 4 sections** — Files (created/modified), Signatures (new/changed exports), Breaking (removed/changed exports — downstream Workers see all Breaking in results.md), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Each Worker appends its RESULT to results.md. Downstream Workers read files directly via SCOPE if they need details. This keeps results.md concise and prevents token bloat.
 11. **Planner curates for efficiency, trusts Workers' competence** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. Providing clear requirements respects Workers as specialists — doubting their ability to verify their own work is disrespectful. When Workers have enough context, they don't read extra files — this saves tokens.
@@ -254,7 +221,7 @@ Replaced storageType/storagePath with databaseUrl in Config. Added parseConnecti
 
 ## Batch Grouping
 
-Planner analyzes the work into logical modification groups, then assigns one or more groups to each Worker. A logical modification group is a coherent unit of work: implement feature X, add tests for X, refactor Y. When multiple groups modify the same file, merge them into one Worker — sequential modification of the same file across Workers forces serial execution and each Worker re-runs the full test suite, multiplying verification cost. One modification group can span multiple files. If there are more groups than Workers, Planner merges smaller groups (one Worker handles multiple groups).
+Planner analyzes the work into logical modification groups, then assigns one or more groups to each Worker. A logical modification group is a coherent unit of work: implement feature X, add tests for X, refactor Y. When multiple groups modify the same file, merge them into one Worker — the task unit is the logical modification group, not the file. Multiple groups touching the same file are likely interdependent and should be one task. One modification group can span multiple files. If there are more groups than Workers, Planner merges smaller groups (one Worker handles multiple groups).
 
 ```
 user.ts:
@@ -273,36 +240,84 @@ Layer 1 (imports Layer 0):        W2 adds Controller (imports Service)
 Layer 2 (imports Layer 0-1):     W3 adds tests (imports Service, Controller)
 ```
 
-Planner writes task1.md through taskN.md. Giver reads the directory, finds N, and creates a W×N chain with exactly N Worker slots. No unused slots — every Worker has a task file.
+Planner decides how many task files to write. The chain always has 10 Worker slots. If Planner writes fewer task files than 10, unused Workers find no task file and output no-op immediately.
 
 **No-op Worker**: if Worker K's task file is not found, Worker outputs "No task assigned. No files modified." and stops immediately. Do NOT retry the read. This is a plain text response, not a RESULT — it has no Files, Signatures, Breaking, or Summary.
 
-$$ \text{Chain} = W_1 \to W_2 \to \cdots \to W_N \quad (N = \text{task files from Planner, no unused slots}) $$
+$$ \text{Chain} = P \to W_1 \to W_2 \to \cdots \to W_{10} \quad (\text{unused Workers return no-op}) $$
 
-## Chain Template (W×N)
+## Chain Template (P→W×10)
 
-Giver runs Planner as a 1-step chain (Phase 3.5) which writes task files via [Write to:] injection. Giver then reads the directory, finds N, and constructs a W×N Worker chain (Phase 4) with the same sessionDir. Every Worker has a task file — no unused slots.
+Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10). Workers read their own task file. Unused Workers find no task file and output no-op immediately.
 
 ```json
 {
-  "context": "fresh",
-  "cwd": "{project_root}",
   "chain": [
     {
-      "agent": "worker",
-      "reads": ["task1.md"],
-      "task": "Your task file task1.md has been provided above. If it appears empty or missing, output: \"No task assigned. No files modified.\" and stop immediately. Do NOT attempt to read the task file again.\n\nImplement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md):\n\n----\n# RESULT #1 (by Worker 1)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)\n\nWrite your RESULT below. Also append it to results.md (replace the filename in the [Write to:] path with results.md)."
+      "agent": "planner",
+      "reads": false,
+      "output": "plan.md",
+      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns, things to avoid, test expectations, implementation patterns for large files}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{signatures with file paths, format: functionName(params): ReturnType — path/to/file.ts. MUST fill from Scout recon. For large deps (500+ lines): include 3-10 line usage pattern}\n\n---\n\n## Your Role\n\nWrite SEPARATE task files (task1.md, task2.md, ...) to the directory shown in the [Write to:] prefix. DO NOT write to plan.md — plan.md is a system file for the chain directory path.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures. Workers are trusted specialists — provide clear requirements, not verification instructions. They own their scope and verify their own work.
     },
     {
       "agent": "worker",
-      "reads": ["task2.md", "results.md"],
-      "task": "Your task file task2.md has been provided above. If it appears empty or missing, output: \"No task assigned. No files modified.\" and stop immediately. Do NOT attempt to read the task file again.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #2 (by Worker 2)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+      "reads": false,
+      "task": "Read your task file task1.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\nImplement the Target Files listed in the task file.\n\nSCOPE: Read only files listed in Target Files and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md):\n\n----\n# RESULT #1 (by Worker 1)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)
+
+Write your RESULT below. Also append it to results.md (replace the filename in the [Write to:] path with results.md)."
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task2.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #2 (by Worker 2)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task3.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #3 (by Worker 3)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task4.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #4 (by Worker 4)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task5.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #5 (by Worker 5)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task6.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #6 (by Worker 6)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task7.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #7 (by Worker 7)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task8.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #8 (by Worker 8)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task9.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #9 (by Worker 9)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+    },
+    {
+      "agent": "worker",
+      "reads": ["results.md"],
+      "task": "Read your task file task10.md using the `read` tool. If the file does not exist, output: \"No task assigned. No files modified.\" and stop immediately.\n\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #10 (by Worker 10)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
     }
-  ]
+  ],
+  "context": "fresh",
+  "cwd": "{project_root}"
 }
 ```
 
-Giver runs Planner as a 1-step chain, which writes task1.md through taskN.md to the [Write to:] directory. Giver then reads the directory, determines N, and constructs a W×N Worker chain with the same sessionDir. Workers find their task files via reads auto-inject. Every Worker has a task file — no unused slots.
+Giver constructs the chain with all 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10) to the chain directory. Workers receive their task file via reads auto-inject. Workers without a task file output no-op immediately.
 
 The **last Worker** includes all RESULT sections (Files, Signatures, Breaking, Summary) as usual. While no subsequent Workers consume them, Giver reads progress.md for the full picture — Signatures and Breaking tell Giver what exports changed, Files tells Giver what was modified. Breaking includes forwarded items from all previous Workers plus this Worker's own breaking changes, giving Giver a complete change log.
 
