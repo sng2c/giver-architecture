@@ -12,19 +12,46 @@ pi install npm:@sng2c/giver-skill
 
 Requires [pi-subagents](https://www.npmjs.com/package/pi-subagents) ≥ 0.25.0.
 
-## Quick Start
+## Activate
 
-After installing, tell Pi to use the Giver skill:
+After installing, activate the skill in your Pi session:
 
 ```
-Use the giver skill to implement [your task]
+/skill:giver
+```
+
+Or add it to your project instructions (`.pi/AGENTS.md`) so it activates automatically for coding tasks.
+
+## Quick Start
+
+Once activated, describe your task to Pi:
+
+```
+Use the giver skill to implement a user authentication module with login, signup, and password reset
 ```
 
 Pi will orchestrate a Planner → Workers pipeline:
 1. **Giver** writes Task #0 (Goal, Background, Signatures, Target Files)
-2. **Planner** writes per-Worker task files
-3. **Workers** implement tasks in isolated fresh contexts
-4. Unused Workers trigger `[CHAIN COMPLETED]` → chain breaks → ✅
+2. **Planner** writes per-Worker task files (task1.md, task2.md, ...)
+3. **Workers** implement their tasks in isolated fresh contexts
+4. Unused Worker slots trigger `[CHAIN COMPLETED]` → completionGuard breaks the chain → ✅
+5. **Giver** reads results.md, verifies, and reports to you
+
+### What happens
+
+- Giver holds all conversation context — it does **not** write code directly
+- Planner and Workers run in **fresh** context (zero history leak)
+- Workers communicate via **results.md** (structural injection, not prompt passing)
+- Each Worker **owns its scope** — only modifies files in its task
+- If all tasks complete before Worker slot 10, the chain **breaks automatically**
+
+### Key commands
+
+| Command | Description |
+|---|---|
+| `/skill:giver` | Activate the Giver skill |
+| `Use the giver skill to [task]` | Start a Giver pipeline |
+| `Use the giver skill with scout to investigate [bug]` | Scout-only diagnosis |
 
 For full configuration and templates, see [SKILL.md](skills/giver/SKILL.md).
 
