@@ -420,7 +420,7 @@ v3.5 C1 █████████████                                 
 
 - **RESULT "All tests pass" → "Verification passed"**: 전체 스위트를 돌렸다는 뉘앙스 대신 자기 검증만 통과했다는 의미. Worker가 검증 결과를 구체적으로 표현하도록 유도.
 
-## v3.7.0 — W₁ Planner 출력 수신 제거 (2026-05)
+## v3.7.1 — W₁ Planner 출력 수신 제거 (2026-05)
 
 - **W₁ {previous} 제거**: Worker 1의 태스크 템플릿에서 `{previous}` 참조 제거. W₁은 task1.md에서만 컨텍스트를 받음.
 - **W₁ Breaking**: "forward Breaking items from {previous}" → "add this Worker's own" (W₁은 {previous}가 없으므로).
@@ -456,7 +456,7 @@ v3.5 C1 █████████████                                 
 
 W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "no edit made for implementation task"로 판단하여 체인 실패로 처리. 실제로는 모든 작업이 완료된 정상 종료. Giver가 progress.md에서 실제 결과를 확인하여 대응.
 
-## v3.7.0 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
+## v3.7.1 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
 
 - **페르소나 도입**: 소설 The Giver의 캐릭터 역할을 에이전트 페르소나로 매핑. Giver = 기억 전달자(모든 맥락 보유, 직접 수정하지 않음), Planner = 배정 위원회(역할 분배만, 검증은 관심사外), Worker = 수령자/전문가(자기 범위 완전 책임).
 - **Worker "owns its scope"**: 규칙("verify only your changes") → 정체성("you own your scope"). Worker가 자기 검증을 선택하는 게 아니라 자기 범위를 책임지는 전문가.
@@ -498,7 +498,7 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
   - Worker template: "Read taskN.md" → "Your task file taskN.md has been provided above"
   - Planner Working Rules: "to the [Write to:] directory"
 
-## v3.7.0 — echo/RESULT 충돌 해결, "brief" 제거 (2026-05-26)
+## v3.7.1 — echo/RESULT 충돌 해결, "brief" 제거 (2026-05-26)
 
 - **"Write a brief RESULT" → "Write a RESULT"**: "brief"가 "echo {previous}"와 충돌. 모델이 brief를 선택하여 echo를 건너뜀. 33588327 체인에서 모든 Worker가 echo 미준수.
 - **W2+ 지시 변경**: "Echo the previous Worker result below, then write your RESULT" → "Reproduce the previous Worker result below, then write your RESULT". reproduce가 echo보다 강한 지시어.
@@ -512,7 +512,7 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **W1 Breaking**: "add this Worker's own" (이전 Worker 없음). W2+ Breaking: "forward all Breaking items from previous Workers above and add this Worker's own".
 - **{previous} 3회→1회 치환**: 템플릿에서 `{previous}` 리터럴이 3곳에 있어 pi-subagents가 전부 치환. "contains RESULT #N"과 "Echo {previous}"를 정적 텍스트로 변경. echo 위치 1곳만 `{previous}` 유지.
 
-## v3.7.0 — results.md 구조적 통신, {previous} 제거 (2026-05-26)
+## v3.7.1 — results.md 구조적 통신, {previous} 제거 (2026-05-26)
 
 - **results.md 파일로 Worker 간 통신**: {previous} echo/reproduce 지시가 모델에 의해 무시됨 (v3.6.7, v3.6.8 실측). Breaking 수동 forward도 단일 홉 제한으로 이론적 간극 존재. results.md를 Worker가 append/reads하는 구조적 방식으로 교체.
 - **reads 자동 주입**: W2+ reads=['taskN.md', 'results.md'] → pi-subagents가 results.md를 자동 주입. Worker가 안 읽을 수 없음.
