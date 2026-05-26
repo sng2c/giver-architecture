@@ -1,18 +1,32 @@
 {
-  "name": "giver-architecture",
-  "version": "1.0.0",
-  "description": "Giver architecture project",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "test": "jest --verbose",
-    "test:config": "jest --verbose src/__tests__/config.test.ts",
-    "test:parser": "jest --verbose src/__tests__/parser.test.ts"
+  "name": "giver-skill",
+  "version": "3.7.5",
+  "description": "The Giver v3 — Pipeline orchestration skill for Pi coding agent. Planner→Workers chain with results.md communication, completionGuard chain break, and [CHAIN COMPLETED] signal.",
+  "main": "skills/giver/SKILL.md",
+  "keywords": [
+    "pi-package",
+    "pi-skill",
+    "pi-coding-agent",
+    "giver",
+    "orchestration",
+    "pipeline",
+    "chain",
+    "subagents"
+  ],
+  "license": "MIT",
+  "author": "sng2c",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sng2c/giver-architecture"
   },
-  "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.2",
-    "typescript": "^5.4.5"
-  }
+  "peerDependencies": {
+    "pi-subagents": ">=0.25.0"
+  },
+  "files": [
+    "skills/",
+    "docs/history.md",
+    "docs/insights.md",
+    "giver-principles.md",
+    "README.md"
+  ]
 }

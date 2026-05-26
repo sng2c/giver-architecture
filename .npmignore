@@ -1,12 +1,5 @@
-# Raw analysis data (baseline snapshots)
-reports/baseline-v1-*.jsonnode_modules/
-node_modules/
-
-# Analysis scripts (not needed in npm package)
+# Dev/analysis files not needed in npm package
 scripts/
-tsconfig.json
-jest.config.js
-package-lock.json
 reports/
 docs/chains.json
 docs/01-analysis-logic.md
@@ -15,3 +8,10 @@ docs/03-v36-performance-report.md
 docs/04-chain-token-analysis.json
 docs/05-monolithic-vs-giver-comparison.json
 docs/06-v363-performance-report.md
+tsconfig.json
+jest.config.js
+package-lock.json
+node_modules/
+.pi/
+.git/
+*.tgz
