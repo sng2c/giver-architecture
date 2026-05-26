@@ -221,7 +221,7 @@ Replaced storageType/storagePath with databaseUrl in Config. Added parseConnecti
 
 ## Batch Grouping
 
-Planner analyzes the work into logical modification groups, then assigns one or more groups to each Worker. A logical modification group is a coherent unit of work: implement feature X, add tests for X, refactor Y. One file can be modified by multiple Workers in sequence. One modification group can span multiple files. If there are more groups than Workers, Planner merges smaller groups (one Worker handles multiple groups).
+Planner analyzes the work into logical modification groups, then assigns one or more groups to each Worker. A logical modification group is a coherent unit of work: implement feature X, add tests for X, refactor Y. When multiple groups modify the same file, merge them into one Worker — sequential modification of the same file across Workers forces serial execution and each Worker re-runs the full test suite, multiplying verification cost. One modification group can span multiple files. If there are more groups than Workers, Planner merges smaller groups (one Worker handles multiple groups).
 
 ```
 user.ts:

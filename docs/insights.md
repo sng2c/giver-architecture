@@ -229,3 +229,9 @@ v3.7.0에서 results.md로 교체했다. W2+의 reads에 results.md를 넣으니
 **지시보다 구조** (#6의 확장): 불만족스러운 지시를 더 강한 지시로 대치하는 게 아니라, 지시가 필요 없는 구조로 바꾼다.
 
 v3.7.1 실측 (67df5f65): W1~W5 전부 output에 RESULT 포맷 작성, results.md에 5개 RESULT 누적. W2+ reads=['taskN.md', 'results.md'] 자동 주입. {previous} 없이도 구조적으로 정보 전달 보장. W평균tk/t 19K (v3.6.8과 동급).
+
+### #11 같은 파일을 수정하는 Worker는 하나로 묶어라
+
+v3.7.1 체인(67df5f65): Planner가 arg-parsers.ts를 수정하는 5개 태스크를 5개 Worker에 분리. 각 Worker가 전체 1338 테스트를 실행 → 총 6,690 테스트 실행. 같은 파일을 순차 수정하면 직렬 실행이 강제되고, 검증 비용이 Worker 수만큼 배가된다.
+
+해결: 같은 파일을 수정하는 modification group은 하나의 Worker에 병합. 병렬 실행 가능한 group만 분리.
