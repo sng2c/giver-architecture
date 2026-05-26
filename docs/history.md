@@ -560,3 +560,11 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **Chain 템플릿 단순화**: Planner step 제거, W1(reads=["task1.md"]) + W2(reads=["task2.md", "results.md"]) 패턴만 표시. Giver가 N에 따라 복제.
 - **플로우 변경**: Phase 1→1.5(Scout)→2→3(T₀)→3.5(Planner standalone)→4(W×N chain)→5→6.
 - **체인 34477324 교훈**: 1줄 수정 과제에 10 Worker 슬롯 전부 실행 → 170초 NOOP 낭비. Planner가 task 파일 안 만들고 plan.md에 직접 씀. 동적 Worker 수와 Planner standalone으로 해결.
+
+## v3.7.5 — [CHAIN COMPLETED] + completionGuard
+
+- NOOP Worker outputs `[CHAIN COMPLETED]` + results.md content (W2~W10)
+- W1 (no results.md): outputs `[CHAIN COMPLETED]` only
+- `Do NOT write to any files` → completionGuard triggers → exitCode=1 → chain breaks
+- Giver Phase 5 recognizes `[CHAIN COMPLETED]` as success, not failure
+- Results: W3 NOOP breaks chain (~16s), W4~W10 never execute (~5min saved)

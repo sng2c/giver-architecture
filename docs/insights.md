@@ -235,3 +235,9 @@ v3.7.1 실측 (67df5f65): W1~W5 전부 output에 RESULT 포맷 작성, results.m
 v3.7.1 체인(67df5f65): Planner가 arg-parsers.ts를 수정하는 5개 태스크를 5개 Worker에 분리. 각 Worker가 전체 1338 테스트를 실행 → 총 6,690 테스트 실행. 같은 파일을 순차 수정하면 직렬 실행이 강제되고, 검증 비용이 Worker 수만큼 배가된다.
 
 해결: 같은 파일을 수정하는 modification group은 하나의 Worker에 병합. 병렬 실행 가능한 group만 분리.
+
+### Insight #12: 통신 채널은 구조로 보장한다 — NOOP도 마찬가지 (v3.7.5)
+"지시로는 NOOP Worker가 write를 피하게 할 수 없었다. completionGuard라는 구조적 메커니즘을 활용하면, NOOP가 write를 안 하면 자동으로 exitCode=1이 되어 chain이 break된다. 구조가 보장하면 지시는 필요 없다."
+
+### Insight #13: [CHAIN COMPLETED] — 시그널은 대괄호로 (v3.7.5)
+"NOOP Worker가 [CHAIN COMPLETED]를 출력하면 Giver가 즉시 '성공 종료'로 인식. 대괄호 패턴은 일반 텍스트와 구분되어 파싱이 쉽다. W2~W10은 results.md를 reads로 받으므로, 시그널과 함께 완료된 작업 결과도 전달 가능. completionGuard는 write 툴콜만 체크하므로 text 출력에는 반응하지 않는다."
