@@ -1,6 +1,6 @@
 ---
 name: giver
-version: "3.7.5"
+version: "3.7.6"
 description: 'The Giver v3.7.5. Each agent owns its scope. Giver records failures, does not fix directly. Efficiency report per chain. reads:["taskN.md"] auto-inject. P-Wx10 chain. W1 gets task file only (no P output). Same file OK across Workers. No Scout in chain. All subagents run fresh.'
 disable-model-invocation: true
 ---
