@@ -1,5 +1,5 @@
 {
-  "name": "giver-skill",
+  "name": "@sng2c/giver-skill",
   "version": "3.7.5",
   "description": "The Giver v3 — Pipeline orchestration skill for Pi coding agent. Planner→Workers chain with results.md, completionGuard chain break, [CHAIN COMPLETED] signal.",
   "main": "skills/giver/SKILL.md",
