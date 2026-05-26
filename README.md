@@ -98,12 +98,12 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 
 ## 성능
 
-에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **tk/turn**(Worker 턴당 처리 토큰)으로 비교한다.
+에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **in/turn**(Worker 턴당 처리 토큰)으로 비교한다.
 
 ### 모놀리식 → v3.6.3 진화
 
 ```
-버전            W_tokens평균  W tk/turn   핵심 변화
+버전            W_tokens평균  W in/turn   핵심 변화
 ───────────────────────────────────────────────────────────
 모놀리식(fresh)  152K/18턴      8K        실측: Redbis 44테스트
 v1              1.9M            —        Giver 베이스라인, fork 누수
@@ -119,7 +119,7 @@ v3.7.0            —           19K        results.md 도입
 v3.7.1            —           19K        results.md + RESULT 양쪽 기록
 ```
 
-**v3.6.3 tk/turn(12K)은 모놀리식(8K)과 동급** — Worker당 효율성이 모놀리식과 비슷하면서 부분 재시도 가능.
+**v3.6.3 in/turn(12K)은 모놀리식(8K)과 동급** — Worker당 효율성이 모놀리식과 비슷하면서 부분 재시도 가능.
 
 ### 동일 과제 비교 (Redbis 44테스트, 실측)
 
@@ -128,7 +128,7 @@ v3.7.1            —           19K        results.md + RESULT 양쪽 기록
 | 활성 Worker | 1 | 3 | 4 | 5 |
 | W_tokens 합 | 152K | 344K | 1,141K | **282K** |
 | W_tokens 평균 | 152K | 115K | 285K | **56K** |
-| W tk/turn | 8K | 93K | 63K | **12K** |
+| W in/turn | 8K | 93K | 63K | **12K** |
 | P+W tokens | 152K | 378K | 1,266K | **421K** |
 | 컨텍스트 | 누적 ❌ | fresh ✅ | fresh ✅ | **fresh ✅** |
 | 부분 재시도 | 불가 ❌ | Worker 단위 ✅ | Worker 단위 ✅ | **Worker 단위 ✅** |
@@ -142,7 +142,7 @@ v3.7.1            —           19K        results.md + RESULT 양쪽 기록
 | [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
 | [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
 | [insights.md](docs/insights.md) | 프로젝트 인사이트 (8개 핵심 통찰) |
-| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.1, tk/turn, 동일과제 비교) |
+| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.1, in/turn, 동일과제 비교) |
 | [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
 | [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
 | [history.md](docs/history.md) | v1~v3.7.1 개선 이력 |
