@@ -241,3 +241,9 @@ v3.7.1 체인(67df5f65): Planner가 arg-parsers.ts를 수정하는 5개 태스�
 
 ### Insight #13: [CHAIN COMPLETED] — 시그널은 대괄호로 (v3.7.5)
 "NOOP Worker가 [CHAIN COMPLETED]를 출력하면 Giver가 즉시 '성공 종료'로 인식. 대괄호 패턴은 일반 텍스트와 구분되어 파싱이 쉽다. W2~W10은 results.md를 reads로 받으므로, 시그널과 함께 완료된 작업 결과도 전달 가능. completionGuard는 write 툴콜만 체크하므로 text 출력에는 반응하지 않는다."
+
+### Insight #14: completionGuard 에러 메시지가 시그널이다 (v3.7.5)
+"Worker가 '[CHAIN COMPLETED]'를 출력해도 completionGuard가 가로채서 에러 메시지로 대체한다. 따라서 Giver는 Worker의 출력이 아닌 completionGuard의 시스템 에러 메시지를 인식해야 한다. 'Subagent completed without making edits for an implementation task.'가 바로 '모든 작업 완료' 시그널이다. Worker 지시 준수 여부와 무관하게 구조적으로 보장된다."
+
+### Insight #15: completionGuard 메시지는 하드코딩이다 (v3.7.5)
+"pi-subagents의 completionGuard 에러 메시지는 소스에 하드코딩되어 있다. step.completionGuard는 boolean(true/false)만 지원하고 메시지 커스터마이징은 불가능하다. 에러 메시지: 'Subagent completed without making edits for an implementation task. It appears to have returned planning or scratchpad output instead of applying changes.' Giver는 이 메시지를 인식하여 성공 종료로 해석한다."

@@ -568,3 +568,17 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - `Do NOT write to any files` → completionGuard triggers → exitCode=1 → chain breaks
 - Giver Phase 5 recognizes `[CHAIN COMPLETED]` as success, not failure
 - Results: W3 NOOP breaks chain (~16s), W4~W10 never execute (~5min saved)
+
+### v3.7.5 완성: completionGuard 에러 메시지 = 성공 시그널
+
+**문제**: W3(NOOP)이 "[CHAIN COMPLETED]"를 출력해도 completionGuard가 Worker 출력을 에러 메시지로 대체함. Giver가 W3의 실제 출력을 볼 수 없음.
+
+**해결**: Worker 출력이 아닌 completionGuard 시스템 에러 메시지를 시그널로 사용.
+- 에러 메시지: "Subagent completed without making edits for an implementation task."
+- 이 메시지가 보이면 Giver는 "모든 작업 완료"로 해석
+- results.md는 체인 디렉토리에서 직접 읽음
+- Worker 지시 준수 여부와 무관하게 구조적 보장
+
+**completionGuard 메시지 커스터마이징**: 불가 (하드코딩)
+- step.completionGuard: boolean (true/false)만 지원
+- 메시지 오버라이드 옵션 없음
