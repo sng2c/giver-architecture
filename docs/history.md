@@ -420,7 +420,7 @@ v3.5 C1 █████████████                                 
 
 - **RESULT "All tests pass" → "Verification passed"**: 전체 스위트를 돌렸다는 뉘앙스 대신 자기 검증만 통과했다는 의미. Worker가 검증 결과를 구체적으로 표현하도록 유도.
 
-## v3.7.2 — W₁ Planner 출력 수신 제거 (2026-05)
+## v3.7.3 — W₁ Planner 출력 수신 제거 (2026-05)
 
 - **W₁ {previous} 제거**: Worker 1의 태스크 템플릿에서 `{previous}` 참조 제거. W₁은 task1.md에서만 컨텍스트를 받음.
 - **W₁ Breaking**: "forward Breaking items from {previous}" → "add this Worker's own" (W₁은 {previous}가 없으므로).
@@ -456,7 +456,7 @@ v3.5 C1 █████████████                                 
 
 W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "no edit made for implementation task"로 판단하여 체인 실패로 처리. 실제로는 모든 작업이 완료된 정상 종료. Giver가 progress.md에서 실제 결과를 확인하여 대응.
 
-## v3.7.2 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
+## v3.7.3 — 페르소나 기반 아키텍처, 검증 책임 명확화 (2026-05)
 
 - **페르소나 도입**: 소설 The Giver의 캐릭터 역할을 에이전트 페르소나로 매핑. Giver = 기억 전달자(모든 맥락 보유, 직접 수정하지 않음), Planner = 배정 위원회(역할 분배만, 검증은 관심사外), Worker = 수령자/전문가(자기 범위 완전 책임).
 - **Worker "owns its scope"**: 규칙("verify only your changes") → 정체성("you own your scope"). Worker가 자기 검증을 선택하는 게 아니라 자기 범위를 책임지는 전문가.
@@ -498,7 +498,7 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
   - Worker template: "Read taskN.md" → "Your task file taskN.md has been provided above"
   - Planner Working Rules: "to the [Write to:] directory"
 
-## v3.7.2 — echo/RESULT 충돌 해결, "brief" 제거 (2026-05-26)
+## v3.7.3 — echo/RESULT 충돌 해결, "brief" 제거 (2026-05-26)
 
 - **"Write a brief RESULT" → "Write a RESULT"**: "brief"가 "echo {previous}"와 충돌. 모델이 brief를 선택하여 echo를 건너뜀. 33588327 체인에서 모든 Worker가 echo 미준수.
 - **W2+ 지시 변경**: "Echo the previous Worker result below, then write your RESULT" → "Reproduce the previous Worker result below, then write your RESULT". reproduce가 echo보다 강한 지시어.
@@ -512,7 +512,7 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **W1 Breaking**: "add this Worker's own" (이전 Worker 없음). W2+ Breaking: "forward all Breaking items from previous Workers above and add this Worker's own".
 - **{previous} 3회→1회 치환**: 템플릿에서 `{previous}` 리터럴이 3곳에 있어 pi-subagents가 전부 치환. "contains RESULT #N"과 "Echo {previous}"를 정적 텍스트로 변경. echo 위치 1곳만 `{previous}` 유지.
 
-## v3.7.2 — results.md 구조적 통신, {previous} 제거 (2026-05-26)
+## v3.7.3 — results.md 구조적 통신, {previous} 제거 (2026-05-26)
 
 - **results.md 파일로 Worker 간 통신**: {previous} echo/reproduce 지시가 모델에 의해 무시됨 (v3.6.7, v3.6.8 실측). Breaking 수동 forward도 단일 홉 제한으로 이론적 간극 존재. results.md를 Worker가 append/reads하는 구조적 방식으로 교체.
 - **reads 자동 주입**: W2+ reads=['taskN.md', 'results.md'] → pi-subagents가 results.md를 자동 주입. Worker가 안 읽을 수 없음.
@@ -528,7 +528,7 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **v3.6.7에서 발견한 버그**: {previous}가 템플릿에서 3회 치환되어 Planner output이 Breaking 줄, Echo 지시줄, echo 위치에 중복 삽입. v3.6.7에서 1회로 수정.
 - **Breaking forward는 지시 없이도 작동**: 33588327에서 W7이 W1~W6의 Breaking을 모두 forward. echo는 안 했지만 Breaking은 전달. 인사이트 #7 "지시보다 정체성" 재확인.
 
-## v3.7.2 — RESULT output + results.md 양쪽 기록 (2026-05-26)
+## v3.7.3 — RESULT output + results.md 양쪽 기록 (2026-05-26)
 
 - **v3.7.0 문제**: Worker가 output에 간단한 요약만 쓰고 results.md에만 RESULT 포맷 기록. "After writing your RESULT, append it to results.md"가 "output에 안 쓰고 results.md에만 써라"로 해석됨.
 - **해결**: "Write your RESULT below. Also append it to results.md." — output에 RESULT 포맷을 쓰고, results.md에도 추가하라는 의미를 명확히 함.
@@ -542,12 +542,21 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **append 지시**: 각 Worker가 작업 후 RESULT를 results.md에 append. 파일 쓰기는 소스 코드 쓰기와 같은 맥락에서 잘 지켜짐.
 - **{previous} 완전 제거**: W1은 reads=['task1.md']만 (이전 결과 없음). W2+는 reads=['taskN.md', 'results.md'] (모든 이전 결과). Worker template에서 {previous}, echo, reproduce, "Context from previous", Breaking forward 모두 제거.
 - **Breaking forward 불필요**: results.md에 모든 Worker의 Breaking이 누적. 수동 forward 지시 없이도 구조적으로 보장.
-- **실측 (09a860c5)**: W1~W3 output에 RESULT 포맷 없음 (간단한 요약만), results.md에 3개 RESULT 누적. W2 input에 results.md 자동 주입 확인. v3.7.2에서 output에도 RESULT 기록하도록 수정.
+- **실측 (09a860c5)**: W1~W3 output에 RESULT 포맷 없음 (간단한 요약만), results.md에 3개 RESULT 누적. W2 input에 results.md 자동 주입 확인. v3.7.3에서 output에도 RESULT 기록하도록 수정.
 - **인사이트 #10 "통신 채널은 구조로 보장한다"**: echo 지시(v3.6.7), Reproduce 지시(v3.6.8) 모두 무시됨. results.md reads 자동 주입은 구조적 — 지시 불필요. "지시보다 구조" (#6)의 확증.
 
-## v3.7.2 — 동적 Worker 수, 같은 파일 순차 수정 병합, Planner task 파일 강제 (2026-05-27)
+## v3.7.3 — 동적 Worker 수, 같은 파일 순차 수정 병합, Planner task 파일 강제 (2026-05-27)
 
 - **동적 Worker 수**: "Chain ALWAYS has fixed 10 Worker slots" 규칙 제거. Giver가 과제 범위에 따라 Worker 수를 결정 (simple=1, moderate=3~5, large=10). 1줄 수정 과제에 10개 슬롯이 다 돌면 9개 NOOP Worker가 ~170초 낭비.
 - **같은 파일 순차 수정 병합**: "One file can be modified by multiple Workers in sequence" 규칙을 "merge them into one Worker"로 변경. 같은 파일을 여러 Worker가 순차 수정하면 직렬 실행이 강제되고 각 Worker가 전체 테스트 스위트를 재실행 (v3.7.1 실행: arg-parsers.ts 5 Worker 순차 수정, 5×1338 테스트).
 - **Planner task 파일 강제**: Planner가 plan.md에 직접 내용을 쓰는 것을 방지. "DO NOT write to plan.md — plan.md is a system file" 지시 추가.
 - **체인 34477324 실측**: 1줄 수정 과제에 10 Worker 슬롯이 전부 실행. W1만 작업(122초), W2~W10 NOOP(~170초 낭비, 전체의 58%). Planner가 task1.md를 안 만들고 plan.md에 직접 씀.
+
+## v3.7.3 — Planner 체인 밖으로 이동, 동적 Worker 수 (2026-05-27)
+
+- **Planner 체인 밖으로 이동**: P→W×N 체인에서 W×N 체인으로 변경. Planner는 Scout처럼 Giver가 독립 호출. Giver가 Planner 출력(작업 파일 수)으로 N을 결정한 후 W×N 체인 생성.
+- **동적 Worker 수 정확화**: Giver가 N=작업 파일 수로 정확히 결정. NOOP Worker 슬롯 없음. "고정 10개 슬롯" 규칙 완전 제거.
+- **Planner plan.md 직접 작성 방지**: "DO NOT write to plan.md" 명시적 지시. Planner는 항상 별도 task 파일(task1.md, task2.md...) 작성.
+- **Chain 템플릿 단순화**: Planner step 제거, W1(reads=["task1.md"]) + W2(reads=["task2.md", "results.md"]) 패턴만 표시. Giver가 N에 따라 복제.
+- **플로우 변경**: Phase 1→1.5(Scout)→2→3(T₀)→3.5(Planner standalone)→4(W×N chain)→5→6.
+- **체인 34477324 교훈**: 1줄 수정 과제에 10 Worker 슬롯 전부 실행 → 170초 NOOP 낭비. Planner가 task 파일 안 만들고 plan.md에 직접 씀. 동적 Worker 수와 Planner standalone으로 해결.

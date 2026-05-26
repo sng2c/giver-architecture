@@ -1,7 +1,7 @@
 ---
 name: giver
 version: "3.6.7"
-description: 'The Giver v3.7.3. Each agent owns its scope. Giver records failures, does not fix directly. Efficiency report per chain. reads:["taskN.md"] auto-inject. P-Wx10 chain. W1 gets task file only (no P output). Same file OK across Workers. No Scout in chain. All subagents run fresh.'
+description: 'The Giver v3.7.2. Each agent owns its scope. Giver records failures, does not fix directly. Efficiency report per chain. reads:["taskN.md"] auto-inject. W×N chain (dynamic N). W1 gets task file only (no P output). Same file OK across Workers. No Scout in chain. All subagents run fresh.'
 disable-model-invocation: true
 ---
 
@@ -195,8 +195,8 @@ Giver constructs a W×N chain (exactly N Worker slots, where N = number of task 
 
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
-3. **`reads` override is required for every chain step** — Planner uses `reads: false` (prevents context.md/plan.md pre-loading; reads T₀ from task prompt, may read Target Files with `read` tool). Workers use `reads: ["taskN.md"]` (auto-injects task file, prevents defaultReads). Planner's `output: "plan.md"` injects the chain directory path via `[Write to:]` — Planner writes task files to that same directory.
-4. **Planner step includes `"output": "plan.md"`** — this injects the chain directory path via `[Write to:]` prefix, so Planner knows where to write task files. Planner's text output (not plan.md) is consumed by the chain system but not passed to Workers.
+3. **`reads` override is required for every chain step** — Workers use `reads: ["taskN.md"]` (auto-injects task file, prevents defaultReads). W₁ reads only task1.md (no previous results). Wₖ (K≥2) reads taskK.md + results.md (accumulated previous Worker results via reads injection). Planner is called standalone (not in chain) — Giver provides T₀ as task prompt.
+4. **Planner is called standalone by Giver** — Giver provides T₀ as the task prompt and a directory path for task files. Planner writes task1.md through taskN.md to that directory. Giver reads the directory, counts N, then creates a W×N chain.
 5. **Workers receive previous results via results.md, not {previous}** — W₁ reads only task1.md (no previous results). Wₖ (K≥2) reads task file + results.md (accumulated previous Worker results via reads injection). Each Worker appends its RESULT to results.md. No echo or forwarding instructions needed — results.md is structural.
 6. **Planner is outside the chain** — Giver calls Planner standalone (like Scout). Planner writes task files to a directory Giver provides. Giver reads the directory, counts task files (= N), then creates a W×N chain. N is exact — no unused Worker slots. Workers receive their task file via `reads: ["taskN.md"]`.
 7. **Workers read results.md for previous Worker results** — Worker 1 reads only task1.md (no previous results). Worker K (K≥2) reads results.md (injected via reads) to see all previous Workers' Files, Signatures, Breaking, and Summary. Same file can be modified by multiple Workers in sequence (Wₖ reads files modified by Wₖ₋₁).
@@ -261,9 +261,9 @@ Planner writes task1.md through taskN.md. Giver reads the directory, finds N, an
 
 **No-op Worker**: if Worker K's task file is not found, Worker outputs "No task assigned. No files modified." and stops immediately. Do NOT retry the read. This is a plain text response, not a RESULT — it has no Files, Signatures, Breaking, or Summary.
 
-$$ \text{Chain} = P \to W_1 \to W_2 \to \cdots \to W_{10} \quad (\text{unused Workers return no-op}) $$
+$$ \text{Chain} = W_1 \to W_2 \to \cdots \to W_N \quad (N = \text{number of task files, no unused slots}) $$
 
-## Chain Template (P→W×N)
+## Chain Template (W×N)
 
 Giver calls Planner standalone. Planner writes task1.md through taskN.md. Giver reads the directory, determines N, then constructs a W×N chain with exactly N Worker slots. Every Worker has a task file — no unused slots.
 
