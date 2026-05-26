@@ -511,3 +511,19 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 - **Breaking 템플릿 수정**: `{previous}`가 Breaking 줄 안에 들어있어 Planner output이 템플릿을 깨는 버그. Breaking 줄에서 `{previous}` 제거.
 - **W1 Breaking**: "add this Worker's own" (이전 Worker 없음). W2+ Breaking: "forward all Breaking items from previous Workers above and add this Worker's own".
 - **{previous} 3회→1회 치환**: 템플릿에서 `{previous}` 리터럴이 3곳에 있어 pi-subagents가 전부 치환. "contains RESULT #N"과 "Echo {previous}"를 정적 텍스트로 변경. echo 위치 1곳만 `{previous}` 유지.
+
+## v3.7.0 — results.md 구조적 통신, {previous} 제거 (2026-05-26)
+
+- **results.md 파일로 Worker 간 통신**: {previous} echo/reproduce 지시가 모델에 의해 무시됨 (v3.6.7, v3.6.8 실측). Breaking 수동 forward도 단일 홉 제한으로 이론적 간극 존재. results.md를 Worker가 append/reads하는 구조적 방식으로 교체.
+- **reads 자동 주입**: W2+ reads=['taskN.md', 'results.md'] → pi-subagents가 results.md를 자동 주입. Worker가 안 읽을 수 없음.
+- **append 지시**: 각 Worker가 작업 후 RESULT를 results.md에 append. 파일 쓰기는 소스 코드 쓰기와 같은 맥락에서 잘 지켜짐.
+- **{previous} 완전 제거**: W1은 reads=['task1.md']만 (이전 결과 없음). W2+는 reads=['taskN.md', 'results.md'] (모든 이전 결과). Worker template에서 {previous}, echo, reproduce, "Context from previous", Breaking forward 모두 제거.
+- **Breaking forward 불필요**: results.md에 모든 Worker의 Breaking이 누적. 수동 forward 지시 없이도 구조적으로 보장.
+- **인사이트 #6 "지시보다 구조" 재확인**: echo 지시(v3.6.7), Reproduce 지시(v3.6.8) 모두 무시됨. 파일 reads 자동 주입은 구조적 — 지시 불필요. "검증 명령 제거"와 같은 패턴: 지시로 안 되면 구조로.
+
+## v3.6.8 — echo/RESULT 충돌 해결, "brief" 제거 (2026-05-26)
+
+- **"Write a brief RESULT" → "Write a RESULT"**: "brief"가 "echo {previous}"와 충돌. 모델이 brief를 선택하여 echo를 건너뜀. 33588327 체인에서 모든 Worker가 echo 미준수.
+- **W2+ 지시 변경**: "Echo the previous Worker result below, then write your RESULT" → "Reproduce the previous Worker result below, then write your RESULT". reproduce가 echo보다 강한 지시어.
+- **v3.6.7에서 발견한 버그**: {previous}가 템플릿에서 3회 치환되어 Planner output이 Breaking 줄, Echo 지시줄, echo 위치에 중복 삽입. v3.6.7에서 1회로 수정.
+- **Breaking forward는 지시 없이도 작동**: 33588327에서 W7이 W1~W6의 Breaking을 모두 forward. echo는 안 했지만 Breaking은 전달. 인사이트 #7 "지시보다 정체성" 재확인.
