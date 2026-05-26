@@ -98,24 +98,28 @@ G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
 
 ## 성능
 
-에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **1회 실행당 컨텍스트**와 **tk/byte 비율**(과다 처리 지표)로 비교한다.
+에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **tk/turn**(Worker 턴당 처리 토큰)으로 비교한다.
 
 ### 모놀리식 → v3.6.3 진화
 
 ```
-버전            W_tokens평균  W_bytes평균  tk/byte   핵심 변화
-────────────────────────────────────────────────────────────────────
-모놀리식(fresh) 152K/18턴   —           25×      실측: Redbis 44테스트
-v1            1.9M          —           —        Giver 베이스라인, fork 누수
-v2            1.4M          —           —        fork 제거
-v2.5b        103K          —           —        Do-When, DI
-v3.5         113K          —           —        Planner 읽기 금지
-v3.6.1       841K          4.9KB       171×     reads:false (과다 읽기)
-v3.6.2       228K          3.6KB       63×      auto-inject (과다 읽기 −63%)
-v3.6.3        56K          4.8KB       12×      Target Verification (과다 검증 −75%)
+버전            W_tokens평균  W tk/turn   핵심 변화
+───────────────────────────────────────────────────────────
+모놀리식(fresh)  152K/18턴      8K        실측: Redbis 44테스트
+v1              1.9M            —        Giver 베이스라인, fork 누수
+v2              1.4M            —        fork 제거
+v2.5b           103K            —        Do-When, DI
+v3.5             113K          44K        Planner 읽기 금지, W2 64턴
+v3.6.1          841K           93K        reads:false (과다 읽기)
+v3.6.2          228K           63K        auto-inject (과다 읽기 −32%)
+v3.6.3           56K           12K        Target Verification (과다 검증 −81%)
+v3.6.7            —           12K        W₁ {previous} 제거, R8 수정
+v3.6.8            —           17K        brief/echo 충돌
+v3.7.0            —           19K        results.md 도입
+v3.7.1            —           19K        results.md + RESULT 양쪽 기록
 ```
 
-**v3.6.3 tk/byte(12×)가 모놀리식(25×)보다 낮다** — Worker당 효율성이 모놀리식보다 높다.
+**v3.6.3 tk/turn(12K)은 모놀리식(8K)과 동급** — Worker당 효율성이 모놀리식과 비슷하면서 부분 재시도 가능.
 
 ### 동일 과제 비교 (Redbis 44테스트, 실측)
 
@@ -124,7 +128,7 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | 활성 Worker | 1 | 3 | 4 | 5 |
 | W_tokens 합 | 152K | 344K | 1,141K | **282K** |
 | W_tokens 평균 | 152K | 115K | 285K | **56K** |
-| tk/byte | 25× | 32× | 54× | **12×** |
+| W tk/turn | 8K | 93K | 63K | **12K** |
 | P+W tokens | 152K | 378K | 1,266K | **421K** |
 | 컨텍스트 | 누적 ❌ | fresh ✅ | fresh ✅ | **fresh ✅** |
 | 부분 재시도 | 불가 ❌ | Worker 단위 ✅ | Worker 단위 ✅ | **Worker 단위 ✅** |
@@ -138,7 +142,7 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
 | [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
 | [insights.md](docs/insights.md) | 프로젝트 인사이트 (8개 핵심 통찰) |
-| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.1, tk/byte, 동일과제 비교) |
+| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.1, tk/turn, 동일과제 비교) |
 | [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
 | [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
 | [history.md](docs/history.md) | v1~v3.7.1 개선 이력 |
@@ -157,4 +161,6 @@ v3.6.3        56K          4.8KB       12×      Target Verification (과다 검
 | v3.6.2 | 2026-05 | reads auto-inject, [Write to:] 경로 주입, 과다 읽기 −63% |
 | v3.6.3 | 2026-05 | Target Verification scope, Planner가 검증 대상 지정 |
 | v3.6.7 | 2026-05 | {previous} 체인 echo, Breaking 템플릿 버그픽스, 3회→1회 치환 수정 |
-| v3.7.1 | 2026-05 | "brief" 제거로 echo/RESULT 충돌 해결, "Reproduce" 지시어 도입 (33588327 실측: echo 미준수, Breaking forward는 작동) |
+| v3.6.8 | 2026-05 | "brief" 제거로 echo/RESULT 충돌 해결, "Reproduce" 지시어 도입 (33588327 실측: echo 미준수, Breaking forward는 작동) |
+| v3.7.0 | 2026-05 | results.md 구조적 통신, {previous} 제거, reads 자동 주입 (echo 미준수 → 구조적 해결) |
+| v3.7.1 | 2026-05 | RESULT output + results.md 양쪽 기록 (67df5f65 실측: W1~W5 RESULT 포맷 + results.md 누적) |
