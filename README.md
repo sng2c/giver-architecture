@@ -2,6 +2,34 @@
 
 v3.7.5
 
+[![npm version](https://img.shields.io/npm/v/@sng2c/giver-skill?style=flat-square)](https://www.npmjs.com/package/@sng2c/giver-skill) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
+## Install
+
+```bash
+pi install npm:@sng2c/giver-skill
+```
+
+Requires [pi-subagents](https://www.npmjs.com/package/pi-subagents) ≥ 0.25.0.
+
+## Quick Start
+
+After installing, tell Pi to use the Giver skill:
+
+```
+Use the giver skill to implement [your task]
+```
+
+Pi will orchestrate a Planner → Workers pipeline:
+1. **Giver** writes Task #0 (Goal, Background, Signatures, Target Files)
+2. **Planner** writes per-Worker task files
+3. **Workers** implement tasks in isolated fresh contexts
+4. Unused Workers trigger `[CHAIN COMPLETED]` → chain breaks → ✅
+
+For full configuration and templates, see [SKILL.md](skills/giver/SKILL.md).
+
+---
+
 > *"If you're going to receive memories, they should be whole memories."*
 > — Lois Lowry, *The Giver*
 >
@@ -137,7 +165,7 @@ Workers without a task file output `[CHAIN COMPLETED]` and write nothing. This t
 
 ```bash
 # Via npm
-pi install npm:giver-skill
+pi install npm:@sng2c/giver-skill
 
 # Via GitHub
 pi install git:github.com:sng2c/giver-architecture
