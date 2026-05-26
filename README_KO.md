@@ -2,6 +2,61 @@
 
 v3.7.5
 
+[![npm version](https://img.shields.io/npm/v/@sng2c/giver-skill?style=flat-square)](https://www.npmjs.com/package/@sng2c/giver-skill) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
+## 설치
+
+```bash
+pi install npm:@sng2c/giver-skill
+```
+
+[pi-subagents](https://www.npmjs.com/package/pi-subagents) ≥ 0.25.0 필요.
+
+## 활성화
+
+설치 후 Pi 세션에서 스킬을 활성화:
+
+```
+/skill:giver
+```
+
+또는 프로젝트 지시 파일(`.pi/AGENTS.md`)에 추가하여 코딩 작업 시 자동 활성화.
+
+## 빠른 시작
+
+활성화 후 Pi에 작업을 설명:
+
+```
+Use the giver skill to implement a user authentication module with login, signup, and password reset
+```
+
+Pi가 Planner → Workers 파이프라인을 오케스트레이션:
+1. **Giver**가 Task #0 작성 (Goal, Background, Signatures, Target Files)
+2. **Planner**가 Worker별 task 파일 작성 (task1.md, task2.md, ...)
+3. **Workers**가 격리된 fresh 컨텍스트에서 작업 구현
+4. 미사용 Worker 슬롯은 `[CHAIN COMPLETED]` 트리거 → completionGuard가 체인 종료 → ✅
+5. **Giver**가 results.md를 읽고 검증 후 보고
+
+### 작동 원리
+
+- Giver가 모든 대화 컨텍스트를 보유 — 코드를 직접 수정하지 **않음**
+- Planner와 Worker는 **fresh** 컨텍스트에서 실행 (히스토리 누수 없음)
+- Worker 간 통신은 **results.md**로 (프롬프트 전달이 아닌 구조적 주입)
+- 각 Worker는 **자기 스코프만 소유** — task 내 파일만 수정
+- 모든 작업이 Worker 10번 슬롯 전에 완료되면 체인이 **자동 종료**
+
+### 주요 명령
+
+| 명령 | 설명 |
+|---|---|
+| `/skill:giver` | Giver 스킬 활성화 |
+| `Use the giver skill to [작업]` | Giver 파이프라인 시작 |
+| `Use the giver skill with scout to investigate [버그]` | Scout 단독 진단 |
+
+전체 설정과 템플릿은 [SKILL.md](skills/giver/SKILL.md) 참조.
+
+---
+
 > *"기억을 전달받는다면, 그건 온전한 기억이어야 한다."*
 > — 로이스 로리, 《기억 전달자》
 >
