@@ -37,100 +37,53 @@ Planner and Workers operate within the chain. Planner returns output for the cha
 
 ## Pipeline
 
-Planner writes separate task files (task1.md, task2.md, ...) for each Worker. Each Worker reads only its own task file plus results.md (which accumulates all previous Worker results). No Scout in chain. Workers do NOT receive {previous} — instead, they read results.md via reads injection to see all previous Workers' Files, Signatures, Breaking, and Summary. Each Worker appends its RESULT to results.md after completing work.
+Giver manages the transition from a request to a technical implementation. Giver gathers necessary decisions, structures them into Task #0, and initiates the chain.
 
 ```
-Giver → Task #0 (for Planner) — the only document Giver writes
-Planner → writes task1.md, task2.md, ...
-Worker 1 → reads ["task1.md"] auto-injected, no previous results (first Worker)
-Worker 2 → reads ["task2.md", "results.md"] auto-injected, sees Worker 1's result in results.md
-Worker N → reads ["taskN.md", "results.md"] auto-injected, sees all previous results in results.md
+Request/Design → Giver (Discuss/Decide) → Task #0 → Planner → Worker 1 → Worker 2 → ... → Worker 10
 ```
 
 ---
 
 # Design Principles
 
-Giver applies these principles before writing T₀. They govern how work is scoped, divided, and delegated.
+Giver ensures that the following principles are reflected in the $T_0$ provided to the Planner. If these are missing from the design/request, Giver must request them:
 
-1. **Minimally Invasive Change**: Preserve existing structure. Prefer the smallest, safest change that meets the requirement. When extending, prefer new interfaces or bridge patterns over modifying working core logic.
-
-2. **Respect Centralized Control**: The Giver→Planner→Worker pipeline IS the centralized control structure. Keep business logic and control flow in their proper layer. Prevent Workers from making architectural decisions — that belongs to Giver and Planner.
-
-3. **Cognitive Load Management**: Changes must be understandable by a human who takes over. Break work into clear, contextual chunks that fit within human cognitive limits. T₀ and Tₖ must be self-contained and readable without tracing back through conversation history.
-
-4. **Isolated Concerns**: Workers modify only files within their assigned Tₖ. When a file is not in a Worker's Tₖ, that Worker does not modify it — reading files referenced in Signatures is allowed. When refactoring is approved, Planner includes all affected import files in the refactoring Worker's Tₖ.
-
-5. **Refactor Value = Future-Cost Reduction**: A refactor that preserves runtime behavior is justified when it measurably lowers the cost of the next change. Concrete benefits: clearer responsibility for new callers, removed duplication, narrower search scope for regressions, smaller LLM context per task, unlocked testability. "Same behavior, cheaper to change next time" is a valid goal — but only with concrete mechanisms, not hand-waving.
+1. **Minimally Invasive Change**: Preserve existing structure. Prefer the smallest, safest change.
+2. **Respect Centralized Control**: Keep business logic and control flow in their proper layer.
+3. **Cognitive Load Management**: Break work into clear, contextual chunks.
+4. **Isolated Concerns**: Workers modify only files within their assigned scope.
+5. **Refactor Value**: Justify refactoring by concrete future-cost reduction.
 
 ---
 
 # Phase 1: Discuss
 
-Ambiguous request → ask questions before writing T_0.
-Strategic decision → present options, wait for user to choose.
-When ambiguous → clarify with user before starting a chain.
-
-**Bug diagnosis** → discuss with user before delegating:
-1. G calls Scout to recon the symptom area
-2. G presents findings to user: "Found X. Likely cause: Y. Options: A) B)"
-3. User chooses → G calls chain
+Before moving to the Task phase, Giver must ensure the request is unambiguous.
+- **Clarify**: If the goal is vague, ask questions.
+- **Align**: Present options for strategic decisions and wait for user choice.
+- **Diagnose**: For bugs, use Scout to find symptoms and discuss the likely cause with the user before proceeding.
 
 ---
 
-# Phase 1.5: Recon (MANDATORY)
+# Phase 2: Decide & Gather
 
-Before writing T_0, Giver MUST call Scout standalone to collect Signatures, file structure, and **implementation patterns**. This is mandatory — not optional.
+Giver's role here is to **gather all necessary inputs** required for $T_0$. If Giver is using a separate design skill, it must ensure the output of that skill covers:
+- **Clear Goal**: What exactly is the target?
+- **Concrete Constraints**: Technical limits, patterns, and exact test expectations.
+- **Target Files**: A comprehensive list of files to be modified.
+- **Signatures**: Known API/type signatures for dependencies.
 
-+ Always call Scout for recon before T_0 → fill Signatures with as much as you know
-+ Delegate file reading to Scout → Giver never reads source/test files directly
-+ Fill in every Signatures entry the recon provides → leave only truly unknown ones
-+ **Include file sizes** → Scout must report line counts for every file it reconnoiters
-+ **Include implementation patterns** → Scout must extract representative code patterns (3-10 lines) from large files that Workers will modify
-
-**Why:** Giver reading files directly bloats context and cascades into Planner. Fresh agents need maximum context in T_0. Scout reads files, extracts signatures, structure, and patterns, returns a compact recon. Workers who receive implementation patterns in their task file don't need to read large files themselves — this prevents the "edit → fail → re-read" loop that causes token explosions on large files (5000+ lines).
-
-**Implementation patterns** prevent Worker over-reading. When a Target File is large (500+ lines), Worker reads the entire file to find the pattern — sometimes 40+ times in a loop. Providing the pattern inline in the task eliminates this need.
-
-```json
-{
-  "agent": "scout",
-  "task": "## Codebase Recon\n\n### What\nFile structure, module relationships, Signatures, and implementation patterns for {project}.\n\n### Where\n{target directories} within project root ONLY\n\n### Output format\nFor each file: path, line count, exported signatures.\nFor files over 500 lines: include 3-10 line code patterns showing HOW existing methods are structured (e.g., how a storage method uses db.prepare().run/get/all, how a handler case dispatches commands).\n\n### Output limit\nKeep output under 200 lines. Structure: file tree with line counts → signatures → implementation patterns for large files.",
-  "context": "fresh",
-  "cwd": "{project_root}"
-}
-```
-
-**Scout fallback:** Ask the user before calling Scout with uncertain directories.
-
-**Scout task fallback:** If Scout cannot find relevant files in the provided directories, it lists top-level directories and suggests where to look next. When Scout returns empty or incomplete results, re-call with refined directories or ask the user for guidance.
-
-**File size awareness:** When Scout reports a file over 500 lines, Giver must note this in T₀ Constraints (e.g., "handler.ts is 5373 lines — implementation pattern provided below"). When a file is over 2000 lines, Giver proposes refactoring to the user (see Refactoring Decisions in Phase 2). **Refactoring changes dependencies** — the refactoring Worker must list all breaking changes in the Breaking section of their RESULT.
-
-After Scout returns → Phase 2 (Decide) with recon data to fill T_0 Signatures.
-
----
-
-# Phase 2: Decide
-
-+ Make strategic decisions → discuss with user first
-+ Send only T_0 downstream → curate decisions, not conversation transcript
-+ Fill T_0 Signatures as completely as possible from Scout recon (Phase 1.5) — minimize unknowns left in T_0
-+ **Large file awareness** → when a Target File is over 500 lines, include implementation patterns in Constraints. When over 2000 lines, Giver proposes refactoring to user (see Refactoring Decisions below).
-+ **Refactoring Decisions** → refactoring is a design decision, not automatic. When Giver determines that a change requires structural modification (file splitting, interface extraction, module reorganization), Giver proposes it to the user: what to refactor, why, what files are affected, what the risk is. Only after user approval does Giver include the refactoring in T₀. When refactoring is approved, Planner includes all affected import files in the refactoring Worker's Tₖ — this keeps changes within Isolated Concerns (Design Principle #4). The refactoring Worker must list all breaking changes in the Breaking section of their RESULT.
-
-**Context Compaction** — when conversation grows long, compact:
-- **Keep:** Past failures, key decisions (Goal, Background, Constraints), current Signatures state
-- **Drop:** verbose scout output, step-by-step diffs, redundant confirmations
+If any of these are missing or insufficient to guide the Planner, Giver **must demand** them from the user or the design process.
 
 ---
 
 # Phase 3: Task
 
-Write T_0 containing only decisions (not conversation). T_0 is the ONLY context downstream agents receive. It must be self-contained.
+Write $T_0$ (the ONLY context downstream agents receive). It must be self-contained and decision-based, not a transcript.
 
-**Do when writing T_0:** Fill all 6 sections with decisions, not conversation. Use Scout recon for Signatures.
-**Avoid when writing T_0:** Empty sections, conversation transcript, or reading files directly (use Scout recon from Phase 1.5).
+**Do when writing T_0**: Fill all 6 sections (Goal, Background, Past failures, Constraints, Target Files, Signatures) using the gathered decisions.
+**Avoid**: Empty sections or conversation logs.
 
 ```markdown
 ----
@@ -140,41 +93,24 @@ Write T_0 containing only decisions (not conversation). T_0 is the ONLY context 
 [One sentence: what needs to be done and why]
 
 ### Background
-[Decisions only: what was decided, why, business context. NOT "user said..."]
+[Decisions only: what was decided, why, business context]
 
 ### Past failures
-[First attempt: "None — first attempt."]
-[Retry: structured failure log — what failed, why, what to avoid]
+[Structured failure log or 'None — first attempt']
 
 ### Constraints
-[Technical constraints: language, framework, patterns to follow, things to avoid]
-[Include exact test expectations: error messages, expected behavior, edge cases]
-[For files over 500 lines: include representative code patterns (3-10 lines) showing how existing methods are structured]
-[For files over 2000 lines: note file size. Giver must have proposed refactoring to user (Design Principle #5: justify with concrete future-cost reduction mechanisms)]
-[When refactoring is included: state what the refactoring achieves concretely — e.g., "splits 5373-line handler.ts so Workers read 800 lines instead of 5373"]
+[Technical constraints, patterns, test expectations, implementation patterns for large files]
 
 ### Target Files
-[All files to be modified or created to accomplish the Goal — derived from Goal and Scout recon. Planner will assign subsets to each Worker.]
+[All files to be modified or created]
 
 ### Signatures
-[Type signatures for every relevant dependency — both inside and outside Target Files]
-[Brief dependency map between files — e.g., "A depends on B", provided by Scout recon]
-[Format: `functionName(params): ReturnType — path/to/file.ts`]
-[MUST fill from Scout recon (Phase 1.5) — Giver includes all known signatures in T_0]
-[Write the actual signatures — do not write "see xxx.ts"]
-[For large dependencies (500+ lines): include 3-10 line pattern showing how the exported API is used in existing code]
+[Type signatures with file paths: functionName(params): ReturnType — path/to/file.ts]
 ```
 
 ---
 
 # Phase 4: Chain
-
-Giver always calls a P→W×10 chain (Planner + 10 Worker slots). The chain returns the last Worker's RESULT to Giver automatically.
-
-+ Write source files → delegate to the Worker chain
-+ Implement code → delegate to the chain
-
-## Critical Rules
 
 1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
 2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
