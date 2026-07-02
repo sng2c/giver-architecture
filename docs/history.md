@@ -582,3 +582,54 @@ W₁~W6 작업 완료 후 W7이 no-op로 종료. Completion Mutation Guard가 "n
 **completionGuard 메시지 커스터마이징**: 불가 (하드코딩)
 - step.completionGuard: boolean (true/false)만 지원
 - 메시지 오버라이드 옵션 없음
+
+## v3.8.0 — completionGuard 뿌리 제거: 단독 Planner의 정확한 N으로 foreground W×N (2026-07)
+
+### 목표
+v3.7.5의 "고정 10슬롯 + no-op + completionGuard" 우회를 **뿌리에서** 없애기. 그 우회는 Planner가 **체인 안**에 있어 N을 실행 *도중*에 결정할 수밖에 없었기 때문에 발생했다 — 체인은 시작 시점에 스텝 배열을 확정해야 하는데 N이 그보다 나중에 알려지니, 10슬롯을 미리 깔고 남은 (10−N)개를 no-op로 돌려 completionGuard가 "Mutation 없음"을 감지해 체인을 끊는 구조. `[CHAIN COMPLETED]` 시그널 + completionGuard 에러 메시지를 성공으로 재해석하는 트릭.
+
+### 설계 여정 (e2e 테스트 동반, 2026-07-03)
+
+**1차: `append-step`(0.30.0) 기반 async 체인** — "단독 Planner → async 체인을 W₁만 시작 → W₂…W_N을 런타임에 append"로 v3.7.3 방향 복귀. 이게 "진짜 동적 확장"을 기다렸던 기능이라 가정.
+→ **e2e 테스트로 기각**: async 체인은 마지막 step 완료 즉시 자동 종료된다. Giver가 W₁ 결과를 보고 W₂를 append하려 하면 이미 "complete" 상태라 거절(`only running chain runs accept appended steps`). "결과 보고 다음 append(반응형)"은 경쟁(race)으로 불가. eager append(사전 큐잉)는 race-safe지만 정적 W×N과 기능 동일 → append-step 쓸 이유 없음.
+
+**2차: Pattern B (chain-per-Worker, single 호출)** — W_k마다 별도 single subagent 호출, 같은 `<chainDir>/results.md` 공유로 반응형 달성 시도.
+→ **기각**: single(비체인) subagent 호출은 `reads` 파라미터를 **무시**(`[Read from:]` prefix 주입 안 함). W₂가 results.md를 읽은 건 prose가 절대 경로를 명시했기 때문(자가 읽기). giver 핵심 원칙 **"지시보다 구조"**(insights.md #10: echo 지시는 무시됐고 `reads` 자동주입은 구조적이라 작동했다)에 역행 — 신뢰성이 prose 순응에 의존.
+
+**3차 채택: Pattern C (foreground W×N, 단독 Planner의 정확한 N)** — Planner를 **standalone**으로 체인 빌드 *전*에 돌려 N을 확정. Giver가 **정확히 N step**의 foreground 체인 구성·실행. 체인 컨텍스트이므로 구조적 `[Read from:]` reads 주입 유지, results.md 연속성 유지. **빈 슬롯 0** → no-op 0 → completionGuard 발화 0 → `[CHAIN COMPLETED]`/에러-재해석 트릭 전면 삭제. 종료 = W_N 후 자연 종료.
+
+### 핵심 변화
+- **Planner standalone(체인 밖)** — Scout처럼 Giver가 단독 호출(fresh). Plan(정렬 task 디스크립터 + 레이어 순서 + **정확한 N**)과 task 파일을 체인 디�토리에 작성 후 반환. v3.7.3 "Planner 체인 밖으로"의 완성 — 단 이번엔 async 오케스트레이션이 아니라 **N 사전 확정**으로 정확한 사이징이 가능해진 방향.
+- **정확한 N의 foreground 체인** — 고정 슬롯 없음, 빈 슬롯 없음, no-op Worker 없음, `[CHAIN COMPLETED]` 없음, completionGuard 재용 없음. W₁…W_N 실행 후 자연 종료.
+- **completionGuard 뿌리 제거** — 기능을 끈 게 아니라 **빈 슬롯을 원천 제거**해 발화 조건 자체를 없애고 종료를 정상 완료로 대체. v3.7.5의 "10−N개 빈 슬롯 no-op → completionGuard" 경로가 설계상 불가능해짐.
+- **구조적 `[Read from:]` reads 주입 유지** — 체인 컨텍스트라 `reads`가 `[Read from: <chainDir>/task{k}.md, <chainDir>/results.md]` prefix로 주입됨(에이전트가 신뢰성 있게 따름). single 호출은 이게 안 돼서 B를 기각한 이유. 절대 경로 `<chainDir>` 사용으로 체인 자체 작업 디렉토리와 무관하게 동작.
+- **모든 에이전트 fresh** — builtin planner/worker의 `fork` 기본값이 Giver 대화를 자식에 누수시키므로, Planner·Scout·모든 Worker를 `context: "fresh"`로 덮음(fork 불가). 체인은 chain-level `context:"fresh"`로 전 Worker에 적용.
+- **의존성** — `pi-subagents: ^0.25.0` → `latest`. Pattern C는 foreground 체인 + 구조적 reads(v3.7.x부터 안정)에 의존하므로 append-step/async 전용 기능 불필요. `latest` 추적.
+
+### e2e 검증 (2026-07-03, /tmp/giver-e2e-test)
+mathutils 모듈 + 테스트 과제로 종단 간 검증:
+- 단독 Planner → Plan(N=2, Layer 0→1) + task1/2.md 작성 ✅
+- foreground 체인 W₁ → mathutils.js 구현 + RESULT #1를 `<chainDir>/results.md`에 append(Signatures: add, factorial) ✅
+- W₂(results.md 읽기) → mathutils.test.js + RESULT #2 append ✅
+- Phase 5 `node --test` 6/6 pass ✅
+- (1차 append-step 시도는 W₁ 완료 후 체인 종료로 append 거절된 사실도 기록 — race 실증)
+
+### 보존 (의도적 최소화)
+- **results.md 구조적 통신 (v3.7.0)** — 그대로. W_k는 `reads:["<chainDir>/task{k}.md","<chainDir>/results.md"]`로 이전 RESULT/Breaking 주입.
+- **RESULT 4섹션 (Files/Signatures/Breaking/Summary)** — 불변.
+- **Phase 1-3, Design Principles, Phase 6, Dependency Format** — 불변.
+
+### 미결/후속
+- **results.md → named outputs**: v3.8.0은 results.md 유지. 후속에서 `as`/`{outputs.name}`/`collect`/`outputSchema`(0.26.0)로 Breaking/Signatures를 스키마 필드로 인코딩 가능 — 수동 append 로그 제거.
+- **비반응형 트레이드오프 수용**: Pattern C는 N·의존성을 Planner가 사전 정리하므로 Worker 사이 재계획은 안 함. 대신 구조적 reads 주입(체인 전용)을 살리고 append-step 경쟁을 피함. Worker의 Breaking이 하류 task를 무효화하면 Phase 5 검증이 잡고 다음 체인이 Past failures로 반영.
+- **append-step/async는 의도적 미사용**: 테스트로 기각(자동 종료 경쟁 + single 호출 reads 무시 + 정적 W×N과 중복).
+
+### 교훈
+"진짜 동적 확장"을 `append-step`라 가정했으나 e2e 테스트가 그 가정을 깸 — async 체인 자동 종료가 반응형 append와 양립 불가. 오히려 **v3.7.5 우회의 진짜 원인은 "Planner가 체인 안에 있어 N이 사후 결정"**이었고, 그 원인을 제거하니(Planner 밖으로) completionGuard 우회 전체가 불필요해졌다. "기능(append-step)을 기다렸다"가 아니라 **"원인(N 사후 결정)을 제거했다"**가 해법. 테스트가 가정을 검증하고 설계를 바로잡은 사례 — "지시보다 구조" 원칙을 지키는 Pattern C가 정답.
+
+## v0.1.0 — 패키지 리네임 @sng2c/pi-the-giver, 버전 리셋 (2026-07)
+
+- **패키지명**: `@sng2c/giver-skill` → `@sng2c/pi-the-giver` (pi 생태계 `pi-` 표준 접두사 + 스코프 `@sng2c` 유지; 소설 《The Giver》 테마 반영). 스킬명(호출명)은 `giver` 유지(`/skill:giver`).
+- **버전 리셋**: 3.8.0 → 0.1.0. npm 이름이 바뀌었으므로 새 패키지로 버전을 다시 뗌. 아키텍처는 v3.8.0(Pattern C) 그대로 — 이 버전은 "리네임된 패키지의 첫 배포"이지 설계 변경이 아님.
+- **검증 상태**: v3.8.0의 e2e 테스트(mathutils N=3 foreground 체인, node --test 7/7, 구조적 `[Read from:]` 실증)가 그대로 유효.
+- `npm publish --dry-run --access public` 통과(태볼 6파일, 38.4kB).

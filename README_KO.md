@@ -1,222 +1,161 @@
-# Giver
+# pi-the-giver
 
-v3.7.5
+[![npm version](https://img.shields.io/npm/v/@sng2c/pi-the-giver?style=flat-square)](https://www.npmjs.com/package/@sng2c/pi-the-giver) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-[![npm version](https://img.shields.io/npm/v/@sng2c/giver-skill?style=flat-square)](https://www.npmjs.com/package/@sng2c/giver-skill) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+> *"전달받을 거라면, 온전한 기억이어야 해."*
+> — 로이스 로리, 《기억 전달자(The Giver)》
+
+Pi 코딩 에이전트용 스킬. 코딩 과제를 **Planner + N Workers** 파이프라인으로 위임하며, **엄격한 컨텍스트 격리**를 보장한다. 당신은 **Giver**와 대화하고, Giver는 위임한다. Giver는 코드를 직접 고치지 않는다 — 모든 대화 컨텍스트를 품은 기억 전달자가, 그것을 증류하여 task 브리프로 만들어 fresh하고 스코프가 제한된 Worker들에게 건넬 뿐.
 
 ## 설치
 
 ```bash
-pi install npm:@sng2c/giver-skill
+pi install npm:@sng2c/pi-the-giver
 ```
 
-[pi-subagents](https://www.npmjs.com/package/pi-subagents) ≥ 0.25.0 필요.
-
 ## 활성화
-
-설치 후 Pi 세션에서 스킬을 활성화:
 
 ```
 /skill:giver
 ```
 
-또는 프로젝트 지시 파일(`.pi/AGENTS.md`)에 추가하여 코딩 작업 시 자동 활성화.
+또는 프로젝트 지시 파일(`.pi/AGENTS.md`)에 추가해 코딩 과제에 자동 활성화.
 
 ## 빠른 시작
-
-활성화 후 Pi에 작업을 설명:
 
 ```
 Use the giver skill to implement a user authentication module with login, signup, and password reset
 ```
 
-Pi가 Planner → Workers 파이프라인을 오케스트레이션:
-1. **Giver**가 Task #0 작성 (Goal, Background, Signatures, Target Files)
-2. **Planner**가 Worker별 task 파일 작성 (task1.md, task2.md, ...)
-3. **Workers**가 격리된 fresh 컨텍스트에서 작업 구현
-4. 미사용 Worker 슬롯은 `[CHAIN COMPLETED]` 트리거 → completionGuard가 체인 종료 → ✅
-5. **Giver**가 results.md를 읽고 검증 후 보고
-
-### 작동 원리
-
-- Giver가 모든 대화 컨텍스트를 보유 — 코드를 직접 수정하지 **않음**
-- Planner와 Worker는 **fresh** 컨텍스트에서 실행 (히스토리 누수 없음)
-- Worker 간 통신은 **results.md**로 (프롬프트 전달이 아닌 구조적 주입)
-- 각 Worker는 **자기 스코프만 소유** — task 내 파일만 수정
-- 모든 작업이 Worker 10번 슬롯 전에 완료되면 체인이 **자동 종료**
-
-### 주요 명령
-
-| 명령 | 설명 |
-|---|---|
-| `/skill:giver` | Giver 스킬 활성화 |
-| `Use the giver skill to [작업]` | Giver 파이프라인 시작 |
-| `Use the giver skill with scout to investigate [버그]` | Scout 단독 진단 |
-
-전체 설정과 템플릿은 [SKILL.md](skills/giver/SKILL.md) 참조.
+Giver가 Planner → Workers 파이프라인을 돌린다 — Task #0 작성, 단독 Planner로 정확한 Worker 수 N 산출, N개 Worker의 foreground 체인 구성·실행, 검증·보고.
 
 ---
 
-> *"기억을 전달받는다면, 그건 온전한 기억이어야 한다."*
-> — 로이스 로리, 《기억 전달자》
->
-> 《기억 전달자》에서 한 사람이 세상의 모든 기억을 품는다. 나머지는 **Sameness** 속에 산다 — 역사도, 맥락도, 축적된 노이즈도 없이. 기억 전달자는 필요한 순간에 필요한 기억만 골라 전달한다. **고통의 전달**(giving of pain)을 통해 레거시의 고통스러운 진실 — 실패, 제약, 절대 피해야 할 것 — 을 정제하여 백지 상태의 수령자에게 주입한다.
->
-> 우리의 Giver도 똑같이 작동한다:
->
-> | 소설 | 아키텍처 |
-> |---|---|
-> | 기억 전달자가 모든 기억을 보유 | Giver가 모든 대화 컨텍스트를 보유 |
-> | 수령자는 전달받은 것만 받음 | Planner는 Giver의 T₀만 수신 |
-> | 공동체는 Sameness 속에 산다 | Worker/Scout는 완전히 fresh — 역사 0 |
-> | 전달은 선택적이고 의도적 | Giver는 T₀에 명시적 6섹션만 전달 |
-> | 기억은 전달자에만 머물고 아래로 새지 않음 | 대화 컨텍스트는 Giver에만, 하류로 격리 |
-> | 고통의 전달 (giving of pain) | Giver가 실패 기억을 Past failures로 주입 |
+## 은유 — 왜 "The Giver"인가
 
-## Giver란
+로이스 로리의 《기억 전달자》에서 **기억 전달자(Receiver of Memory)** 한 사람이 세상의 모든 기억을 품는다. 나머지는 **Sameness** 속에 산다 — 역사도, 맥락도, 축적된 노이즈도 없이. 기억 전달자는 필요한 순간에 필요한 기억만 골라 전달한다. **고통의 전달(giving of pain)** — 레거시의 고통스러운 진실, 실패, 제약, 절대 다시는 반복하지 말아야 할 것 — 은 정제되어 백지 상태의 수령자에게 주입된다.
 
-사용자의 코딩 작업을 대화로 받아, 여러 에이전트에 작업을 나누어 위임하는 오케스트레이터다. 사용자는 Giver와 대화하고, Giver는 체인을 통해 Planner·Scout·Worker를 호출한다.
+이 스킬은 소설 그 자체를 코딩 에이전트에 옮긴 것이다:
 
-## 문제: 코딩 I/O의 누적
+| 소설 | Giver 스킬 |
+|---|---|
+| 전달자가 모든 기억을 품는다 | Giver가 모든 대화 컨텍스트를 품는다 |
+| 공동체는 Sameness 속에 산다 | Worker·Scout는 **fresh**로 실행 — 히스토리 0 |
+| 전달자는 선택된 기억만 전달 | Planner/Worker는 T₀ / task 파일만 수신 |
+| 고통의 전달 — 실패·제약·금기 | `Past failures` + `Constraints`를 T₀에 주입 |
+| 기억은 아래로 누수되지 않는다 | Giver의 대화는 에이전트 경계를 넘지 않는다 |
+| 전달자는 전달만, 세상을 고치지 않는다 | Giver는 위임만, 코드를 직접 고치지 않는다 |
 
-코딩 에이전트는 파일을 읽고, 코드를 작성하고, 테스트를 돌린다. 이 **코딩 I/O**(소스 파일, 테스트 출력, 에러 로그)가 스텝마다 누적되면 컨텍스트가 지수적으로 증가한다.
+아키텍처는 스킬 위에 얹은 장식이 아니다 — **스킬이 곧 은유**다. Giver는 기억 전달자이고, 모든 하류 에이전트는 증류된 핵심만 받는 백지 수령자다.
+
+---
+
+## 왜 효율적인가 — 컨텍스트 격리 + 관심의 분리
+
+코딩 에이전트는 매 단계에서 파일을 읽고, 코드를 쓰고, 테스트를 돌린다. 이 **코딩 I/O**(소스·테스트 출력·에러 로그)가 누적되며 컨텍스트는 지수적으로 팽창한다:
 
 $$
 |\text{context}(n)| = |\text{context}(1)| \cdot r^{n-1} \quad (r > 1)
 $$
 
-컨텍스트가 커지면 **스티어링**(방향 지시: "어떤 파일을 만들지, 어떤 에러를 고칠지")이 코딩 I/O 노이즈에 묻힌다. 결과적으로 에이전트가 엉뚱한 파일을 수정하거나 이미 고친 에러를 재시도하는 등 방향을 잃는다.
+컨텍스트가 커질수록 **스티어링**(방향 지시: "이 파일 만들어", "저 에러 고쳐", "Z일 때만 Y 접근 써")이 코딩 I/O 노이즈에 잠긴다. 에이전트는 방향을 잃는다 — 잘못된 파일을 고치고, 이미 고친 에러를 재시도하고, 목표에서 표류한다.
 
-## 해법: 스티어링 격리 파이프라인
+Giver는 직교하는 두 축으로 이 문제를 공격한다.
 
-컨텍스트를 **스티어링**(방향 지시)과 **코딩 I/O**(실행 산출물)로 분해하고, 에이전트 경계에서 스티어링만 전달한다.
+### 축 1 — 컨텍스트 격리 (에이전트 경계 너머)
 
-```mermaid
-graph LR
-    G["Giver"] -->|Recon| S["Scout"]
-    S -->|시그니처| G
-    G -->|"T₀"| P["Planner (1-step)"]
-    P -->|task files| G
-    G -->|W×N chain| W1["Worker 1"]
-    W1 -->|results.md| W2["Worker 2"]
-    W2 -->|results.md| W3["Worker 3"]
-    W3 -->|results.md| W4["..."]
-```
-Giver는 항상 P→W×10 체인을 시작한다. Planner가 task 수(N ≤ 10)를 결정하면, task 파일이 없는 Worker 슬롯은 no-op로 즉시 종료된다. 같은 파일을 여러 Worker가 순차 수정 가능.
+컨텍스트를 **스티어링**(방향 지시)과 **코딩 I/O**(실행 산물)로 분해한다. **에이전트 경계를 넘는 건 스티어링뿐.** 코딩 I/O는 그것을 만든 에이전트 안에 머문다.
 
-| 경계 | 전달 (스티어링) | 격리 (코딩 I/O) | 격리율 |
-|------|--------------|---------------|--------|
-| G → P | T₀ | Giver 대화 (~500K토큰) | **99%** |
-| P → Wₖ | taskₖ.md | 다른 Worker 태스크 | **83~93%** |
-| Wₖ → G | RESULT | Worker 실행 전체 | **98~99%** |
+- Giver의 전체 대화(~500K 토큰의 결정·대화·버린 시도)는 Worker에 닿지 않는다.
+- 각 Worker는 **fresh**로 실행되며, 작은 `RESULT`(`Files / Signatures / Breaking / Summary`, 코드 본문·테스트 출력 없음)만 내놓는다.
+- 다음 Worker는 형제들의 전체 실행 궤적이 아니라, **구조적 주입**(프레임워크의 `results.md` `[Read from:]` prefix)으로 이전 `RESULT`를 받는다.
 
-> 격리율 = 1 − (전달 크기 / 격리 전 컨텍스트 크기). 출처: c2e86d3b 체인 측정
+| 경계 | 넘는 것(스티어링) | 격리(코딩 I/O) | 격리율 |
+|---|---|---|---|
+| G → P | T₀ | Giver 대화 | ~99% |
+| P → Wₖ | taskₖ.md | 다른 Worker 태스크 | 83–93% |
+| Wₖ → G | RESULT | Worker 실행 전체 | 98–99% |
 
-## 설계 원칙
+> 격리율 = 1 − (전달 크기 / 격리 전 컨텍스트 크기).
 
-[GGON(꼰)](https://gist.github.com/sng2c/a6d201dff2d66b1a589658056e5861a9)을 기반으로 Giver에 맞게 번역했다.
+### 축 2 — 관심의 분리 (파이프라인 내부)
 
-Giver는 T₀를 쓰기 전에 이 원칙들을 적용한다. 작업의 범위, 분할, 위임을 결정한다.
+각 역할은 정확히 하나의 관심을 소유하고, 다른 이의 I/O를 담지 않는다:
 
-1. **최소 침투**: 기존 구조 보존, 최소 변경으로 요구사항 충족. 핵심 로직 수정보다 새 인터페이스나 브릿지 패턴으로 확장.
+| 역할 | 컨텍스트 | 소유 | 하지 않는 것 |
+|---|---|---|---|
+| **Giver** | 대화 | 결정 → T₀ | 코드 수정 |
+| **Planner** | fresh | task 파일 + 정확한 N + 레이어 순서 큐레이팅 | 구현 |
+| **Scout** | fresh | 정찰 → 시그니처 | 구현 |
+| **Worker** | fresh | 자기 스코프 파일 + 자가 검증 | 다른 스코프 건드림 |
 
-2. **중앙 제어 존중**: Giver→Planner→Worker 파이프라인이 중앙 제어. Worker는 구현만, 아키텍처 결정은 Giver와 Planner.
+관심이 분리되어 한 Worker의 컨텍스트에 다른 에이전트의 결정이나 실행이 섞이지 않는다. 에이전트가 격리되어 파이프라인 전체 컨텍스트는 **가산적**(작은 fresh 컨텍스트들의 합)으로 자라지, **지수적**(하나의 눈덩이 전사)으로 자라지 않는다.
 
-3. **인지 부하 관리**: Human이 인계받을 수 있도록 변경을 명확한 단위로 분할. T₀와 Tₖ는 대화 기록 없이 자체 완결.
+### 구조, 지시가 아니라
 
-4. **관심사 격리**: Worker는 Tₖ 내 파일만 수정. Signatures 참조 파일은 읽기 허용, 수정은 금지.
+results.md는 프레임워크의 `[Read from: <chainDir>/results.md]` prefix로 하류 Worker에게 흐른다 — Worker에게 "출력을 전달해 달라"고 부탁해서가 아니다. 파이프라인의 정확성이 에이전트가 prose를 성실하게 에코하는지에 의존하지 않는다. **지시보다 구조**: 에이전트가 정중하든 아니든 메커니즘은 작동한다.
 
-5. **리팩터 가치 = 다음 변경 비용 감소**: 리팩터링은 자동이 아닌 설계 결정. Giver가 사용자에게 제안, 구체적 메커니즘으로 정당화, 승인 시만 T₀에 포함.
-
-## 3-tier 구조
-
-**Giver**(대화): 사용자 대화에서 결정을 추출하여 T₀를 작성. 코드를 직접 다루지 않음.
-
-**Planner**(계획): T₀에서 Worker별 task{k}.md를 생성. T₀ Signatures가 충분하지 않으면 Target Files에서 구현 패턴을 추출.
-
-**Worker**(실행): 자기 task{k}.md와 이전 Worker의 RESULT만 수신. 격리된 스코프에서 작업을 실행. 각 Worker는 fresh 컨텍스트로 실행되어 부모나 다른 Worker의 I/O에 영향을 받지 않음.
+---
 
 ## 파이프라인
 
 ```
-G → S(Recon) → G → T₀ → P → {T₁, T₂, T₃}
-                                ↓
-                           W₁(T₁) → R₁           ← task file only, NO Planner output
-                           W₂(T₂, R₁) → R₂       ← prev Worker RESULT only
-                           W₃(T₃, R₂) → R₃       ← 조합 전이
+요청 → Giver(논의/결정) → T₀ → Planner(단독, fresh) → Plan(정확한 N + task 파일)
+                                            ↓
+                     Giver가 foreground W×N 체인 구성
+                                            ↓
+   W₁ (task1.md 읽기)                → RESULT #1 → results.md
+   W₂ (task2.md + results.md 읽기)   → RESULT #2 → results.md
+   …                                  …
+   W_N                                → RESULT #N → results.md   → 체인 자연 종료
+                                            ↓
+                     Giver가 results.md 읽고 검증·보고
 ```
 
-- **Scout**: Giver가 코드 구조를 직접 읽지 않고 Scout에게 위임. 체인 밖에서만 호출.
-- **RESULT = Files + Signatures + Breaking + Summary**: 코드 본문은 포함하지 않아 {previous}를 통한 I/O 역류를 차단.
-- **조합 전이**: Rₖ는 Rₖ₋₁의 결과를 반영하여 만들어지므로 정보가 조합적으로 하류에 전달됨. 하지만 각 RESULT는 스티어링만 포함하므로 |Rₖ|는 일정 범위에 바운드됨.
+- **Scout**는 시그니처/타깃 파일 정찰이 필요할 때 Giver가 체인 전에 단독 호출.
+- **Planner**는 단독(체인 밖)으로 돌아 **정확한 N** + 의존성 레이어 순서를 반환 → 체인이 정확히 사이징됨(빈 슬롯 없음).
+- **Worker**는 단일 foreground 체인 안에서 fresh로 실행되며, 각자 task 파일과 누적 `results.md`만 받는다.
 
-> Phase 정의, SCOPE 규칙, 템플릿, 실패 프로토콜은 [SKILL.md](.pi/agent/skills/giver/SKILL.md) 참조
+## 왜 순차 파이프라인인가 (병렬이 아닌)
 
-## 성능
+Worker는 **W₁ → W₂ → … → W_N 순서**로 실행되며, 동시에 돌지 않는다. 이유는 **변경의 영향 반영**: 한 Worker의 편집이 다음 Worker가 빌드해야 할 실제 상태를 바꾸기 때문이다.
 
-에이전트 1회 실행당 컨텍스트 크기가 구조 효율성의 핵심 지표다. 과제가 복잡하면 총 토큰도 커지는 건 당연하다. **in/turn**(Worker 턴당 처리 토큰)으로 비교한다.
+- **같은 파일, 여러 관심**: W₁은 `UserService` 추가, W₂는 그것을 import하는 `UserController` 추가, W₃은 테스트 추가 — 셋 다 `user.ts`를 건드린다. W₂는 W₁이 *쓴 뒤의* `user.ts`를 읽어야 하고, W₃은 둘 다 쓴 뒤의 것을 읽어야 한다. 병렬이면 각 Worker가 정적 스냅샷에 고정되어 공유 파일에서 충돌한다.
+- **익스포트 의존**: Layer 0가 심볼 생성, Layer 1가 import, Layer 2가 테스트. Wₖ의 task는 W_{k-1}이 실행된 뒤에야 존재하는 시그니처를 참조한다. `results.md`가 실제 `Signatures`/`Breaking`을 앞으로 전달하여 Wₖ가 가정이 아닌 **실제 익스포트** 위에서 빌드한다.
+- **Breaking 가드레일**: Wₖ가 익스포트를 제거/개명하면, W_{k+1}는 시작 *전*에 `results.md`에서 그 사실을 본다 — 파일을 읽고 옛 심볼을 못 찾아 루프도는("edit → fail → re-read" 함정) 대신.
 
-### 모놀리식 → v3.6.3 진화
+병렬은 파일을 **겹침 0**, **Worker 간 의존 0**으로 미리 분할해야 한다 — 독립 청크에만 가능하고 취약(공유 파일 하나나 import 하나만 끊어져도 깨짐). 순차 실행은 Giver의 분해 자유를 지킨다: *논리적 수정 그룹*으로 쪼개고, 그룹이 파일을 공유하고 서로 의존하게 두고, 각 Worker가 **진짜 변경 후 상태** 위에서 빌드하게 한다. 그 비용(직렬 지연)은 공유 상태 아래 정확성의 대가이며, 체인의 구조적 `[Read from: results.md]` 주입이 그 전달을 prose 지시 없이 신뢰 가능하게 만든다.
 
-```
-버전            W_tokens평균  W in/turn   핵심 변화
-───────────────────────────────────────────────────────────
-모놀리식(fresh)  152K/18턴      8K        실측: Redbis 44테스트
-v1              1.9M            —        Giver 베이스라인, fork 누수
-v2              1.4M            —        fork 제거
-v2.5b           103K            —        Do-When, DI
-v3.5             113K          44K        Planner 읽기 금지, W2 64턴
-v3.6.1          841K           93K        reads:false (과다 읽기)
-v3.6.2          228K           63K        auto-inject (과다 읽기 −32%)
-v3.6.3           56K           12K        Target Verification (과다 검증 −81%)
-v3.6.7            —           12K        W₁ {previous} 제거, R8 수정
-v3.6.8            —           17K        brief/echo 충돌
-v3.7.0            —           19K        results.md 도입
-v3.7.3            —           19K        results.md + RESULT 양쪽 기록
-```
+## 왜 completionGuard가 없는가
 
-**v3.6.3 in/turn(12K)은 모놀리식(8K)과 동급** — Worker당 효율성이 모놀리식과 비슷하면서 부분 재시도 가능.
+초기 버전(v3.7.5)은 10개 고정 Worker 슬롯을 미리 깔고, 미사용 꼬리를 pi-subagents의 `completionGuard`로 끊었다(no-op Worker가 아무것도 안 쓰면 → 체인이 에러로 완료 시그널). 이 우회는 Planner가 **체인 안**에 있어 N을 실행 도중에 결정할 수밖에 없어, 슬롯을 미리 깔아야 했기 때문에 생겼다.
 
-### 동일 과제 비교 (Redbis 44테스트, 실측)
+v0.1.0은 Planner를 **단독**으로 빼서, N을 체인 빌드 *전*에 확정한다. Giver는 **정확히 N**개 Worker 체인을 구성한다 — 빈 슬롯 0, no-op 0, `[CHAIN COMPLETED]` 0, `completionGuard` 재용 0. 체인은 W_N 뒤 자연 종료한다. (`append-step`/async는 e2e 테스트 후 기각 — `docs/history.md` 참고.)
 
-| 지표 | 모놀리식(fresh) | v3.6.1 | v3.6.2 | **v3.6.3** |
-|------|:-----------:|:------:|:------:|:------:|
-| 활성 Worker | 1 | 3 | 4 | 5 |
-| W_tokens 합 | 152K | 344K | 1,141K | **282K** |
-| W_tokens 평균 | 152K | 115K | 285K | **56K** |
-| W in/turn | 8K | 93K | 63K | **12K** |
-| P+W tokens | 152K | 378K | 1,266K | **421K** |
-| 컨텍스트 | 누적 ❌ | fresh ✅ | fresh ✅ | **fresh ✅** |
-| 부분 재시도 | 불가 ❌ | Worker 단위 ✅ | Worker 단위 ✅ | **Worker 단위 ✅** |
+## 의존성
 
-> 총 토큰은 모놀리식이 적지만, Worker당 효율과 재시도 가능성은 v3.6.3이 우위. [상세 분석](docs/performance-report.md)
+[pi-subagents](https://www.npmjs.com/package/pi-subagents) `latest` 필요 (foreground 체인 + 구조적 `[Read from:]` reads 주입).
 
 ## 참조
 
 | 파일 | 내용 |
-|------|------|
-| [SKILL.md](.pi/agent/skills/giver/SKILL.md) | 전체 구현 (Phase, 템플릿, SCOPE, T₀/Tₖ, 실패 프로토콜) |
-| [giver-principles.md](giver-principles.md) | 수학적 정의 (6원리, 집합, 함수, 불변량) |
-| [insights.md](docs/insights.md) | 프로젝트 인사이트 (8개 핵심 통찰) |
-| [performance-report.md](docs/performance-report.md) | 성능 분석 (v1~v3.7.3, in/turn, 동일과제 비교) |
-| [chains.json](docs/chains.json) | 체인 분석 데이터 (28체인, 토큰+바이트) |
-| [analysis-logic.md](docs/01-analysis-logic.md) | 분석 도구 로직 레퍼런스 |
-| [history.md](docs/history.md) | v1~v3.7.3 개선 이력 |
+|---|---|
+| [skills/giver/SKILL.md](skills/giver/SKILL.md) | 전체 구현 — Phase, 템플릿, RESULT 포맷, 실패 프로토콜 |
+| [giver-principles.md](giver-principles.md) | 수학적 정의 — 6원리, 집합, 함수, 불변량 |
+| [docs/insights.md](docs/insights.md) | v1~v3.7.x 진화에서 얻은 인사이트 |
+| [docs/history.md](docs/history.md) | 버전·설계 이력 (v1 → v0.1.0, append-step → Pattern C 테스트 여정 포함) |
 
-## 버전 히스토리
+## 버전 히스토리 (요약)
 
 | 버전 | 날짜 | 변경 |
-|------|------|------|
-| v3.0 | 2026-05 | 초기 파이프라인 아키텍처 |
-| v3.2 | 2026-05 | 체인 내 Scout 제거, Planner가 Imports needed 큐레이팅 |
-| v3.3 | 2026-05 | Planner가 task{k}.md 분리 작성 |
-| v3.5 | 2026-05 | Planner "T₀에서만 큐레이팅", RESULT = Files/Signatures/Summary |
-| v3.5.13 | 2026-05 | Signatures 통합, Breaking forward, T₀ Target Files, Planner Target Files 읽기 허용 |
-| v3.6 | 2026-05 | 설계 원칙 (GGON), 리팩토링 설계 결정화, 모순 6건 수정 |
-| v3.6.1 | 2026-05 | reads:false, no-op 강화, 모순 8건 수정 |
-| v3.6.2 | 2026-05 | reads auto-inject, [Write to:] 경로 주입, 과다 읽기 −63% |
-| v3.6.3 | 2026-05 | Target Verification scope, Planner가 검증 대상 지정 |
-| v3.6.7 | 2026-05 | {previous} 체인 echo, Breaking 템플릿 버그픽스, 3회→1회 치환 수정 |
-| v3.6.8 | 2026-05 | "brief" 제거로 echo/RESULT 충돌 해결, "Reproduce" 지시어 도입 (33588327 실측: echo 미준수, Breaking forward는 작동) |
-| v3.7.0 | 2026-05 | results.md 구조적 통신, {previous} 제거, reads 자동 주입 (echo 미준수 → 구조적 해결) |
-| v3.7.3 | 2026-05 | RESULT output + results.md 양쪽 기록 (67df5f65 실측: W1~W5 RESULT 포맷 + results.md 누적) |
+|---|---|---|
+| v3.0 | 2026-05 | 초기 Planner → Workers 파이프라인 |
+| v3.6.3 | 2026-05 | Target 검증 스코프 (검증 I/O −81%) |
+| v3.7.0 | 2026-05 | results.md 구조적 통신 |
+| v3.7.5 | 2026-05 | 고정 10슬롯 + completionGuard 우회 |
+| v3.8.0 | 2026-07 | Pattern C — foreground W×N, 단독 Planner의 정확한 N (e2e 테스트) |
+| **v0.1.0** | 2026-07 | 패키지 리네임 `@sng2c/giver-skill` → `@sng2c/pi-the-giver`; 버전 리셋. 아키텍처 = Pattern C (v3.8.0 설계) |
+
+## 라이선스
+
+MIT

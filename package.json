@@ -1,7 +1,7 @@
 {
-  "name": "@sng2c/giver-skill",
-  "version": "3.7.6",
-  "description": "The Giver v3 \u2014 Pipeline orchestration skill for Pi coding agent. Planner\u2192Workers chain with results.md, completionGuard chain break, [CHAIN COMPLETED] signal.",
+"name": "@sng2c/pi-the-giver",
+  "version": "0.1.0",
+  "description": "The Giver v3 \u2014 Pipeline orchestration skill for Pi coding agent. Async chain + append-step orchestration: Planner standalone, dynamic Worker count at runtime, native termination. results.md structural communication. All subagents run fresh.",
   "main": "skills/giver/SKILL.md",
   "keywords": [
     "pi-package",
@@ -20,7 +20,7 @@
     "url": "https://github.com/sng2c/giver-architecture"
   },
   "dependencies": {
-    "pi-subagents": "^0.25.0"
+    "pi-subagents": "latest"
   },
   "bundledDependencies": [
     "pi-subagents"

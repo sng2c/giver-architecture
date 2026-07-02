@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "3.7.6"
-description: 'The Giver v3.7.5. Each agent owns its scope. Giver records failures, does not fix directly. Efficiency report per chain. reads:["taskN.md"] auto-inject. P-Wx10 chain. W1 gets task file only (no P output). Same file OK across Workers. No Scout in chain. All subagents run fresh.'
+version: "0.1.0"
+description: 'The Giver v0.1.0. Foreground W×N chain with exact N from standalone Planner — no fixed slots, no completionGuard. Structural [Read from:] injection, results.md continuity. Each Worker owns its scope. Giver records failures, does not fix directly. All subagents run fresh.'
 disable-model-invocation: true
 ---
 
@@ -14,33 +14,34 @@ You selectively **give** only what they need via T_0. Workers receive previous r
 
 ```
 Task #0 (T_0) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Written by Giver)
-Task #k (T_k) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Curated by Planner per Worker — saved to task{k}.md)
+Task #k (T_k) = Goal + Background + Past failures + Constraints + Target Files + Signatures  (Curated by Planner per Worker — saved to task{k}.md in the chain directory)
 Dependency = (signature, filepath)  (tuple)
 Signatures = List of Dependency tuples. Direction implied by context: in T₀/Tₖ = dependencies this task needs (input); in RESULT = dependencies this Worker provides (output). Breaking = dependencies removed or changed (negative output).
 Target Files (T₀) = All files to be modified or created across the entire task (written by Giver, from Scout recon)
 Target Files (Tₖ) = Files this Worker will modify or create (subset assigned by Planner from T₀)
 Each Worker owns its scope — verifies its own changes, not someone else's. Giver is the memory keeper: records failures, discusses with user, does not fix directly.
 Result = Files + Signatures + Breaking + Summary. Each Worker appends its RESULT to results.md in the chain directory.
-History = Giver writes T₀ → T₀ → P output → W₁ appends to results.md → W₂ reads results.md + appends → ... → W₁₀ appends  (Planner writes task files to chain directory via [Write to:]. Workers receive task files via reads:["taskN.md"] auto-inject and previous results via reads:["results.md"] auto-inject.)  (W₁ reads only task1.md. Wₖ (K≥2) reads taskK.md + results.md to see all previous Workers' results. Each Worker appends its RESULT to results.md after completing work.)
+Plan = ordered list of task descriptors (Layer 0 → Layer 1 → ...) produced by standalone Planner, with the exact count N. Giver builds the chain with exactly N Worker steps from this Plan.
+History = Giver writes T₀ → Giver calls Planner standalone → Planner writes task1..taskN.md + returns Plan (N, layer order) → Giver builds a foreground chain of exactly N Workers → W₁ → W₂ → … → W_N (natural completion). Workers receive task files via reads:["<chainDir>/taskN.md"] (structural [Read from:] prefix) and previous results via reads:["<chainDir>/results.md"]. W₁ reads only task1.md. Wₖ (K≥2) reads taskK.md + results.md. Each Worker appends its RESULT to results.md after completing work.
 ```
 
 ## Signatures
 
 ```
 G: user_input → T₀
-P: T₀ → {Tₖ}
+P: T₀ → Plan (standalone, fresh — called by Giver before the chain, like Scout; returns exact N + task files)
 S: recon → recon (called standalone by Giver, not in chain)
-W: Tₖ → RESULT  (W₁ reads task1.md only. Wₖ (K≥2) reads task file + results.md for all previous results)
+W: Tₖ → RESULT  (W₁ reads task1.md only. Wₖ (K≥2) reads task file + results.md for all previous results. Runs as step K of an N-step foreground chain.)
 ```
 
-Planner and Workers operate within the chain. Planner returns output for the chain system. Workers receive task files and results.md (via reads injection) and return output. Scout is called standalone by Giver before the chain — it does not participate in the chain pipeline. Task files and results.md persist across the chain.
+Planner runs **standalone** (out of the chain), like Scout. It produces the Plan (exact count N + ordered task descriptors) and writes task files to the chain directory. Workers run inside a **foreground chain of exactly N steps** that Giver builds from the Plan. Workers receive task files and results.md via the structural `[Read from:]` prefix (chain context) and return output. Scout is called standalone by Giver before the chain. Task files and results.md persist across the chain in the chain directory.
 
 ## Pipeline
 
-Giver manages the transition from a request to a technical implementation. Giver gathers necessary decisions, structures them into Task #0, and initiates the chain.
+Giver manages the transition from a request to a technical implementation. Giver gathers necessary decisions, structures them into Task #0, calls Planner standalone to get the exact Worker count N and the ordered Plan, then builds and runs a foreground chain of exactly N Workers.
 
 ```
-Request/Design → Giver (Discuss/Decide) → Task #0 → Planner → Worker 1 → Worker 2 → ... → Worker 10
+Request/Design → Giver (Discuss/Decide) → Task #0 → Planner (standalone) → Plan (exact N) → Giver builds W×N foreground chain → W₁ → W₂ → … → W_N (natural completion)
 ```
 
 ---
@@ -110,23 +111,55 @@ Write $T_0$ (the ONLY context downstream agents receive). It must be self-contai
 
 ---
 
-# Phase 4: Chain
+# Phase 4: Chain (foreground W×N, exact N from standalone Planner)
 
-1. **Every chain MUST include `"context": "fresh"` at the chain level** — this sets fresh mode for all agents in the chain. Individual step-level `"context"` is ignored (not supported in ChainStep). Default agent context is fork which leaks parent context.
-2. **Every chain MUST include `"cwd": "{project_root}"`** — this sets the working directory for all agents in the chain. Without it, agents may write files to the wrong directory. Replace `{project_root}` with the actual project root path.
-3. **`reads` override is required for every chain step** — Planner uses `reads: false` (prevents context.md/plan.md pre-loading; reads T₀ from task prompt, may read Target Files with `read` tool). Workers use `reads: ["taskN.md"]` (auto-injects task file, prevents defaultReads). Planner's `output: "plan.md"` injects the chain directory path via `[Write to:]` — Planner writes task files to that same directory.
-4. **Planner step includes `"output": "plan.md"`** — this injects the chain directory path via `[Write to:]` prefix, so Planner knows where to write task files. Planner's text output (not plan.md) is consumed by the chain system but not passed to Workers.
-5. **Workers receive previous results via results.md, not {previous}** — W₁ reads only task1.md (no previous results). Wₖ (K≥2) reads task file + results.md (accumulated previous Worker results via reads injection). Each Worker appends its RESULT to results.md. No echo or forwarding instructions needed — results.md is structural.
-6. **Planner is in the chain** — P writes task1.md through taskN.md to the chain directory (shown in `[Write to:]` prefix). Workers receive their task file via `reads: ["taskN.md"]`. N depends on logical modification groups, not file count. Chain always has 10 Worker slots. Unused Workers find no task file and output no-op immediately.
-7. **Workers read results.md for previous Worker results** — Worker 1 reads only task1.md (no previous results). Worker K (K≥2) reads results.md (injected via reads) to see all previous Workers' Files, Signatures, Breaking, and Summary. Same file can be modified by multiple Workers in sequence (Wₖ reads files modified by Wₖ₋₁).
-8. **Worker's auto-injected file is its own task file** — `reads: ["taskN.md"]` in the chain step auto-injects the task file. Workers may also read files listed in their Target Files and Signatures (see SCOPE in Worker template). If the task file does not exist, Worker outputs no-op immediately (do NOT retry reading the task file).
-9. **Each Worker owns its scope completely** — you are a specialist trusted to deliver working code. You verify your own changes because you own your scope, not because of a rule. Other Workers own their scopes — checking their work is not your concern. Check what you changed works: type check, build, or targeted test. Giver verifies the complete result in Phase 5.
-10. **Worker RESULT has 4 sections** — Files (created/modified), Signatures (new/changed exports), Breaking (removed/changed exports — downstream Workers see all Breaking in results.md), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Each Worker appends its RESULT to results.md. Downstream Workers read files directly via SCOPE if they need details. This keeps results.md concise and prevents token bloat.
-11. **Planner curates for efficiency, trusts Workers' competence** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. Providing clear requirements respects Workers as specialists — doubting their ability to verify their own work is disrespectful. When Workers have enough context, they don't read extra files — this saves tokens.
-12. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, Planner reads the Target File using `read` tool to extract key patterns (3-10 lines per file) and includes them inline in Constraints. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
-13. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, note that Giver should have discussed refactoring with the user. If user approved refactoring, Planner includes all affected import files in the refactoring Worker's Tₖ and the refactoring Worker lists all Breaking items (removed/renamed/changed exports).
-14. **Last Worker's output is the chain result** — the chain system returns the last Worker's text output to Giver. Giver also reads results.md in the chain directory for all Workers' results (Files, Signatures, Breaking, Summary) and progress.md for implementation details.
-15. **Worker Breaking section prevents downstream failures** — when a Worker removes or changes an export that another Worker might reference, it must list it in the Breaking section. Downstream Workers see all previous Breaking items in results.md (injected via reads).
+Giver builds a **foreground chain of exactly N Worker steps**, where N comes from a standalone Planner run **before** the chain is built. Because N is known at chain-build time, the chain has **no empty slots** — every step is a real task. There are no no-op Workers, no `[CHAIN COMPLETED]` signal, and **no completionGuard repurposing**. The chain completes naturally when W_N finishes.
+
+This is the v3.7.5 fixed-10-slot + completionGuard workaround replaced at the root: that workaround existed only because the Planner was *inside* the chain and decided N mid-run, forcing 10 pre-committed slots whose unused tail had to be broken via completionGuard. Moving Planner standalone makes N known before the chain is built, so the chain is sized exactly and completionGuard never fires.
+
+**Dependency:** tracks the latest `pi-subagents` release. This design uses the foreground chain (structural `[Read from:]` reads injection + dedicated chain dir) which has been stable since the v3.7.x line; no `append-step`/async-interrupt features are required.
+
+## Why not append-step / async (rejected after e2e testing, 2026-07-03)
+
+v3.8.0 initially planned `append-step` (pi-subagents 0.30.0) on a single async chain (start W₁, append W₂…W_N at runtime). E2E testing rejected it:
+- **append-step races**: an async chain auto-finalizes the moment its last step completes, so by the time Giver reads W₁'s RESULT and calls `append-step` for W₂, the run is already "complete" and append is rejected ("only running chain runs accept appended steps"). Reactive append-after-result is impractical.
+- **eager append is non-reactive and redundant**: queueing W₂…W_N up front (before W₁ finishes) is race-safe but functionally identical to a static W×N chain — no append-step benefit.
+- **single-Worker calls (chain-per-Worker) lose structural reads**: a single (non-chain) subagent call ignores the `reads` parameter (no `[Read from:]` prefix); continuity falls back to prose-instructed self-reading, which contradicts Giver's core "structure over instruction" principle (insights.md #10).
+
+Pattern C (foreground W×N, exact N from standalone Planner) is chosen instead: it preserves the structural `[Read from:]` reads injection (chain context) and results.md continuity, is race-free, sizes the chain exactly from the Plan, and removes completionGuard by construction.
+
+## Flow
+
+1. Giver writes T_0.
+2. Giver creates a temp chain directory `<chainDir>` (absolute path, e.g. under the system temp or `.pi-subagents/<runId>/`).
+3. Giver calls Planner **standalone** (a SINGLE subagent call, fresh, like Scout, NOT in the chain) and passes `<chainDir>` and T_0. Planner curates the Plan: an ordered list of task descriptors grouped by dependency layer (Layer 0 → Layer 1 → …), writes `task1.md … taskN.md` to `<chainDir>`, and returns the Plan — crucially the **exact count N** and the ordering — to Giver.
+4. Giver builds a **foreground chain of exactly N Worker steps** from the Plan (`context: "fresh"`, `cwd: "<project_root>"`):
+   - W₁: `reads: ["<chainDir>/task1.md"]`
+   - Wₖ (K = 2 … N): `reads: ["<chainDir>/task{K}.md", "<chainDir>/results.md"]`
+   - Each Worker's task instructs it to append its RESULT to `<chainDir>/results.md` (absolute path).
+5. Giver runs the chain (one foreground `subagent({ chain: [W₁ … W_N], … })` call). It blocks until the chain completes naturally after W_N. No polling, no append-step, no interrupt.
+6. Phase 5: Giver reads `<chainDir>/results.md` and verifies.
+
+## Rules
+
+1. **Exact N, no empty slots** — Giver builds the chain with exactly the N Worker steps the Planner returned. No fixed slot cap, no unused slots, no no-op Workers, no `[CHAIN COMPLETED]`, no completionGuard repurposing. Termination is the chain's natural completion after W_N.
+2. **Planner is standalone, not in the chain** — Giver calls Planner fresh (like Scout) with `<chainDir>` and T_0. Planner writes `task1.md … taskN.md` and returns N + the ordered Plan. Giver — not Planner — builds the N-step chain from that Plan. (This is what makes Rule 1 possible: N is known before the chain is built.)
+3. **Foreground chain (not async, not append-step)** — a single `subagent({ chain: [W₁ … W_N], context, cwd })` call that blocks until completion. `append-step` is async-only and races (see above); it is not used.
+4. **Giver orchestrates structure, never content** — Giver builds the chain (structure) from the Planner's Plan, but each Worker still receives only its task file (fresh). Giver's conversation context never leaks into Workers.
+5. **ALL agents run fresh — P, S, W, no exceptions** — the builtin `planner` and `worker` agents default to `context: "fork"` (leaks the parent conversation into the child), so Giver MUST override to `fresh` on every call. No agent is ever run with `fork` or with `context` unset:
+   - **Planner** (standalone single call): `"context": "fresh"`.
+   - **Scout** (standalone single call): `"context": "fresh"`.
+   - **Every Worker** (chain): `"context": "fresh"` at the **chain level** — this sets fresh mode for all chain steps and overrides each worker agent's fork default. Step-level `context` is ignored in ChainStep, so the chain-level value is the ONLY lever — never omit it.
+   - `cwd` is the **project root** so Workers write source files to the right place; the separate `<chainDir>` (task files + results.md) is referenced via **absolute paths** in `reads` and in each Worker's results.md write instruction (Rule 6).
+6. **Path resolution (absolute paths)** — `resolveChainPath` keeps absolute paths as-is, so `reads: ["<chainDir>/task1.md"]` produces `[Read from: <chainDir>/task1.md]` regardless of the chain's own working dir. Workers append RESULT to `<chainDir>/results.md` (absolute, stated in each task). Do NOT use the `{chain_dir}` placeholder (it resolves to a different dir and is unnecessary when you pass absolute paths).
+7. **Structural `[Read from:]` injection (chain context)** — because Workers run in a chain, `reads` produces a `[Read from: <abs paths>]` prefix that the agent reliably follows. This is the structural mechanism v3.7.x depended on; it does NOT work for single (non-chain) subagent calls, which ignore `reads` — another reason this design uses a chain.
+8. **Each Worker owns its scope completely** — you are a specialist trusted to deliver working code. You verify your own changes because you own your scope, not because of a rule. Other Workers own their scopes — checking their work is not your concern. Check what you changed works: type check, build, or targeted test. Giver verifies the complete result in Phase 5.
+9. **Worker RESULT has 4 sections** — Files (created/modified), Signatures (new/changed exports), Breaking (removed/changed exports — downstream Workers see all Breaking in results.md), Summary (1-2 sentences what was done). Do NOT include code bodies, test output, or implementation details. Each Worker appends its RESULT to `<chainDir>/results.md`. Downstream Workers read files directly via SCOPE if they need details. This keeps results.md concise and prevents token bloat.
+10. **Planner curates for efficiency, trusts Workers' competence** — include all information Workers need (error messages, expected behavior, edge cases) in Constraints. Providing clear requirements respects Workers as specialists — doubting their ability to verify their own work is disrespectful. When Workers have enough context, they don't read extra files — this saves tokens.
+11. **Planner must include implementation patterns for large files** — when a Target File is over 500 lines, Planner reads the Target File using `read` tool to extract key patterns (3-10 lines per file) and includes them inline in Constraints. Do NOT write "follow existing patterns" — provide the actual pattern code. Workers who receive patterns inline don't need to read the full file.
+12. **Planner must note file sizes** — when a Target File is over 500 lines, note its size in Constraints (e.g., "handler.ts is 5373 lines"). When over 2000 lines, note that Giver should have discussed refactoring with the user. If user approved refactoring, Planner includes all affected import files in the refactoring Worker's Tₖ and the refactoring Worker lists all Breaking items (removed/renamed/changed exports).
+13. **Native termination** — the chain completes naturally after W_N. Hard deadline: `timeoutMs`/`maxRuntimeMs` on the chain call (foreground chain; per-agent `maxExecutionTimeMs`/`maxTokens` may also be set). Do NOT use completionGuard as a termination signal — there are no no-op steps to trigger it, and it must not be repurposed.
+14. **Worker Breaking section prevents downstream failures** — when a Worker removes or changes an export that another Worker might reference, it lists it in Breaking. Downstream Workers see all previous Breaking in results.md (injected via `[Read from:]`). Because the chain is sequential and pre-planned by layer, dependencies are encoded in the Plan; Breaking is the runtime guard against unexpected export changes.
 
 ## RESULT Format
 
@@ -134,7 +167,7 @@ Worker RESULT has 4 sections — Files (created/modified), Signatures (new/chang
 
 **Breaking** prevents the "edit → fail → re-read" loop. When a downstream Worker's Signatures references an export that a previous Worker removed or changed, the downstream Worker reads the file expecting the old signature, doesn't find it, re-reads, and loops. Breaking tells downstream Workers upfront: "don't look for these — they're gone or changed."
 
-**Breaking accumulates via results.md.** Each Worker appends its RESULT (including Breaking) to results.md. Downstream Workers read results.md to see all previous Breaking items. No manual forwarding instructions needed — structural.
+**Breaking accumulates via results.md.** Each Worker appends its RESULT (including Breaking) to `<chainDir>/results.md`. Downstream Workers read results.md (via `[Read from:]`) to see all previous Breaking items. No manual forwarding instructions needed — structural.
 
 ```markdown
 # RESULT #1 (by Worker 1)
@@ -166,96 +199,70 @@ user.ts:
   W3: add UserService tests + integration
 ```
 
-All three Workers modify user.ts. W₂ reads user.ts after W₁ has added UserService. W₃ reads after both W₁ and W₂. This works because the chain is sequential.
+All three Workers modify user.ts. W₂ reads user.ts after W₁ has added UserService. W₃ reads after both W₁ and W₂. This works because the chain is sequential and Giver orders the steps by dependency layer.
 
 Order by dependency:
 
 ```
 Layer 0 (creates new symbols):   W1 adds UserService, Repository
 Layer 1 (imports Layer 0):        W2 adds Controller (imports Service)
-Layer 2 (imports Layer 0-1):     W3 adds tests (imports Service, Controller)
+Layer 2 (imports Layer 0-1):      W3 adds tests (imports Service, Controller)
 ```
 
-Planner decides how many task files to write. The chain always has 10 Worker slots. If Planner writes fewer task files than 10, unused Workers find no task file and output no-op immediately.
+Planner decides N (task file count) from the work, ordered by layer. Giver builds the chain with exactly N Worker steps. There is NO fixed slot cap and NO no-op tail — N is whatever the work needs, and the chain runs exactly W₁ … W_N.
 
-**No-op Worker**: if Worker K's task file is not found, Worker outputs "[CHAIN COMPLETED]" and stops. Do NOT retry the read. Do NOT write to ANY files — not progress.md, not results.md, not any other file. The reason: writing ANY file prevents completionGuard from detecting this as a no-op step. completionGuard expects no file mutations for a no-op Worker (no write, no edit, no mutating bash). If you write to progress.md or any other file, completionGuard will NOT trigger, the chain will NOT break, and the next Worker will waste time and tokens. Output only "[CHAIN COMPLETED]" and do nothing else. The chain system replaces the Worker's output with: "Subagent completed without making edits for an implementation task." Giver recognizes this as a successful completion signal — all tasks before this Worker were completed. Giver reads results.md in the chain directory for actual Worker results.
+$$ \text{Chain} = W_1 \to W_2 \to \cdots \to W_N \quad (N \text{ exact, from the standalone Planner's Plan; no empty slots, no completionGuard}) $$
 
-$$ \text{Chain} = P \to W_1 \to W_2 \to \cdots \to W_{10} \quad (\text{unused Workers return no-op}) $$
+## Chain Template (standalone Planner + foreground W×N)
 
-## Chain Template (P→W×10)
+Giver writes ONLY Task #0. Planner (standalone) writes `task1.md … taskN.md` to `<chainDir>` and returns N + the ordering. Giver builds the foreground chain with exactly N Worker steps (replicate the Wₖ pattern below for K = 1 … N).
 
-Giver constructs the chain with Planner + 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10). Workers read their own task file. Unused Workers find no task file and output no-op immediately.
+### Step 1 — Giver calls Planner standalone (like Scout, before the chain)
+
+Giver first creates a temp chain directory `<chainDir>` (absolute). Then a SINGLE subagent call (NOT a chain step):
+
+```json
+{
+  "agent": "planner",
+  "context": "fresh",
+  "cwd": "<project_root>",
+  "reads": false,
+  "output": "<chainDir>/plan.md",
+  "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns, things to avoid, test expectations, implementation patterns for large files}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{signatures with file paths, format: functionName(params): ReturnType — path/to/file.ts. MUST fill from Scout recon. For large deps (500+ lines): include 3-10 line usage pattern}\n\n---\n\n## Your Role\n\nYou are running STANDALONE (not in a chain). Write SEPARATE task files (task1.md, task2.md, ...) to this absolute directory: <chainDir>. Use the `write` tool with these absolute paths (e.g. `<chainDir>/task1.md`). DO NOT write your Plan summary to plan.md — plan.md is only a persisted copy of your returned text. Then return a short Plan summary as your text output: the EXACT task count N and the dependency-layer ordering (Layer 0 → Layer 1 → …). N must be exact — Giver will build a chain of exactly N steps from it.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures. Workers are trusted specialists — provide clear requirements, not verification instructions. They own their scope and verify their own work.\n- Decide N from the work (logical modification groups, 2-3 per Worker). There is no fixed cap. Order task files by dependency layer."
+}
+```
+
+### Step 2 — Giver builds and runs the foreground W×N chain
+
+From the Planner's returned N, Giver constructs `chain: [W₁ … W_N]`. W₁ uses the first template; Wₖ (K ≥ 2) uses the second. Replicate per N.
 
 ```json
 {
   "chain": [
     {
-      "agent": "planner",
-      "reads": false,
-      "output": "plan.md",
-      "task": "----\n# Task #0 (for Planner)\n\n### Goal\n{one sentence objective}\n\n### Background\n{decisions, context, business requirements}\n\n### Past failures\n{failure log or 'None — first attempt'}\n\n### Constraints\n{technical constraints, framework, patterns, things to avoid, test expectations, implementation patterns for large files}\n\n### Target Files\n{all files to be modified or created — Planner assigns subsets to each Worker}\n\n### Signatures\n{signatures with file paths, format: functionName(params): ReturnType — path/to/file.ts. MUST fill from Scout recon. For large deps (500+ lines): include 3-10 line usage pattern}\n\n---\n\n## Your Role\n\nWrite SEPARATE task files (task1.md, task2.md, ...) to the directory shown in the [Write to:] prefix. DO NOT write to plan.md — plan.md is a system file for the chain directory path.\n\n## Working Rules\n\n- Curate from Task #0 primarily. You MAY read Target Files listed in T_0 to extract implementation patterns (3-10 lines per file) when T_0 Signatures don't provide enough detail. Read efficiently — read only the sections you need, not entire files. Keep task files concise — include patterns inline, not entire file contents.\n- Curate per Worker — include ONLY what that Worker needs. Each task file contains: Goal, Background, Past failures, Constraints, Target Files, Signatures. Workers are trusted specialists — provide clear requirements, not verification instructions. They own their scope and verify their own work.
+      "agent": "worker",
+      "reads": ["<chainDir>/task1.md"],
+      "task": "Your task file has been provided above (auto-injected from the [Read from:] prefix): <chainDir>/task1.md. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk under <project_root>. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Then APPEND it to the results.md file at this absolute path: <chainDir>/results.md (use the write/edit tool with that absolute path; create the file if it does not exist, otherwise append).\n\n----\n# RESULT #1 (by Worker 1)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
     },
     {
       "agent": "worker",
-      "reads": ["task1.md"],
-      "task": "Your task file task1.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nImplement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md):\n\n----\n# RESULT #1 (by Worker 1)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)
-
-Write your RESULT below. Also append it to results.md (replace the filename in the [Write to:] path with results.md)."
-    },
-    {
-      "agent": "worker",
-      "reads": ["task2.md", "results.md"],
-      "task": "Your task file task2.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #2 (by Worker 2)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task3.md", "results.md"],
-      "task": "Your task file task3.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #3 (by Worker 3)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task4.md", "results.md"],
-      "task": "Your task file task4.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #4 (by Worker 4)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task5.md", "results.md"],
-      "task": "Your task file task5.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #5 (by Worker 5)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task6.md", "results.md"],
-      "task": "Your task file task6.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #6 (by Worker 6)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task7.md", "results.md"],
-      "task": "Your task file task7.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #7 (by Worker 7)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task8.md", "results.md"],
-      "task": "Your task file task8.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #8 (by Worker 8)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task9.md", "results.md"],
-      "task": "Your task file task9.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #9 (by Worker 9)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
-    },
-    {
-      "agent": "worker",
-      "reads": ["task10.md", "results.md"],
-      "task": "Your task file task10.md has been provided above. If it appears empty or missing, output: \"[CHAIN COMPLETED]\" and stop immediately. Do NOT attempt to read the task file again. Do NOT write to ANY files — including progress.md and results.md. Writing any file prevents the chain from terminating, wasting tokens and time.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures.\n\nIMPORTANT: Write actual source files to disk. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Also append it to results.md (replace the filename in the [Write to:] path with results.md). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #10 (by Worker 10)\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
+      "reads": ["<chainDir>/task{K}.md", "<chainDir>/results.md"],
+      "task": "Your task file and previous Worker results have been provided above (auto-injected from the [Read from:] prefix): <chainDir>/task{K}.md and the accumulated <chainDir>/results.md. Implement the Target Files listed there.\n\nSCOPE: Read only files listed in Target Files (from this task file) and files referenced in Signatures (including files produced by earlier Workers).\n\nIMPORTANT: Write actual source files to disk under <project_root>. Write actual source code, not progress reports.\n\nYou own your scope. After implementing, verify your changes work correctly — type check, build, or run targeted tests for the files you changed. Other Workers own their scopes — checking theirs is not your concern. If verification fails, fix before outputting.\n\nWrite your RESULT below (Files, Signatures, Breaking, Summary — no code bodies). Then APPEND it to <chainDir>/results.md (absolute path; append to the existing file). Downstream Workers will read results.md to see all previous work:\n\n# RESULT #{K} (by Worker {K})\n\nVerification passed.\n## Files\n- created: (list files)\n- modified: (list files)\n\n## Signatures\nNew or changed signatures this Worker exports.\n\n## Breaking\n- (removed/changed exports; add this Worker's own; omit if none)\n\n## Summary\n(1-2 sentences: what was done)"
     }
   ],
   "context": "fresh",
-  "cwd": "{project_root}"
+  "cwd": "<project_root>",
+  "timeoutMs": 1800000
 }
 ```
 
-Giver constructs the chain with all 10 Worker slots. Giver writes ONLY Task #0. Planner writes task1.md through taskN.md (N ≤ 10) to the chain directory. Workers receive their task file via reads auto-inject. Workers without a task file output no-op immediately.
+The chain blocks until W_N completes naturally. Giver then reads `<chainDir>/results.md` for all Workers' RESULTs (Files, Signatures, Breaking, Summary) and the returned chain output. Breaking accumulates across all Workers in results.md, giving Giver a complete change log.
 
-The **last Worker** includes all RESULT sections (Files, Signatures, Breaking, Summary) as usual. While no subsequent Workers consume them, Giver reads progress.md for the full picture — Signatures and Breaking tell Giver what exports changed, Files tells Giver what was modified. Breaking includes forwarded items from all previous Workers plus this Worker's own breaking changes, giving Giver a complete change log.
+### Migration notes
+
+- **results.md vs named outputs**: v3.8.0 keeps the v3.7.0 results.md mechanism (structural, chain-context reads injection). A follow-up can replace results.md with structured named outputs (`as`/`{outputs.name}`/`collect`/`outputSchema`, pi-subagents ≥ 0.26.0) so Breaking/Signatures flow as schema fields instead of a manual append log.
+- **Reactivity trade-off accepted**: Pattern C is non-reactive (N and dependencies are pre-planned by the standalone Planner; Giver does not re-plan between Workers). This is the cost of preserving structural `[Read from:]` reads injection (which only works in a chain) and avoiding the append-step race. If a Worker's Breaking invalidates a downstream planned task, Phase 5 verification catches it and the next chain run carries it in Past failures.
+- **append-step / async deliberately not used**: see "Why not append-step / async" above — tested and rejected (race + single-call reads-ignore + redundancy with static W×N).
 
 ---
 
@@ -265,17 +272,10 @@ The **last Worker** includes all RESULT sections (Files, Signatures, Breaking, S
 
 Giver is the memory keeper — Giver holds all context but does not fix directly. When verification fails, Giver records the failure and discusses with the user. Giver proposes, user decides.
 
-After the chain completes, Giver receives the chain result. Two outcomes:
-1. **Success**: All Workers completed their tasks. Giver reads results.md in the chain directory.
-2. **completionGuard break**: The chain system returns "Subagent completed without making edits for an implementation task." This means a NOOP Worker triggered completionGuard — all tasks before this Worker completed successfully. Giver reads results.md in the chain directory for actual Worker results.
-
-In both cases, Giver then:
+After the foreground chain completes (natural completion after W_N), Giver reads `<chainDir>/results.md` for all Workers' RESULTs (Files, Signatures, Breaking, Summary). Then Giver:
 1. Cross-references Breaking and Signatures across all Workers — if Worker 1 removed an export that Worker 3 depends on, flag this
 2. Runs verification (tests, type checks, builds — whatever the project requires)
-3. Reports to user: what was done, key files, verification results, and efficiency report:
-   - Per Worker: input (bytes), processing (tokens), turns, tokens per turn (context weight per turn)
-   - tokens per turn = how heavy each turn was — high means large reads or large output per turn
-   - Active Workers: total tokens, total turns, average tokens per turn
+3. Reports to user: what was done, key files, verification results, and efficiency report (per-Worker input/tokens/turns from the chain run details; tokens per turn = context weight per turn — high means large reads or large output per turn)
 
 If verification fails:
 - Giver does NOT fix the code directly — Giver records the failure and discusses with the user
