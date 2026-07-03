@@ -1,7 +1,7 @@
 ---
 name: giver
-version: "0.1.0"
-description: 'The Giver v0.1.0. Foreground W×N chain with exact N from standalone Planner — no fixed slots, no completionGuard. Structural [Read from:] injection, results.md continuity. Each Worker owns its scope. Giver records failures, does not fix directly. All subagents run fresh.'
+version: "0.1.1"
+description: 'The Giver v0.1.1. Foreground W×N chain with exact N from standalone Planner — no fixed slots, no completionGuard. Structural [Read from:] injection, results.md continuity. Giver-guided sub-phases with a verify-Plan-artifacts checkpoint (4.2). Each Worker owns its scope. Giver records failures, does not fix directly. All subagents run fresh.'
 disable-model-invocation: true
 ---
 
@@ -128,17 +128,32 @@ v3.8.0 initially planned `append-step` (pi-subagents 0.30.0) on a single async c
 
 Pattern C (foreground W×N, exact N from standalone Planner) is chosen instead: it preserves the structural `[Read from:]` reads injection (chain context) and results.md continuity, is race-free, sizes the chain exactly from the Plan, and removes completionGuard by construction.
 
-## Flow
+## Flow (Giver-guided sub-phases)
 
-1. Giver writes T_0.
-2. Giver creates a temp chain directory `<chainDir>` (absolute path, e.g. under the system temp or `.pi-subagents/<runId>/`).
-3. Giver calls Planner **standalone** (a SINGLE subagent call, fresh, like Scout, NOT in the chain) and passes `<chainDir>` and T_0. Planner curates the Plan: an ordered list of task descriptors grouped by dependency layer (Layer 0 → Layer 1 → …), writes `task1.md … taskN.md` to `<chainDir>`, and returns the Plan — crucially the **exact count N** and the ordering — to Giver.
-4. Giver builds a **foreground chain of exactly N Worker steps** from the Plan (`context: "fresh"`, `cwd: "<project_root>"`):
+Each sub-phase is a discrete Giver action with its own entry/exit condition. Giver does NOT advance to the next sub-phase until the current one's exit condition is met. The Planner is NOT trusted to self-verify — sub-phase **4.2** is the Giver-side checkpoint that catches Planner non-compliance before a broken Plan becomes a broken chain.
+
+**4.0 Prepare.** Giver writes T₀ and creates a temp chain directory `<chainDir>` (absolute path, e.g. under the system temp or `.pi-subagents/<runId>/`). Exit: T₀ written; `<chainDir>` exists.
+
+**4.1 Plan (standalone Planner).** Giver calls Planner **standalone** (a SINGLE subagent call, fresh, like Scout, NOT in the chain) and passes `<chainDir>` and T₀. Planner curates the Plan: an ordered list of task descriptors grouped by dependency layer (Layer 0 → Layer 1 → …), writes `task1.md … taskN.md` to `<chainDir>`, and returns the Plan — crucially the **exact count N** and the ordering — to Giver. Exit: Planner call returned (N + ordering in its text output).
+
+**4.2 Verify Plan artifacts (Giver checkpoint — do NOT skip).** Giver lists `<chainDir>` and confirms the Planner's deliverable, not just its text:
+   - **Count check**: exactly `task1.md … taskN.md` exist on disk AND file count == returned N.
+   - **Content check**: each `taskK.md` is non-empty and contains the 6 sections (Goal, Background, Past failures, Constraints, Target Files, Signatures).
+   - If complete → proceed to **4.3**.
+   - If incomplete (files missing, N mismatch, or empty files) → Giver **recovers before building the chain** (never build a chain from a broken Plan):
+     1. **Retry once**: re-prompt Planner standalone with an explicit list of the missing/empty files and the absolute paths to `write`. (Do NOT silently proceed.)
+     2. **If still incomplete → Giver curates**: write the missing `taskK.md` files directly from T₀ + the returned Plan (the Plan's ordering/descriptors are the spec). This is the fallback that keeps the run alive.
+   - Record the path taken (clean / retry / Giver-curated) — it feeds failure attribution in Phase 5 (a retry or Giver-curate is a Planner-reliability signal, not a Giver error). Exit: `task1.md … taskN.md` all exist and are well-formed.
+
+**4.3 Build chain.** Giver constructs a **foreground chain of exactly N Worker steps** from the verified Plan (`context: "fresh"`, `cwd: "<project_root>"`):
    - W₁: `reads: ["<chainDir>/task1.md"]`
    - Wₖ (K = 2 … N): `reads: ["<chainDir>/task{K}.md", "<chainDir>/results.md"]`
    - Each Worker's task instructs it to append its RESULT to `<chainDir>/results.md` (absolute path).
-5. Giver runs the chain (one foreground `subagent({ chain: [W₁ … W_N], … })` call). It blocks until the chain completes naturally after W_N. No polling, no append-step, no interrupt.
-6. Phase 5: Giver reads `<chainDir>/results.md` and verifies.
+   Exit: `chain: [W₁ … W_N]` array built (N exact).
+
+**4.4 Run chain.** Giver runs the chain (one foreground `subagent({ chain: [W₁ … W_N], … })` call). It blocks until the chain completes naturally after W_N. No polling, no append-step, no interrupt. Exit: chain call returned (natural completion after W_N).
+
+→ **Phase 5**: Giver reads `<chainDir>/results.md` and verifies.
 
 ## Rules
 
